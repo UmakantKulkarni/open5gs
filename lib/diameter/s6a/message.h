@@ -62,6 +62,12 @@ extern "C" {
 #define OGS_DIAM_S6A_UE_SRVCC_NOT_SUPPORTED             (0)
 #define OGS_DIAM_S6A_UE_SRVCC_SUPPORTED                 (1)
 
+#define OGS_DIAM_S6A_PDN_GW_ALLOCATION_STATIC           (0)
+#define OGS_DIAM_S6A_PDN_GW_ALLOCATION_DYNAMIC          (1)
+
+#define OGS_DIAM_S6A_VPLMN_DYNAMIC_ADDRESS_NOTALLOWED   (0)
+#define OGS_DIAM_S6A_VPLMN_DYNAMIC_ADDRESS_ALLOWED      (1)
+
 extern struct dict_object *ogs_diam_s6a_application;
 
 extern struct dict_object *ogs_diam_s6a_cmd_air;
@@ -107,6 +113,8 @@ extern struct dict_object *ogs_diam_s6a_allocation_retention_priority;
 extern struct dict_object *ogs_diam_s6a_priority_level;
 extern struct dict_object *ogs_diam_s6a_pre_emption_capability;
 extern struct dict_object *ogs_diam_s6a_pre_emption_vulnerability;
+extern struct dict_object *ogs_diam_s6a_pdn_gw_allocation_type;
+extern struct dict_object *ogs_diam_s6a_vplmn_dynamic_address_allowed;
 
 extern struct dict_object *ogs_diam_s6a_terminal_information;
 extern struct dict_object *ogs_diam_s6a_imei;

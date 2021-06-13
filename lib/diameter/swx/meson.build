@@ -15,9 +15,24 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-subdir('common')
-subdir('gx')
-subdir('rx')
-subdir('s6a')
-subdir('cx')
-subdir('swx')
+libdiameter_swx_sources = files('''
+    ogs-diameter-swx.h
+    message.h
+
+    message.c
+'''.split())
+
+libdiameter_swx_inc = include_directories('.')
+
+libdiameter_swx = library('ogsdiameter-swx',
+    sources : libdiameter_swx_sources,
+    version : libogslib_version,
+    c_args : libdiameter_common_cc_flags,
+    include_directories : libdiameter_swx_inc,
+    dependencies : [libdiameter_cx_dep, libdiameter_s6a_dep],
+    install : true)
+
+libdiameter_swx_dep = declare_dependency(
+    link_with : libdiameter_swx,
+    include_directories : libdiameter_swx_inc,
+    dependencies : [libdiameter_cx_dep, libdiameter_s6a_dep])

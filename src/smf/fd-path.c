@@ -211,18 +211,18 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     ogs_assert(ret == 0);
 
     /* Set Subscription-Id */
-    ret = fd_msg_avp_new(ogs_diam_gx_subscription_id, 0, &avp);
+    ret = fd_msg_avp_new(ogs_diam_subscription_id, 0, &avp);
     ogs_assert(ret == 0);
 
-    ret = fd_msg_avp_new(ogs_diam_gx_subscription_id_type, 0, &avpch1);
+    ret = fd_msg_avp_new(ogs_diam_subscription_id_type, 0, &avpch1);
     ogs_assert(ret == 0);
-    val.i32 = OGS_DIAM_GX_SUBSCRIPTION_ID_TYPE_END_USER_IMSI;
+    val.i32 = OGS_DIAM_SUBSCRIPTION_ID_TYPE_END_USER_IMSI;
     ret = fd_msg_avp_setvalue (avpch1, &val);
     ogs_assert(ret == 0);
     ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
     ogs_assert(ret == 0);
 
-    ret = fd_msg_avp_new(ogs_diam_gx_subscription_id_data, 0, &avpch1);
+    ret = fd_msg_avp_new(ogs_diam_subscription_id_data, 0, &avpch1);
     ogs_assert(ret == 0);
     val.os.data = (uint8_t *)smf_ue->imsi_bcd;
     val.os.len  = strlen(smf_ue->imsi_bcd);

@@ -15,9 +15,20 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-subdir('common')
-subdir('gx')
-subdir('rx')
-subdir('s6a')
-subdir('cx')
-subdir('swx')
+testapp_non3gpp_sources = files('''
+    test-fd-path.h
+    test-fd-path.c
+    diameter-swx-path.c
+    gtp-path.c
+
+    abts-main.c
+    swx-test.c
+'''.split())
+
+testapp_non3gpp_exe = executable('non3gpp',
+    sources : testapp_non3gpp_sources,
+    c_args : [testunit_core_cc_flags,
+        '-DFD_EXT_DIR="@0@"'.format(freediameter_extensions_builddir)],
+    dependencies : libtestepc_dep)
+
+test('non3gpp', testapp_non3gpp_exe, is_parallel : false, suite: 'epc')

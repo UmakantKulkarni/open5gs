@@ -17,26 +17,25 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HSS_FD_PATH_H
-#define HSS_FD_PATH_H
+#ifndef OGS_DIAMETER_SWX_H
+#define OGS_DIAMETER_SWX_H
+
+#include "ogs-diameter-common.h"
+
+#define OGS_DIAMETER_INSIDE
+
+#include "diameter/swx/message.h"
+
+#undef OGS_DIAMETER_INSIDE
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int hss_fd_init(void);
-void hss_fd_final(void);
-
-int hss_s6a_init(void);
-void hss_s6a_final(void);
-int hss_cx_init(void);
-void hss_cx_final(void);
-int hss_swx_init(void);
-void hss_swx_final(void);
+/* Nothing */
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HSS_FD_PATH_H */
-
+#endif /* OGS_DIAMETER_SWX_H */

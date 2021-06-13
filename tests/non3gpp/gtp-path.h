@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019,2020 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -17,26 +17,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HSS_FD_PATH_H
-#define HSS_FD_PATH_H
+#ifndef TEST_NON3GPP_GTP_PATH_H
+#define TEST_NON3GPP_GTP_PATH_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int hss_fd_init(void);
-void hss_fd_final(void);
+ogs_socknode_t *test_gtpv2c_server(void);
+void test_gtpv2c_close(ogs_socknode_t *node);
 
-int hss_s6a_init(void);
-void hss_s6a_final(void);
-int hss_cx_init(void);
-void hss_cx_final(void);
-int hss_swx_init(void);
-void hss_swx_final(void);
+ogs_pkbuf_t *test_gtpv2c_read(ogs_socknode_t *node);
+int test_gtpv2c_send(ogs_socknode_t *node, ogs_pkbuf_t *pkbuf);
+
+int test_gtpv2c_send_create_session_request(
+        ogs_socknode_t *node, test_sess_t *sess);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HSS_FD_PATH_H */
-
+#endif /* TEST_NON3GPP_GTP_PATH_H */

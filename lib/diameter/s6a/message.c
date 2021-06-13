@@ -67,6 +67,8 @@ struct dict_object *ogs_diam_s6a_allocation_retention_priority = NULL;
 struct dict_object *ogs_diam_s6a_priority_level = NULL;
 struct dict_object *ogs_diam_s6a_pre_emption_capability = NULL;
 struct dict_object *ogs_diam_s6a_pre_emption_vulnerability = NULL;
+struct dict_object *ogs_diam_s6a_pdn_gw_allocation_type = NULL;
+struct dict_object *ogs_diam_s6a_vplmn_dynamic_address_allowed = NULL;
 
 struct dict_object *ogs_diam_s6a_terminal_information = NULL;
 struct dict_object *ogs_diam_s6a_imei = NULL;
@@ -116,6 +118,8 @@ int ogs_diam_s6a_init(void)
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Priority-Level", &ogs_diam_s6a_priority_level);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Pre-emption-Capability", &ogs_diam_s6a_pre_emption_capability);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Pre-emption-Vulnerability", &ogs_diam_s6a_pre_emption_vulnerability);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "PDN-GW-Allocation-Type", &ogs_diam_s6a_pdn_gw_allocation_type);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "VPLMN-Dynamic-Address-Allowed", &ogs_diam_s6a_vplmn_dynamic_address_allowed);
 
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "AMBR", &ogs_diam_s6a_ambr);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Max-Requested-Bandwidth-UL", &ogs_diam_s6a_max_bandwidth_ul);

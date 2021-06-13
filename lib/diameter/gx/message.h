@@ -54,13 +54,6 @@ extern struct dict_object *ogs_diam_gx_cmd_raa;
 extern struct dict_object *ogs_diam_gx_cc_request_type;
 extern struct dict_object *ogs_diam_gx_cc_request_number;
 extern struct dict_object *ogs_diam_gx_network_request_support;
-extern struct dict_object *ogs_diam_gx_subscription_id;
-#define OGS_DIAM_GX_SUBSCRIPTION_ID_TYPE_END_USER_E164      0
-#define OGS_DIAM_GX_SUBSCRIPTION_ID_TYPE_END_USER_IMSI      1
-#define OGS_DIAM_GX_SUBSCRIPTION_ID_TYPE_END_USER_SIP_URI   2
-#define OGS_DIAM_GX_SUBSCRIPTION_ID_TYPE_END_USER_NAI       3
-extern struct dict_object *ogs_diam_gx_subscription_id_type;
-extern struct dict_object *ogs_diam_gx_subscription_id_data;
 extern struct dict_object *ogs_diam_gx_supported_features;
 extern struct dict_object *ogs_diam_gx_feature_list_id;
 extern struct dict_object *ogs_diam_gx_feature_list;

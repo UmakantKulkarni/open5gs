@@ -81,6 +81,7 @@ static int test_context_prepare(void)
 {
     self.s1ap_port = OGS_S1AP_SCTP_PORT;
     self.ngap_port = OGS_NGAP_SCTP_PORT;
+    self.gtpc_port = OGS_GTPV2_C_UDP_PORT;
 
     return OGS_OK;
 }
@@ -764,6 +765,106 @@ int test_context_parse_config(void)
                     if (list2->num || num_of_list0) {
                         self.num_of_e_served_tai++;
                     }
+                }
+            }
+        } else if (!strcmp(root_key, "smf")) {
+            ogs_yaml_iter_t smf_iter;
+            ogs_yaml_iter_recurse(&root_iter, &smf_iter);
+            while (ogs_yaml_iter_next(&smf_iter)) {
+                const char *smf_key = ogs_yaml_iter_key(&smf_iter);
+                ogs_assert(smf_key);
+                if (!strcmp(smf_key, "gtpc")) {
+                    ogs_yaml_iter_t gtpc_array, gtpc_iter;
+                    ogs_yaml_iter_recurse(&smf_iter, &gtpc_array);
+                    do {
+                        int family = AF_UNSPEC;
+                        int i, num = 0;
+                        const char *hostname[OGS_MAX_NUM_OF_HOSTNAME];
+                        uint16_t port = self.gtpc_port;
+                        ogs_sockaddr_t *addr = NULL;
+
+                        if (ogs_yaml_iter_type(&gtpc_array) ==
+                                YAML_MAPPING_NODE) {
+                            memcpy(&gtpc_iter, &gtpc_array,
+                                    sizeof(ogs_yaml_iter_t));
+                        } else if (ogs_yaml_iter_type(&gtpc_array) ==
+                            YAML_SEQUENCE_NODE) {
+                            if (!ogs_yaml_iter_next(&gtpc_array))
+                                break;
+                            ogs_yaml_iter_recurse(&gtpc_array, &gtpc_iter);
+                        } else if (ogs_yaml_iter_type(&gtpc_array) ==
+                            YAML_SCALAR_NODE) {
+                            break;
+                        } else
+                            ogs_assert_if_reached();
+
+                        while (ogs_yaml_iter_next(&gtpc_iter)) {
+                            const char *gtpc_key =
+                                ogs_yaml_iter_key(&gtpc_iter);
+                            ogs_assert(gtpc_key);
+                            if (!strcmp(gtpc_key, "family")) {
+                                const char *v = ogs_yaml_iter_value(&gtpc_iter);
+                                if (v) family = atoi(v);
+                                if (family != AF_UNSPEC &&
+                                    family != AF_INET && family != AF_INET6) {
+                                    ogs_warn("Ignore family(%d) : "
+                                        "AF_UNSPEC(%d), "
+                                        "AF_INET(%d), AF_INET6(%d) ",
+                                        family, AF_UNSPEC, AF_INET, AF_INET6);
+                                    family = AF_UNSPEC;
+                                }
+                            } else if (!strcmp(gtpc_key, "addr") ||
+                                    !strcmp(gtpc_key, "name")) {
+                                ogs_yaml_iter_t hostname_iter;
+                                ogs_yaml_iter_recurse(&gtpc_iter,
+                                        &hostname_iter);
+                                ogs_assert(ogs_yaml_iter_type(&hostname_iter) !=
+                                    YAML_MAPPING_NODE);
+
+                                do {
+                                    if (ogs_yaml_iter_type(&hostname_iter) ==
+                                            YAML_SEQUENCE_NODE) {
+                                        if (!ogs_yaml_iter_next(&hostname_iter))
+                                            break;
+                                    }
+
+                                    ogs_assert(num < OGS_MAX_NUM_OF_HOSTNAME);
+                                    hostname[num++] =
+                                        ogs_yaml_iter_value(&hostname_iter);
+                                } while (
+                                    ogs_yaml_iter_type(&hostname_iter) ==
+                                        YAML_SEQUENCE_NODE);
+                            } else if (!strcmp(gtpc_key, "port")) {
+                                const char *v = ogs_yaml_iter_value(&gtpc_iter);
+                                if (v) port = atoi(v);
+                            } else
+                                ogs_warn("unknown key `%s`", gtpc_key);
+                        }
+
+                        addr = NULL;
+                        for (i = 0; i < num; i++) {
+                            rv = ogs_addaddrinfo(&addr,
+                                    family, hostname[i], port, 0);
+                            ogs_assert(rv == OGS_OK);
+                        }
+
+                        ogs_filter_ip_version(&addr,
+                                ogs_app()->parameter.no_ipv4,
+#if 0 /* Only IPv4 is supporeted in Test-GTPv2C */
+                                ogs_app()->parameter.no_ipv6,
+#else
+                                1,
+#endif
+                                ogs_app()->parameter.prefer_ipv4);
+
+                        if (addr == NULL) continue;
+
+                        ogs_gtp_node_add_by_addr(&test_self()->gtpc_list, addr);
+
+                        ogs_freeaddrinfo(addr);
+
+                    } while (ogs_yaml_iter_type(&gtpc_array) ==
+                            YAML_SEQUENCE_NODE);
                 }
             }
         }
@@ -2036,6 +2137,160 @@ bson_t *test_db_new_slice(test_ue_t *test_ue)
                 "]",
               "}",
             "]",
+            "security", "{",
+                "k", BCON_UTF8(test_ue->k_string),
+                "opc", BCON_UTF8(test_ue->opc_string),
+                "amf", BCON_UTF8("8000"),
+                "sqn", BCON_INT64(64),
+            "}",
+            "subscribed_rau_tau_timer", BCON_INT32(12),
+            "network_access_mode", BCON_INT32(2),
+            "subscriber_status", BCON_INT32(0),
+            "access_restriction_data", BCON_INT32(32)
+          );
+    ogs_assert(doc);
+
+    return doc;
+}
+
+bson_t *test_db_new_non3gpp(test_ue_t *test_ue)
+{
+    bson_t *doc = NULL;
+
+    ogs_assert(test_ue);
+
+    doc = BCON_NEW(
+            "imsi", BCON_UTF8(test_ue->imsi),
+            "msisdn", "[",
+                BCON_UTF8(TEST_MSISDN),
+                BCON_UTF8(TEST_ADDITIONAL_MSISDN),
+            "]",
+            "ambr", "{",
+                "downlink", "{",
+                    "value", BCON_INT32(1),
+                    "unit", BCON_INT32(3),
+                "}",
+                "uplink", "{",
+                    "value", BCON_INT32(1),
+                    "unit", BCON_INT32(3),
+                "}",
+            "}",
+            "slice", "[", "{",
+                "sst", BCON_INT32(1),
+                "default_indicator", BCON_BOOL(true),
+                "session", "[",
+                  "{",
+                    "name", BCON_UTF8("internet"),
+                    "type", BCON_INT32(3),
+                    "ambr", "{",
+                        "downlink", "{",
+                            "value", BCON_INT32(1),
+                            "unit", BCON_INT32(3),
+                        "}",
+                        "uplink", "{",
+                            "value", BCON_INT32(1),
+                            "unit", BCON_INT32(3),
+                        "}",
+                    "}",
+                    "qos", "{",
+                        "index", BCON_INT32(9),
+                        "arp", "{",
+                            "priority_level", BCON_INT32(8),
+                            "pre_emption_vulnerability", BCON_INT32(1),
+                            "pre_emption_capability", BCON_INT32(1),
+                        "}",
+                    "}",
+                    "smf", "{",
+                        "addr", BCON_UTF8("51.51.51.228"),
+                        "addr6", BCON_UTF8("cafe::4"),
+                    "}",
+                  "}",
+                  "{",
+                    "name", BCON_UTF8("ims"),
+                    "type", BCON_INT32(3),
+                    "ambr", "{",
+                        "downlink", "{",
+                            "value", BCON_INT32(1),
+                            "unit", BCON_INT32(3),
+                        "}",
+                        "uplink", "{",
+                            "value", BCON_INT32(1),
+                            "unit", BCON_INT32(3),
+                        "}",
+                    "}",
+                    "qos", "{",
+                        "index", BCON_INT32(5),
+                        "arp", "{",
+                            "priority_level", BCON_INT32(1),
+                            "pre_emption_vulnerability", BCON_INT32(1),
+                            "pre_emption_capability", BCON_INT32(1),
+                        "}",
+                    "}",
+                    "pcc_rule", "[",
+                      "{",
+                        "qos", "{",
+                            "index", BCON_INT32(1),
+                            "arp", "{",
+                                "priority_level", BCON_INT32(3),
+                                "pre_emption_vulnerability", BCON_INT32(2),
+                                "pre_emption_capability", BCON_INT32(2),
+                            "}",
+                            "mbr", "{",
+                                "downlink", "{",
+                                    "value", BCON_INT32(82),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                                "uplink", "{",
+                                    "value", BCON_INT32(82),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                            "}",
+                            "gbr", "{",
+                                "downlink", "{",
+                                    "value", BCON_INT32(82),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                                "uplink", "{",
+                                    "value", BCON_INT32(82),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                            "}",
+                        "}",
+                      "}",
+                      "{",
+                        "qos", "{",
+                            "index", BCON_INT32(2),
+                            "arp", "{",
+                                "priority_level", BCON_INT32(4),
+                                "pre_emption_vulnerability", BCON_INT32(2),
+                                "pre_emption_capability", BCON_INT32(2),
+                            "}",
+                            "mbr", "{",
+                                "downlink", "{",
+                                    "value", BCON_INT32(802),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                                "uplink", "{",
+                                    "value", BCON_INT32(802),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                            "}",
+                            "gbr", "{",
+                                "downlink", "{",
+                                    "value", BCON_INT32(802),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                                "uplink", "{",
+                                    "value", BCON_INT32(802),
+                                    "unit", BCON_INT32(1),
+                                "}",
+                            "}",
+                        "}",
+                      "}",
+                    "]",
+                  "}",
+                "]",
+            "}", "]",
             "security", "{",
                 "k", BCON_UTF8(test_ue->k_string),
                 "opc", BCON_UTF8(test_ue->opc_string),

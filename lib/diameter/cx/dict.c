@@ -150,9 +150,11 @@ int ogs_dict_cx_entry(char *conffile)
 
   {
     struct dict_object * vendor;
+    struct dict_application_data cx = { 16777216, "Cx" };
+    struct dict_application_data swx = { 16777265, "SWx" };
     CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_VENDOR, VENDOR_BY_NAME, "3GPP", &vendor, ENOENT));
-    struct dict_application_data app_data = { 16777216, "Cx" };
-    CHECK_FCT(fd_dict_new(fd_g_config->cnf_dict, DICT_APPLICATION, &app_data, vendor, NULL));
+    CHECK_FCT(fd_dict_new(fd_g_config->cnf_dict, DICT_APPLICATION, &cx, vendor, NULL));
+    CHECK_FCT(fd_dict_new(fd_g_config->cnf_dict, DICT_APPLICATION, &swx, vendor, NULL));
   }
 
   }
@@ -160,8 +162,10 @@ int ogs_dict_cx_entry(char *conffile)
   /* Command section */
 
   {
+#if 0
     struct dict_object *cx;
     CHECK_FCT(fd_dict_search(fd_g_config->cnf_dict, DICT_APPLICATION, APPLICATION_BY_NAME, "Cx", &cx, ENOENT));
+#endif
 
     /* User-Authorization-Request (UAR) Command */
     {
@@ -191,7 +195,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_uar);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_uar);
       PARSE_loc_rules(rules, cmd_uar);
     }
 
@@ -222,7 +226,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_uaa);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_uaa);
       PARSE_loc_rules(rules, cmd_uaa);
     }
 
@@ -254,7 +258,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_lir);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_lir);
       PARSE_loc_rules(rules, cmd_lir);
     }
 
@@ -287,7 +291,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_lia);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_lia);
       PARSE_loc_rules(rules, cmd_lia);
     }
 
@@ -312,15 +316,23 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Destination-Host" }, RULE_OPTIONAL, -1, 1 },
         {  {                      .avp_name = "User-Name" }, RULE_REQUIRED, -1, 1 },
         {  { .avp_vendor = 10415, .avp_name = "Supported-Features" }, RULE_OPTIONAL, -1, -1 },
+#if 0 /* modified by acetcom */
         {  { .avp_vendor = 10415, .avp_name = "Public-Identity" }, RULE_REQUIRED, -1, 1 },
+#else
+        {  { .avp_vendor = 10415, .avp_name = "Public-Identity" }, RULE_OPTIONAL, -1, 1 },
+#endif
         {  { .avp_vendor = 10415, .avp_name = "SIP-Auth-Data-Item" }, RULE_REQUIRED, -1, 1 },
         {  { .avp_vendor = 10415, .avp_name = "SIP-Number-Auth-Items" }, RULE_REQUIRED, -1, 1 },
+#if 0 /* modified by acetcom */
         {  { .avp_vendor = 10415, .avp_name = "Server-Name" }, RULE_REQUIRED, -1, 1 },
+#else
+        {  { .avp_vendor = 10415, .avp_name = "Server-Name" }, RULE_OPTIONAL, -1, 1 },
+#endif
         {  {                      .avp_name = "Proxy-Info" }, RULE_OPTIONAL, -1, -1 },
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 },
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_mar);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_mar);
       PARSE_loc_rules(rules, cmd_mar);
     }
 
@@ -353,7 +365,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_maa);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_maa);
       PARSE_loc_rules(rules, cmd_maa);
     }
 
@@ -380,9 +392,17 @@ int ogs_dict_cx_entry(char *conffile)
         {  { .avp_vendor = 10415, .avp_name = "Supported-Features" }, RULE_OPTIONAL, -1, -1 },
         {  { .avp_vendor = 10415, .avp_name = "Public-Identity" }, RULE_OPTIONAL, -1, -1 },
         {  { .avp_vendor = 10415, .avp_name = "Wildcarded-Public-Identity" }, RULE_OPTIONAL, -1, 1 },
+#if 0 /* modified by acetcom */
         {  { .avp_vendor = 10415, .avp_name = "Server-Name" }, RULE_REQUIRED, -1, 1 },
+#else
+        {  { .avp_vendor = 10415, .avp_name = "Server-Name" }, RULE_OPTIONAL, -1, 1 },
+#endif
         {  { .avp_vendor = 10415, .avp_name = "Server-Assignment-Type" }, RULE_REQUIRED, -1, 1 },
+#if 0 /* modified by acetcom */
         {  { .avp_vendor = 10415, .avp_name = "User-Data-Already-Available" }, RULE_REQUIRED, -1, 1 },
+#else
+        {  { .avp_vendor = 10415, .avp_name = "User-Data-Already-Available" }, RULE_OPTIONAL, -1, 1 },
+#endif
         {  { .avp_vendor = 10415, .avp_name = "SCSCF-Restoration-Info" }, RULE_OPTIONAL, -1, 1 },
         {  { .avp_vendor = 10415, .avp_name = "Multiple-Registration-Indication" }, RULE_OPTIONAL, -1, 1 },
         {  { .avp_vendor = 10415, .avp_name = "Session-Priority" }, RULE_OPTIONAL, -1, 1 },
@@ -390,7 +410,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_sar);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_sar);
       PARSE_loc_rules(rules, cmd_sar);
     }
 
@@ -429,7 +449,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_saa);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_saa);
       PARSE_loc_rules(rules, cmd_saa);
     }
 
@@ -461,7 +481,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_rtr);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_rtr);
       PARSE_loc_rules(rules, cmd_rtr);
     }
 
@@ -492,7 +512,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_rta);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_rta);
       PARSE_loc_rules(rules, cmd_rta);
     }
 
@@ -524,7 +544,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_ppr);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_ppr);
       PARSE_loc_rules(rules, cmd_ppr);
     }
 
@@ -553,7 +573,7 @@ int ogs_dict_cx_entry(char *conffile)
         {  {                      .avp_name = "Route-Record" }, RULE_OPTIONAL, -1, -1 }
       };
 
-      CHECK_dict_new(DICT_COMMAND, &data, cx, &cmd_ppa);
+      CHECK_dict_new(DICT_COMMAND, &data, NULL, &cmd_ppa);
       PARSE_loc_rules(rules, cmd_ppa);
     }
   }

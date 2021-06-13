@@ -53,13 +53,16 @@ typedef struct test_context_s {
     uint16_t        s1ap_port;      /* Default S1AP Port */
     ogs_list_t      s1ap_list;      /* MME S1AP IPv4 Server List */
     ogs_list_t      s1ap_list6;     /* MME S1AP IPv6 Server List */
-    ogs_sockaddr_t  *s1ap_addr;     /* MME GTPC IPv4 Address */
-    ogs_sockaddr_t  *s1ap_addr6;    /* MME GTPC IPv6 Address */
+    ogs_sockaddr_t  *s1ap_addr;     /* MME S1AP IPv4 Address */
+    ogs_sockaddr_t  *s1ap_addr6;    /* MME S1AP IPv6 Address */
 
     ogs_sockaddr_t  *gnb1_addr;
     ogs_sockaddr_t  *gnb1_addr6;
     ogs_sockaddr_t  *gnb2_addr;
     ogs_sockaddr_t  *gnb2_addr6;
+
+    uint32_t        gtpc_port;      /* SMF GTPC local port */
+    ogs_list_t      gtpc_list;      /* SMF GTPC Client List */
 
     /* 5G PLMN Support */
     uint8_t num_of_plmn_support;
@@ -414,6 +417,9 @@ typedef struct test_ue_s {
     uint8_t emm_message_type;
     uint8_t esm_message_type;
 
+    /* GTPv2-C */
+    uint32_t epdg_s2b_teid;
+
     test_sess_t *sess;
 
     ogs_list_t sess_list;
@@ -519,6 +525,7 @@ bson_t *test_db_new_qos_flow(test_ue_t *test_ue);
 bson_t *test_db_new_session(test_ue_t *test_ue);
 bson_t *test_db_new_ims(test_ue_t *test_ue);
 bson_t *test_db_new_slice(test_ue_t *test_ue);
+bson_t *test_db_new_non3gpp(test_ue_t *test_ue);
 
 #ifdef __cplusplus
 }

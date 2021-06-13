@@ -17,26 +17,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef HSS_FD_PATH_H
-#define HSS_FD_PATH_H
+#ifndef TEST_FD_PATH_H
+#define TEST_FD_PATH_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-int hss_fd_init(void);
-void hss_fd_final(void);
+#include "ogs-diameter-cx.h"
+#include "ogs-diameter-s6a.h"
+#include "ogs-diameter-swx.h"
 
-int hss_s6a_init(void);
-void hss_s6a_final(void);
-int hss_cx_init(void);
-void hss_cx_final(void);
-int hss_swx_init(void);
-void hss_swx_final(void);
+#define TEST_HSS_IDENTITY "hss.localdomain"
+#define TEST_SMF_IDENTITY "smf.localdomain"
+
+int test_fd_init(void);
+void test_fd_final(void);
+
+int test_swx_init(void);
+void test_swx_final(void);
+
+void test_swx_send(test_ue_t *test_ue);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* HSS_FD_PATH_H */
+#endif /* TEST_FD_PATH_H */
 
