@@ -72,8 +72,11 @@ static void test1_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
+    /* Setup Test Session */
     sess = test_sess_add_by_apn(test_ue, "internet");
     ogs_assert(sess);
+
+    OGS_SETUP_GTP_NODE(sess, ogs_list_first(&test_self()->gtpc_list));
 
     /* eNB connects to MME */
     s1ap = tests1ap_client(AF_INET);
@@ -109,6 +112,12 @@ static void test1_func(abts_case *tc, void *data)
 
     /* DELAY for Diameter message */
     ogs_msleep(100);
+
+    /* Send S2b Create Session Request */
+    rv = test_s2b_send_create_session_request(sess);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Receive S2b Create Session Response */
 
     ogs_msleep(300);
 

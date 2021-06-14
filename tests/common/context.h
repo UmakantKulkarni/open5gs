@@ -417,9 +417,6 @@ typedef struct test_ue_s {
     uint8_t emm_message_type;
     uint8_t esm_message_type;
 
-    /* GTPv2-C */
-    uint32_t epdg_s2b_teid;
-
     test_sess_t *sess;
 
     ogs_list_t sess_list;
@@ -459,6 +456,10 @@ typedef struct test_sess_s {
         uint32_t upf_dl_teid;
         ogs_ip_t upf_dl_ip;
     } handover;
+
+    /* ePDG */
+    uint32_t epdg_s2b_teid;
+    ogs_gtp_node_t *gnode;
 
     ogs_list_t bearer_list;
 

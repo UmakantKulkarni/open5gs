@@ -39,10 +39,11 @@ ogs_socknode_t *test_gtpv2c_server(void)
     sock = ogs_udp_server(node);
     ogs_assert(sock);
 
-    ogs_list_for_each(&test_self()->gtpc_list, gnode) {
-        rv = ogs_gtp_connect(sock, NULL, gnode);
-        ogs_assert(rv == OGS_OK);
-    }
+    gnode = ogs_list_first(&test_self()->gtpc_list);
+    ogs_assert(gnode);
+
+    rv = ogs_gtp_connect(sock, NULL, gnode);
+    ogs_assert(rv == OGS_OK);
 
     return node;
 }
@@ -77,34 +78,27 @@ ogs_pkbuf_t *test_gtpv2c_read(ogs_socknode_t *node)
     return recvbuf;
 }
 
-int test_gtpv2c_send(ogs_socknode_t *node, ogs_pkbuf_t *pkbuf)
-{
-    ogs_assert(node);
-    ogs_assert(node->sock);
-    ogs_assert(pkbuf);
-    ogs_assert(pkbuf->data);
-    ogs_assert(pkbuf->len);
-
-    return ogs_sendto(node->sock->fd, pkbuf->data, pkbuf->len, 0, NULL);
-}
-
-int test_gtpv2c_send_create_session_request(
-        ogs_socknode_t *node, test_sess_t *sess)
+int test_s2b_send_create_session_request(test_sess_t *sess)
 {
     int rv;
     ogs_gtp_header_t h;
     ogs_pkbuf_t *pkbuf = NULL;
-    test_ue_t *test_ue = NULL;
+    ogs_gtp_xact_t *xact = NULL;
 
-    test_ue = sess->test_ue;
-    ogs_assert(test_ue);
+    ogs_assert(sess);
 
     memset(&h, 0, sizeof(ogs_gtp_header_t));
     h.type = OGS_GTP_CREATE_SESSION_REQUEST_TYPE;
-    h.teid = test_ue->epdg_s2b_teid;
+    h.teid = sess->epdg_s2b_teid;
 
     pkbuf = test_s2b_build_create_session_request(h.type, sess);
     ogs_expect_or_return_val(pkbuf, OGS_ERROR);
 
-    return test_gtpv2c_send(node, pkbuf);;
+    xact = ogs_gtp_xact_local_create(sess->gnode, &h, pkbuf, NULL, sess);
+    ogs_expect_or_return_val(xact, OGS_ERROR);
+
+    rv = ogs_gtp_xact_commit(xact);
+    ogs_expect(rv == OGS_OK);
+
+    return rv;
 }

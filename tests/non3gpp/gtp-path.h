@@ -28,10 +28,8 @@ ogs_socknode_t *test_gtpv2c_server(void);
 void test_gtpv2c_close(ogs_socknode_t *node);
 
 ogs_pkbuf_t *test_gtpv2c_read(ogs_socknode_t *node);
-int test_gtpv2c_send(ogs_socknode_t *node, ogs_pkbuf_t *pkbuf);
 
-int test_gtpv2c_send_create_session_request(
-        ogs_socknode_t *node, test_sess_t *sess);
+int test_s2b_send_create_session_request(test_sess_t *sess);
 
 #ifdef __cplusplus
 }
