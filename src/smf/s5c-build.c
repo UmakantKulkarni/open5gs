@@ -63,7 +63,17 @@ ogs_pkbuf_t *smf_s5c_build_create_session_response(
 
     /* Control Plane(UL) : SMF-S5C */
     memset(&smf_s5c_teid, 0, sizeof(ogs_gtp_f_teid_t));
-    smf_s5c_teid.interface_type = OGS_GTP_F_TEID_S5_S8_PGW_GTP_C;
+    switch (sess->gtp_rat_type) {
+    case OGS_GTP_RAT_TYPE_EUTRAN:
+        smf_s5c_teid.interface_type = OGS_GTP_F_TEID_S5_S8_PGW_GTP_C;
+        break;
+    case OGS_GTP_RAT_TYPE_WLAN:
+        smf_s5c_teid.interface_type = OGS_GTP_F_TEID_S2B_PGW_GTP_C;
+        break;
+    default:
+        ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
+        ogs_assert_if_reached();
+    }
     smf_s5c_teid.teid = htobe32(sess->smf_n4_teid);
     rv = ogs_gtp_sockaddr_to_f_teid(
             ogs_gtp_self()->gtpc_addr, ogs_gtp_self()->gtpc_addr6,
@@ -142,15 +152,29 @@ ogs_pkbuf_t *smf_s5c_build_create_session_response(
 
     /* Data Plane(UL) : SMF-S5U */
     memset(&pgw_s5u_teid, 0, sizeof(ogs_gtp_f_teid_t));
-    pgw_s5u_teid.interface_type = OGS_GTP_F_TEID_S5_S8_PGW_GTP_U;
     pgw_s5u_teid.teid = htobe32(bearer->pgw_s5u_teid);
     ogs_assert(bearer->pgw_s5u_addr || bearer->pgw_s5u_addr6);
     rv = ogs_gtp_sockaddr_to_f_teid(
         bearer->pgw_s5u_addr, bearer->pgw_s5u_addr6, &pgw_s5u_teid, &len);
     ogs_expect_or_return_val(rv == OGS_OK, NULL);
-    rsp->bearer_contexts_created.s5_s8_u_sgw_f_teid.presence = 1;
-    rsp->bearer_contexts_created.s5_s8_u_sgw_f_teid.data = &pgw_s5u_teid;
-    rsp->bearer_contexts_created.s5_s8_u_sgw_f_teid.len = len;
+
+    switch (sess->gtp_rat_type) {
+    case OGS_GTP_RAT_TYPE_EUTRAN:
+        pgw_s5u_teid.interface_type = OGS_GTP_F_TEID_S5_S8_PGW_GTP_U;
+        rsp->bearer_contexts_created.s5_s8_u_sgw_f_teid.presence = 1;
+        rsp->bearer_contexts_created.s5_s8_u_sgw_f_teid.data = &pgw_s5u_teid;
+        rsp->bearer_contexts_created.s5_s8_u_sgw_f_teid.len = len;
+        break;
+    case OGS_GTP_RAT_TYPE_WLAN:
+        pgw_s5u_teid.interface_type = OGS_GTP_F_TEID_S2B_U_PGW_GTP_U;
+        rsp->bearer_contexts_created.s12_rnc_f_teid.presence = 1;
+        rsp->bearer_contexts_created.s12_rnc_f_teid.data = &pgw_s5u_teid;
+        rsp->bearer_contexts_created.s12_rnc_f_teid.len = len;
+        break;
+    default:
+        ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
+        ogs_assert_if_reached();
+    }
 
     gtp_message.h.type = type;
     return ogs_gtp_build_msg(&gtp_message);
