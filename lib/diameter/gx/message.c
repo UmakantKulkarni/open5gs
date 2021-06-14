@@ -79,6 +79,13 @@ struct dict_object *ogs_diam_gx_codec_data = NULL;
 struct dict_object *ogs_diam_gx_media_sub_component = NULL;
 struct dict_object *ogs_diam_gx_flow_number = NULL;
 struct dict_object *ogs_diam_gx_flow_usage = NULL;
+struct dict_object *ogs_diam_gx_3gpp_sgsn_mcc_mnc = NULL;
+struct dict_object *ogs_diam_gx_an_gw_address = NULL;
+struct dict_object *ogs_diam_gx_online = NULL;
+struct dict_object *ogs_diam_gx_offline = NULL;
+struct dict_object *ogs_diam_gx_access_network_charging_address = NULL;
+struct dict_object *ogs_diam_gx_access_network_charging_identifier_gx = NULL;
+struct dict_object *ogs_diam_gx_an_trusted = NULL;
 
 extern int ogs_dict_gx_entry(char *conffile);
 
@@ -148,6 +155,13 @@ int ogs_diam_gx_init(void)
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Media-Sub-Component", &ogs_diam_gx_media_sub_component);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Flow-Number", &ogs_diam_gx_flow_number);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Flow-Usage", &ogs_diam_gx_flow_usage);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "3GPP-SGSN-MCC-MNC", &ogs_diam_gx_3gpp_sgsn_mcc_mnc);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "AN-GW-Address", &ogs_diam_gx_an_gw_address);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Online", &ogs_diam_gx_online);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Offline", &ogs_diam_gx_offline);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Access-Network-Charging-Address", &ogs_diam_gx_access_network_charging_address);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Access-Network-Charging-Identifier-Gx", &ogs_diam_gx_access_network_charging_identifier_gx);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "AN-Trusted", &ogs_diam_gx_an_trusted);
 
     return 0;
 }

@@ -121,6 +121,13 @@ extern struct dict_object *ogs_diam_gx_codec_data;
 extern struct dict_object *ogs_diam_gx_media_sub_component;
 extern struct dict_object *ogs_diam_gx_flow_number;
 extern struct dict_object *ogs_diam_gx_flow_usage;
+extern struct dict_object *ogs_diam_gx_3gpp_sgsn_mcc_mnc;
+extern struct dict_object *ogs_diam_gx_an_gw_address;
+extern struct dict_object *ogs_diam_gx_online;
+extern struct dict_object *ogs_diam_gx_offline;
+extern struct dict_object *ogs_diam_gx_access_network_charging_address;
+extern struct dict_object *ogs_diam_gx_access_network_charging_identifier_gx;
+extern struct dict_object *ogs_diam_gx_an_trusted;
 
 typedef struct ogs_diam_gx_message_s {
 #define OGS_DIAM_GX_CMD_CODE_CREDIT_CONTROL                         272

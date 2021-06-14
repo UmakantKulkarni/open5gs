@@ -101,6 +101,19 @@ void smf_s5c_handle_create_session_request(
         ogs_error("No UE Location Information");
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
     }
+    if (req->serving_network.presence == 0) {
+        ogs_error("No Serving Network");
+        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+    }
+    if (req->serving_network.data == NULL) {
+        ogs_error("No Data in Serving Network");
+        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+    }
+    if (req->serving_network.len != OGS_PLMN_ID_LEN) {
+        ogs_error("Invalid Len[%d] in Serving Network",
+                req->serving_network.len);
+        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+    }
     if (req->rat_type.presence == 0) {
         ogs_error("No RAT Type");
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
@@ -154,6 +167,9 @@ void smf_s5c_handle_create_session_request(
     ogs_gtp_parse_uli(&uli, &req->user_location_information);
     memcpy(&sess->e_tai, &uli.tai, sizeof(sess->e_tai));
     memcpy(&sess->e_cgi, &uli.e_cgi, sizeof(sess->e_cgi));
+
+    /* Serving Network */
+    ogs_nas_to_plmn_id(&sess->plmn_id, req->serving_network.data);
 
     /* Select PGW based on UE Location Information */
     smf_sess_select_upf(sess);
