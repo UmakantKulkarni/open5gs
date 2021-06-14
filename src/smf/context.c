@@ -1091,6 +1091,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
     sess->index = ogs_pool_index(&smf_sess_pool, sess);
     ogs_assert(sess->index > 0 && sess->index <= ogs_app()->pool.sess);
 
+    /* Set SmContextRef in 5GC */
     sess->sm_context_ref = ogs_msprintf("%d",
             (int)ogs_pool_index(&smf_sess_pool, sess));
     ogs_assert(sess->sm_context_ref);
@@ -1111,7 +1112,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
     sess->smf_n4_teid = sess->index;
     sess->smf_n4_seid = sess->index;
 
-    /* Set Charging ID */
+    /* Set Charging Id */
     sess->charging.id = sess->index;
 
     /* Setup Timer */
@@ -1506,6 +1507,12 @@ smf_sess_t *smf_sess_find_by_psi(smf_ue_t *smf_ue, uint8_t psi)
     }
 
     return NULL;
+}
+
+smf_sess_t *smf_sess_find_by_charging_id(uint32_t charging_id)
+{
+    ogs_assert(charging_id);
+    return smf_sess_find(charging_id);
 }
 
 smf_sess_t *smf_sess_find_by_sm_context_ref(char *sm_context_ref)

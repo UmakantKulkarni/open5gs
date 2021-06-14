@@ -370,6 +370,7 @@ smf_sess_t *smf_sess_find_by_teid(uint32_t teid);
 smf_sess_t *smf_sess_find_by_seid(uint64_t seid);
 smf_sess_t *smf_sess_find_by_apn(smf_ue_t *smf_ue, char *apn);
 smf_sess_t *smf_sess_find_by_psi(smf_ue_t *smf_ue, uint8_t psi);
+smf_sess_t *smf_sess_find_by_charging_id(uint32_t charging_id);
 smf_sess_t *smf_sess_find_by_sm_context_ref(char *sm_context_ref);
 smf_sess_t *smf_sess_find_by_ipv4(uint32_t addr);
 smf_sess_t *smf_sess_find_by_ipv6(uint32_t *addr6);

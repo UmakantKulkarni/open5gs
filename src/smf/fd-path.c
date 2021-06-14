@@ -86,6 +86,7 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     char buf[OGS_PLMNIDSTRLEN];
     struct sockaddr_in sin;
     struct sockaddr_in6 sin6;
+    uint32_t charing_id;
 
     ogs_assert(sess);
     ogs_assert(sess->ipv4 || sess->ipv6);
@@ -558,7 +559,6 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         }
 
         /* Set Access-Network-Charging-Identitifer-Gx */
-#if 0
         ret = fd_msg_avp_new(
                 ogs_diam_gx_access_network_charging_identifier_gx, 0, &avp);
         ogs_assert(ret == 0);
@@ -567,7 +567,9 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
                 ogs_diam_gx_access_network_charging_identifier_value, 0,
                 &avpch1);
         ogs_assert(ret == 0);
-        val.u32 = 444;
+        charing_id = htobe32(sess->charging.id);
+        val.os.data = (uint8_t *)&charing_id;
+        val.os.len = sizeof(charing_id);
         ret = fd_msg_avp_setvalue (avpch1, &val);
         ogs_assert(ret == 0);
         ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
@@ -575,7 +577,6 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
 
         ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
         ogs_assert(ret == 0);
-#endif
 
         ret = fd_msg_avp_new(ogs_diam_gx_an_trusted, 0, &avp);
         ogs_assert(ret == 0);
