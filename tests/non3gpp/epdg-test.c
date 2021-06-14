@@ -78,6 +78,10 @@ static void test1_func(abts_case *tc, void *data)
 
     OGS_SETUP_GTP_NODE(sess, ogs_list_first(&test_self()->gtpc_list));
 
+    /* Setup Test Bearer */
+    bearer = test_bearer_add(sess, 5);
+    ogs_assert(bearer);
+
     /* eNB connects to MME */
     s1ap = tests1ap_client(AF_INET);
     ABTS_PTR_NOTNULL(tc, s1ap);

@@ -803,6 +803,8 @@ void test_ue_set_mobile_identity_suci(test_ue_t *test_ue,
         ogs_free(test_ue->imsi);
     test_ue->imsi = ogs_id_get_value(test_ue->supi);
     ogs_assert(test_ue->imsi);
+
+    ogs_bcd_to_buffer(test_ue->imsi, test_ue->imsi_buf, &test_ue->imsi_len);
 }
 
 static void test_ue_set_mobile_identity_imsi(test_ue_t *test_ue)
@@ -960,9 +962,14 @@ test_sess_t *test_sess_add_by_apn(test_ue_t *test_ue, char *apn)
     ogs_assert(sess);
     memset(sess, 0, sizeof *sess);
 
+    sess->index = ogs_pool_index(&test_sess_pool, sess);
+
     sess->apn = ogs_strdup(apn);
     ogs_assert(sess->apn);
     sess->pti = 1; /* Default PTI : 1 */
+
+    sess->epdg_s2b_c_teid = sess->index;
+    sess->epdg_s2b_u_teid = sess->index;
 
     sess->test_ue = test_ue;
 

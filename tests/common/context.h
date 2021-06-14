@@ -308,6 +308,9 @@ typedef struct test_ue_s {
     char *suci; /* TS33.501 : SUCI */
     char *supi; /* TS33.501 : SUPI */
 
+    uint8_t imsi_buf[OGS_MAX_IMSI_LEN];
+    int imsi_len;
+
     ogs_nas_5gs_mobile_identity_suci_t mobile_identity_suci;
     ogs_nas_mobile_identity_imeisv_t mobile_identity_imeisv;
     bool mobile_identity_imeisv_presence;
@@ -458,7 +461,10 @@ typedef struct test_sess_s {
     } handover;
 
     /* ePDG */
-    uint32_t epdg_s2b_teid;
+    uint32_t epdg_s2b_c_teid;
+    uint32_t smf_s2b_c_teid;
+    uint32_t epdg_s2b_u_teid;
+    uint32_t upf_s2b_u_teid;
     ogs_gtp_node_t *gnode;
 
     ogs_list_t bearer_list;

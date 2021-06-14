@@ -157,7 +157,7 @@ ogs_pkbuf_t *mme_s11_build_create_session_request(
 
     req->selection_mode.presence = 1;
     req->selection_mode.u8 = 
-        OGS_GTP_SELECTION_MODE_MS_OR_NETWORK_PROVIDED_APN | 0xfc;
+        OGS_GTP_SELECTION_MODE_MS_OR_NETWORK_PROVIDED_APN;
 
     ogs_assert(sess->request_type.type == OGS_NAS_EPS_PDN_TYPE_IPV4 ||
             sess->request_type.type == OGS_NAS_EPS_PDN_TYPE_IPV6 ||
