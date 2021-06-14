@@ -127,7 +127,7 @@ int test_s2b_send_create_session_request(test_sess_t *sess)
 
     memset(&h, 0, sizeof(ogs_gtp_header_t));
     h.type = OGS_GTP_CREATE_SESSION_REQUEST_TYPE;
-    h.teid = sess->epdg_s2b_c_teid;
+    h.teid = sess->smf_s2b_c_teid;
 
     pkbuf = test_s2b_build_create_session_request(h.type, sess);
     ogs_expect_or_return_val(pkbuf, OGS_ERROR);

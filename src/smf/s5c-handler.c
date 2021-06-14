@@ -205,18 +205,22 @@ void smf_s5c_handle_create_session_request(
         bearer->sgw_s5u_teid = be32toh(sgw_s5u_teid->teid);
         rv = ogs_gtp_f_teid_to_ip(sgw_s5u_teid, &bearer->sgw_s5u_ip);
         ogs_assert(rv == OGS_OK);
-
-        ogs_debug("    SGW_S5U_TEID[0x%x] PGW_S5U_TEID[0x%x]",
-                bearer->sgw_s5u_teid, bearer->pgw_s5u_teid);
-
         break;
     case OGS_GTP_RAT_TYPE_WLAN:
-        ogs_fatal("TODO");
+        sgw_s5u_teid = req->bearer_contexts_to_be_created.
+            s2b_u_epdg_f_teid_5.data;
+        ogs_assert(sgw_s5u_teid);
+        bearer->sgw_s5u_teid = be32toh(sgw_s5u_teid->teid);
+        rv = ogs_gtp_f_teid_to_ip(sgw_s5u_teid, &bearer->sgw_s5u_ip);
+        ogs_assert(rv == OGS_OK);
         break;
     default:
         ogs_error("Unknown RAT Type [%d]", req->rat_type.u8);
         ogs_assert_if_reached();
     }
+
+    ogs_debug("    SGW_S5U_TEID[0x%x] PGW_S5U_TEID[0x%x]",
+            bearer->sgw_s5u_teid, bearer->pgw_s5u_teid);
 
     /* Set Bearer QoS */
     decoded = ogs_gtp_parse_bearer_qos(&bearer_qos,
