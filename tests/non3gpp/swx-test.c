@@ -26,7 +26,7 @@ static void test1_func(abts_case *tc, void *data)
     int rv;
     ogs_socknode_t *s1ap;
     ogs_socknode_t *gtpu;
-    ogs_socknode_t *gtpv2c;
+    ogs_socknode_t *gtpv2;
     ogs_pkbuf_t *emmbuf;
     ogs_pkbuf_t *esmbuf;
     ogs_pkbuf_t *sendbuf;
@@ -87,8 +87,8 @@ static void test1_func(abts_case *tc, void *data)
     ABTS_PTR_NOTNULL(tc, gtpu);
 
     /* ePDG connects to SMF */
-    gtpv2c = test_gtpv2c_server();
-    ABTS_PTR_NOTNULL(tc, gtpv2c);
+    gtpv2 = test_gtpv2_server();
+    ABTS_PTR_NOTNULL(tc, gtpv2);
 
     /* Send S1-Setup Reqeust */
     sendbuf = test_s1ap_build_s1_setup_request(
@@ -118,6 +118,9 @@ static void test1_func(abts_case *tc, void *data)
     ABTS_INT_EQUAL(tc, OGS_OK, rv);
 
     /* Receive S2b Create Session Response */
+    recvbuf = test_gtpv2_read(gtpv2);
+    ABTS_PTR_NOTNULL(tc, recvbuf);
+    test_s2b_recv(sess, recvbuf);
 
     ogs_msleep(300);
 
@@ -131,7 +134,7 @@ static void test1_func(abts_case *tc, void *data)
     test_gtpu_close(gtpu);
 
     /* ePDG disonncect from SMF */
-    test_gtpv2c_close(gtpv2c);
+    test_gtpv2_close(gtpv2);
 
     test_ue_remove(test_ue);
 }

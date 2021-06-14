@@ -19,7 +19,7 @@
 
 #include "test-common.h"
 
-ogs_socknode_t *test_gtpv2c_server(void)
+ogs_socknode_t *test_gtpv2_server(void)
 {
     int rv;
     ogs_sockaddr_t *addr = NULL;
@@ -48,12 +48,12 @@ ogs_socknode_t *test_gtpv2c_server(void)
     return node;
 }
 
-void test_gtpv2c_close(ogs_socknode_t *node)
+void test_gtpv2_close(ogs_socknode_t *node)
 {
     ogs_socknode_free(node);
 }
 
-ogs_pkbuf_t *test_gtpv2c_read(ogs_socknode_t *node)
+ogs_pkbuf_t *test_gtpv2_read(ogs_socknode_t *node)
 {
     int rc = 0;
     ogs_sockaddr_t from;
@@ -76,6 +76,14 @@ ogs_pkbuf_t *test_gtpv2c_read(ogs_socknode_t *node)
     recvbuf->len = rc;
 
     return recvbuf;
+}
+
+void test_s2b_recv(test_sess_t *sess, ogs_pkbuf_t *pkbuf)
+{
+    ogs_assert(sess);
+    ogs_assert(pkbuf);
+
+    ogs_pkbuf_free(pkbuf);
 }
 
 int test_s2b_send_create_session_request(test_sess_t *sess)
