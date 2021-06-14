@@ -41,9 +41,6 @@ ogs_pkbuf_t *test_s2b_build_create_session_request(
     ogs_gtp_ambr_t ambr;
     ogs_gtp_bearer_qos_t bearer_qos;
     char bearer_qos_buf[GTP_BEARER_QOS_LEN];
-    ogs_gtp_ue_timezone_t ue_timezone;
-    struct timeval now;
-    struct tm time_exp;
     char apn[OGS_MAX_APN_LEN];
 
     ogs_assert(sess);
@@ -118,14 +115,6 @@ ogs_pkbuf_t *test_s2b_build_create_session_request(
     req->aggregate_maximum_bit_rate.data = &ambr;
     req->aggregate_maximum_bit_rate.len = sizeof(ambr);
 
-#if 0
-    if (sess->ue_pco.length && sess->ue_pco.buffer) {
-        req->protocol_configuration_options.presence = 1;
-        req->protocol_configuration_options.data = sess->ue_pco.buffer;
-        req->protocol_configuration_options.len = sess->ue_pco.length;
-    }
-#endif
-
     req->bearer_contexts_to_be_created.presence = 1;
     req->bearer_contexts_to_be_created.eps_bearer_id.presence = 1;
     req->bearer_contexts_to_be_created.eps_bearer_id.u8 = bearer->ebi;
@@ -152,28 +141,13 @@ ogs_pkbuf_t *test_s2b_build_create_session_request(
             &req->bearer_contexts_to_be_created.bearer_level_qos,
             &bearer_qos, bearer_qos_buf, GTP_BEARER_QOS_LEN);
 
-#if 0
-    /* UE Time Zone */
-    memset(&ue_timezone, 0, sizeof(ue_timezone));
-    ogs_gettimeofday(&now);
-    ogs_localtime(now.tv_sec, &time_exp);
-    if (time_exp.tm_gmtoff >= 0) {
-        ue_timezone.timezone = OGS_GTP_TIME_TO_BCD(time_exp.tm_gmtoff / 900);
-    } else {
-        ue_timezone.timezone = OGS_GTP_TIME_TO_BCD((-time_exp.tm_gmtoff) / 900);
-        ue_timezone.timezone |= 0x08;
-    }
-    /* quarters of an hour */
-    ue_timezone.daylight_saving_time = 
-        OGS_GTP_UE_TIME_ZONE_NO_ADJUSTMENT_FOR_DAYLIGHT_SAVING_TIME;
-    req->ue_time_zone.presence = 1;
-    req->ue_time_zone.data = &ue_timezone;
-    req->ue_time_zone.len = sizeof(ue_timezone);
+    req->recovery.presence = 1;
+    req->recovery.u8 = 66;
 
-    req->charging_characteristics.presence = 1;
-    req->charging_characteristics.data = (uint8_t *)"\x54\x00";
-    req->charging_characteristics.len = 2;
-#endif
+    req->additional_protocol_configuration_options.presence = 1;
+    req->additional_protocol_configuration_options.data =
+        (uint8_t *)"\x80\x00\x0d\x00";
+    req->additional_protocol_configuration_options.len = 4;
 
     gtp_message.h.type = type;
     return ogs_gtp_build_msg(&gtp_message);
