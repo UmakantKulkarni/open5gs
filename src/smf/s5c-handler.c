@@ -60,6 +60,7 @@ void smf_s5c_handle_create_session_request(
     smf_ue_t *smf_ue = NULL;
 
     ogs_gtp_f_teid_t *sgw_s5c_teid, *sgw_s5u_teid;
+    ogs_paa_t *paa = NULL;
     smf_bearer_t *bearer = NULL;
     ogs_gtp_bearer_qos_t bearer_qos;
     ogs_gtp_ambr_t *ambr = NULL;
@@ -94,10 +95,6 @@ void smf_s5c_handle_create_session_request(
     }
     if (req->bearer_contexts_to_be_created.s5_s8_u_sgw_f_teid.presence == 0) {
         ogs_error("No TEID");
-        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
-    }
-    if (req->pdn_type.presence == 0) {
-        ogs_error("No PDN Type");
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
     }
     if (req->pdn_address_allocation.presence == 0) {
@@ -147,11 +144,10 @@ void smf_s5c_handle_create_session_request(
     }
 
     /* UE IP Address */
-    ogs_assert(req->pdn_address_allocation.data);
-    sess->session.session_type = req->pdn_type.u8;
-    rv = ogs_gtp_paa_to_ip(
-            (ogs_paa_t *)req->pdn_address_allocation.data,
-            &sess->session.ue_ip);
+    paa = req->pdn_address_allocation.data;
+    ogs_assert(paa);
+    sess->session.session_type = paa->session_type;
+    rv = ogs_gtp_paa_to_ip(paa, &sess->session.ue_ip);
     ogs_assert(rv == OGS_OK);
 
     smf_sess_set_ue_ip(sess);
