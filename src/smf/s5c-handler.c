@@ -147,8 +147,8 @@ void smf_s5c_handle_create_session_request(
     ogs_assert(smf_ue);
 
     /* RAT Type */
-    sess->rat_type_in_eps = req->rat_type.u8;
-    ogs_assert(sess->rat_type_in_eps);
+    sess->gtp_rat_type = req->rat_type.u8;
+    ogs_assert(sess->gtp_rat_type);
 
     /* UE Location Inforamtion*/
     ogs_gtp_parse_uli(&uli, &req->user_location_information);
@@ -200,7 +200,7 @@ void smf_s5c_handle_create_session_request(
     ogs_debug("    SGW_S5C_TEID[0x%x] SMF_N4_TEID[0x%x]",
             sess->sgw_s5c_teid, sess->smf_n4_teid);
 
-    switch (sess->rat_type_in_eps) {
+    switch (sess->gtp_rat_type) {
     case OGS_GTP_RAT_TYPE_EUTRAN:
         /* Data Plane(DL) : SGW-S5U */
         sgw_s5u_teid = req->bearer_contexts_to_be_created.
@@ -219,7 +219,7 @@ void smf_s5c_handle_create_session_request(
         ogs_assert(rv == OGS_OK);
         break;
     default:
-        ogs_error("Unknown RAT Type [%d]", sess->rat_type_in_eps);
+        ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
         ogs_assert_if_reached();
     }
 

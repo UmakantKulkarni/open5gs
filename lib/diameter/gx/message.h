@@ -65,7 +65,7 @@ extern struct dict_object *ogs_diam_gx_framed_ipv6_prefix;
 #define OGS_DIAM_GX_IP_CAN_TYPE_WiMAX                       3
 #define OGS_DIAM_GX_IP_CAN_TYPE_3GPP2                       4
 #define OGS_DIAM_GX_IP_CAN_TYPE_3GPP_EPS                    5
-#define OGS_DIAM_GX_IP_CAN_TYPE_Non_3GPP_EPS                6
+#define OGS_DIAM_GX_IP_CAN_TYPE_NON_3GPP_EPS                6
 extern struct dict_object *ogs_diam_gx_ip_can_type;
 #define OGS_DIAM_GX_RAT_TYPE_WLAN                           0
 #define OGS_DIAM_GX_RAT_TYPE_VIRTUAL                        1 

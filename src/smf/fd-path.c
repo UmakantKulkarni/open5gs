@@ -297,7 +297,19 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         /* Set IP-Can-Type */
         ret = fd_msg_avp_new(ogs_diam_gx_ip_can_type, 0, &avp);
         ogs_assert(ret == 0);
-        val.i32 = OGS_DIAM_GX_IP_CAN_TYPE_3GPP_EPS;
+
+        switch (sess->gtp_rat_type) {
+        case OGS_GTP_RAT_TYPE_EUTRAN:
+            val.i32 = OGS_DIAM_GX_IP_CAN_TYPE_3GPP_EPS;
+            break;
+        case OGS_GTP_RAT_TYPE_WLAN:
+            val.i32 = OGS_DIAM_GX_IP_CAN_TYPE_NON_3GPP_EPS;
+            break;
+        default:
+            ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
+            ogs_assert_if_reached();
+        }
+
         ret = fd_msg_avp_setvalue(avp, &val);
         ogs_assert(ret == 0);
         ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
@@ -306,7 +318,19 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         /* Set RAT-Type */
         ret = fd_msg_avp_new(ogs_diam_gx_rat_type, 0, &avp);
         ogs_assert(ret == 0);
-        val.i32 = OGS_DIAM_GX_RAT_TYPE_EUTRAN;
+
+        switch (sess->gtp_rat_type) {
+        case OGS_GTP_RAT_TYPE_EUTRAN:
+            val.i32 = OGS_DIAM_GX_RAT_TYPE_EUTRAN;
+            break;
+        case OGS_GTP_RAT_TYPE_WLAN:
+            val.i32 = OGS_DIAM_GX_RAT_TYPE_WLAN;
+            break;
+        default:
+            ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
+            ogs_assert_if_reached();
+        }
+
         ret = fd_msg_avp_setvalue(avp, &val);
         ogs_assert(ret == 0);
         ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
