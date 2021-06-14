@@ -18,6 +18,7 @@
  */
 
 #include "test-common.h"
+#include "gtp-handler.h"
 
 ogs_socknode_t *test_gtpv2_server(void)
 {
@@ -80,8 +81,36 @@ ogs_pkbuf_t *test_gtpv2_read(ogs_socknode_t *node)
 
 void test_s2b_recv(test_sess_t *sess, ogs_pkbuf_t *pkbuf)
 {
+    int rv;
+    ogs_gtp_message_t gtp_message;
+    ogs_gtp_xact_t *xact = NULL;
+
     ogs_assert(sess);
+    ogs_assert(sess->gnode);
     ogs_assert(pkbuf);
+
+    if (ogs_gtp_parse_msg(&gtp_message, pkbuf) != OGS_OK) {
+        ogs_error("ogs_gtp_parse_msg() failed");
+        ogs_pkbuf_free(pkbuf);
+        return;
+    }
+
+    rv = ogs_gtp_xact_receive(sess->gnode, &gtp_message.h, &xact);
+    if (rv != OGS_OK) {
+        ogs_error("ogs_gtp_xact_receive() failed");
+        ogs_pkbuf_free(pkbuf);
+        return;
+    }
+
+    switch (gtp_message.h.type) {
+        case OGS_GTP_CREATE_SESSION_RESPONSE_TYPE:
+            test_s2b_handle_create_session_response(
+                xact, sess, &gtp_message.create_session_response);
+            break;
+        default:
+            ogs_error("Not implmeneted(type:%d)", gtp_message.h.type);
+            break;
+    }
 
     ogs_pkbuf_free(pkbuf);
 }

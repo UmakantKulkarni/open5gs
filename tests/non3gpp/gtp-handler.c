@@ -17,25 +17,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef TEST_NON3GPP_GTP_PATH_H
-#define TEST_NON3GPP_GTP_PATH_H
+#include "gtp-handler.h"
 
-#include "test-common.h"
+void test_s2b_handle_create_session_response(
+        ogs_gtp_xact_t *xact, test_sess_t *sess,
+        ogs_gtp_create_session_response_t *rsp)
+{
+    ogs_assert(xact);
+    ogs_assert(sess);
+    ogs_assert(rsp);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-ogs_socknode_t *test_gtpv2_server(void);
-void test_gtpv2_close(ogs_socknode_t *node);
-
-ogs_pkbuf_t *test_gtpv2_read(ogs_socknode_t *node);
-
-void test_s2b_recv(test_sess_t *sess, ogs_pkbuf_t *pkbuf);
-int test_s2b_send_create_session_request(test_sess_t *sess);
-
-#ifdef __cplusplus
 }
-#endif
-
-#endif /* TEST_NON3GPP_GTP_PATH_H */
