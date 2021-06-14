@@ -237,9 +237,6 @@ typedef struct smf_sess_s {
     ogs_eps_tai_t   e_tai;
     ogs_e_cgi_t     e_cgi;
 
-    /* Rat Type */
-    OpenAPI_rat_type_e rat_type;
-
     /* NR Location */
     ogs_5gs_tai_t   nr_tai;
     ogs_nr_cgi_t    nr_cgi;
@@ -265,6 +262,10 @@ typedef struct smf_sess_s {
 
     ogs_pfcp_ue_ip_t *ipv4;
     ogs_pfcp_ue_ip_t *ipv6;
+
+    /* RAT Type */
+    uint8_t rat_type_in_eps;
+    OpenAPI_rat_type_e rat_type_in_5gs;
 
     struct {
         ogs_tlv_octet_t ue_pco;
