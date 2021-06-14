@@ -69,8 +69,6 @@ extern "C" {
 
 #include "common/sgsap-build.h"
 
-#include "common/s2b-build.h"
-
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN 1
 

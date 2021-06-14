@@ -49,8 +49,6 @@ libtestcommon_sources = files('''
     nas-security.c
 
     sgsap-build.c
-
-    s2b-build.c
 '''.split())
 
 libtestcommon_inc = include_directories('.')

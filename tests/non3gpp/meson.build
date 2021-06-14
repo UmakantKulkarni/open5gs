@@ -20,7 +20,9 @@ testapp_non3gpp_sources = files('''
     test-fd-path.c
     diameter-swx-path.c
     gtp-path.c
-    gtp-handler.c
+
+    s2b-build.c
+    s2b-handler.c
 
     abts-main.c
     epdg-test.c

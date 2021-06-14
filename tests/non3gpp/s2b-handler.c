@@ -17,7 +17,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "gtp-handler.h"
+#include "s2b-handler.h"
 
 void test_s2b_handle_create_session_response(
         ogs_gtp_xact_t *xact, test_sess_t *sess,

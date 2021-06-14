@@ -18,7 +18,8 @@
  */
 
 #include "test-common.h"
-#include "gtp-handler.h"
+#include "s2b-build.h"
+#include "s2b-handler.h"
 
 ogs_socknode_t *test_gtpv2_server(void)
 {
