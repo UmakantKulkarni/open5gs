@@ -112,14 +112,7 @@ static void test1_func(abts_case *tc, void *data)
     ABTS_INT_EQUAL(tc, OGS_OK, test_db_insert_ue(test_ue, doc));
 
     /* Send SWx MAR */
-    test_swx_send(test_ue);
-
-    /* DELAY for Diameter message */
-    ogs_msleep(100);
-
-    /* Send S2b Create Session Request */
-    rv = test_s2b_send_create_session_request(sess);
-    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+    test_swx_send(sess, test_s2b_send_create_session_request);
 
     /* Receive S2b Create Session Response */
     recvbuf = test_gtpv2_read(gtpv2);

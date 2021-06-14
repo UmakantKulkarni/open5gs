@@ -37,7 +37,7 @@ void test_fd_final(void);
 int test_swx_init(void);
 void test_swx_final(void);
 
-void test_swx_send(test_ue_t *test_ue);
+void test_swx_send(test_sess_t *sess, int (*gtp_send)(test_sess_t *sess));
 
 #ifdef __cplusplus
 }

@@ -25,7 +25,8 @@
 static struct session_handler *test_swx_reg = NULL;
 
 struct sess_state {
-    test_ue_t *test_ue;
+    test_sess_t *sess;
+    int (*gtp_send)(test_sess_t *sess);
 
     char *user_name;
 
@@ -61,15 +62,19 @@ static int test_swx_fb_cb(struct msg **msg, struct avp *avp,
 	return ENOTSUP;
 }
 
-void test_swx_send(test_ue_t *test_ue)
+void test_swx_send(test_sess_t *sess, int (*gtp_send)(test_sess_t *sess))
 {
     struct sess_state *sess_data = NULL;
+
+    ogs_assert(sess);
+    ogs_assert(gtp_send);
 
     /* Create the random value to store with the session */
     sess_data = ogs_calloc(1, sizeof (*sess_data));
     ogs_assert(sess_data);
 
-    sess_data->test_ue = test_ue;
+    sess_data->sess = sess;
+    sess_data->gtp_send = gtp_send;
 
     test_swx_send_mar(sess_data);
 }
@@ -89,11 +94,14 @@ static void test_swx_send_mar(struct sess_state *sess_data)
     union avp_value val;
 
     test_ue_t *test_ue = NULL;
+    test_sess_t *sess = NULL;
 
     uint8_t resync[OGS_AUTS_LEN + OGS_RAND_LEN];
 
     ogs_assert(sess_data);
-    test_ue = sess_data->test_ue;
+    sess = sess_data->sess;
+    ogs_assert(sess);
+    test_ue = sess->test_ue;
     ogs_assert(test_ue);
 
     ogs_debug("Multimedia-Auth-Request");
@@ -275,8 +283,6 @@ static void test_swx_maa_cb(void *data, struct msg **msg)
     struct timespec ts;
     struct session *session;
 
-    test_ue_t *test_ue = NULL;
-
     uint32_t result_code;
     uint32_t *err = NULL, *exp_err = NULL;
 
@@ -294,9 +300,6 @@ static void test_swx_maa_cb(void *data, struct msg **msg)
     ogs_expect_or_return(ret == 0);
     ogs_expect_or_return(sess_data);
     ogs_expect_or_return((void *)sess_data == data);
-
-    test_ue = sess_data->test_ue;
-    ogs_assert(test_ue);
 
     /* Value of Result Code */
     ret = fd_msg_search_avp(*msg, ogs_diam_result_code, &avp);
@@ -395,9 +398,12 @@ static void test_swx_send_sar(struct sess_state *sess_data)
     union avp_value val;
 
     test_ue_t *test_ue = NULL;
+    test_sess_t *sess = NULL;
 
     ogs_assert(sess_data);
-    test_ue = sess_data->test_ue;
+    sess = sess_data->sess;
+    ogs_assert(sess);
+    test_ue = sess->test_ue;
     ogs_assert(test_ue);
 
     ogs_debug("Server-Assignment-Request");
@@ -502,7 +508,7 @@ static void test_swx_send_sar(struct sess_state *sess_data)
 /* Callback for incoming Server-Assignment-Answer messages */
 static void test_swx_saa_cb(void *data, struct msg **msg)
 {
-    int ret, new;
+    int rv, ret, new;
 
     struct avp *avp, *avpch;
     struct avp_hdr *hdr;
@@ -515,6 +521,7 @@ static void test_swx_saa_cb(void *data, struct msg **msg)
     struct session *session;
 
     test_ue_t *test_ue = NULL;
+    test_sess_t *sess = NULL;
 
     uint32_t result_code;
     uint32_t *err = NULL, *exp_err = NULL;
@@ -534,7 +541,9 @@ static void test_swx_saa_cb(void *data, struct msg **msg)
     ogs_expect_or_return(sess_data);
     ogs_expect_or_return((void *)sess_data == data);
 
-    test_ue = sess_data->test_ue;
+    sess = sess_data->sess;
+    ogs_assert(sess);
+    test_ue = sess->test_ue;
     ogs_assert(test_ue);
 
     /* Value of Result Code */
@@ -616,6 +625,9 @@ static void test_swx_saa_cb(void *data, struct msg **msg)
         test_swx_send_lir(sess_data);
     return;
 #else
+    rv = sess_data->gtp_send(sess);
+    ogs_assert(rv == OGS_OK);
+
     state_cleanup(sess_data, NULL, NULL);
 #endif
 }
