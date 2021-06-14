@@ -85,6 +85,7 @@ struct dict_object *ogs_diam_gx_online = NULL;
 struct dict_object *ogs_diam_gx_offline = NULL;
 struct dict_object *ogs_diam_gx_access_network_charging_address = NULL;
 struct dict_object *ogs_diam_gx_access_network_charging_identifier_gx = NULL;
+struct dict_object *ogs_diam_gx_access_network_charging_identifier_value = NULL;
 struct dict_object *ogs_diam_gx_an_trusted = NULL;
 
 extern int ogs_dict_gx_entry(char *conffile);
@@ -161,6 +162,7 @@ int ogs_diam_gx_init(void)
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Offline", &ogs_diam_gx_offline);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Access-Network-Charging-Address", &ogs_diam_gx_access_network_charging_address);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Access-Network-Charging-Identifier-Gx", &ogs_diam_gx_access_network_charging_identifier_gx);
+    CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "Access-Network-Charging-Identifier-Value", &ogs_diam_gx_access_network_charging_identifier_value);
     CHECK_dict_search(DICT_AVP, AVP_BY_NAME_ALL_VENDORS, "AN-Trusted", &ogs_diam_gx_an_trusted);
 
     return 0;

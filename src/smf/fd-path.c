@@ -83,6 +83,9 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     struct session *session = NULL;
     int new;
     ogs_paa_t paa; /* For changing Framed-IPv6-Prefix Length to 128 */
+    char buf[OGS_PLMNIDSTRLEN];
+    struct sockaddr_in sin;
+    struct sockaddr_in6 sin6;
 
     ogs_assert(sess);
     ogs_assert(sess->ipv4 || sess->ipv6);
@@ -178,7 +181,7 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     ret = fd_msg_avp_new(ogs_diam_destination_realm, 0, &avp);
     ogs_assert(ret == 0);
     val.os.data = (unsigned char *)(fd_g_config->cnf_diamrlm);
-    val.os.len  = strlen(fd_g_config->cnf_diamrlm);
+    val.os.len = strlen(fd_g_config->cnf_diamrlm);
     ret = fd_msg_avp_setvalue(avp, &val);
     ogs_assert(ret == 0);
     ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
@@ -225,7 +228,7 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     ret = fd_msg_avp_new(ogs_diam_subscription_id_data, 0, &avpch1);
     ogs_assert(ret == 0);
     val.os.data = (uint8_t *)smf_ue->imsi_bcd;
-    val.os.len  = strlen(smf_ue->imsi_bcd);
+    val.os.len = strlen(smf_ue->imsi_bcd);
     ret = fd_msg_avp_setvalue (avpch1, &val);
     ogs_assert(ret == 0);
     ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
@@ -465,15 +468,37 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         }
 
         /* Set 3GPP-SGSN-MCC-MNC */
-        char buf[OGS_PLMNIDSTRLEN];
         ret = fd_msg_avp_new(ogs_diam_gx_3gpp_sgsn_mcc_mnc, 0, &avp);
         ogs_assert(ret == 0);
         val.os.data = (uint8_t *)ogs_plmn_id_to_string(&sess->plmn_id, buf);
-        val.os.len  = strlen(buf);
+        val.os.len = strlen(buf);
         ret = fd_msg_avp_setvalue(avp, &val);
         ogs_assert(ret == 0);
         ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
         ogs_assert(ret == 0);
+
+        /* Set AN-GW-Address - Upto 2 address */
+        if (sess->sgw_s5c_ip.ipv4) {
+            ret = fd_msg_avp_new(ogs_diam_gx_an_gw_address, 0, &avp);
+            ogs_assert(ret == 0);
+            sin.sin_family = AF_INET;
+            sin.sin_addr.s_addr = sess->sgw_s5c_ip.addr;
+            ret = fd_msg_avp_value_encode(&sin, avp);
+            ogs_assert(ret == 0);
+            ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+            ogs_assert(ret == 0);
+        }
+        if (sess->sgw_s5c_ip.ipv6) {
+            ret = fd_msg_avp_new(ogs_diam_gx_an_gw_address, 0, &avp);
+            ogs_assert(ret == 0);
+            sin6.sin6_family = AF_INET6;
+            memcpy(sin6.sin6_addr.s6_addr,
+                    sess->sgw_s5c_ip.addr6, OGS_IPV6_LEN);
+            ret = fd_msg_avp_value_encode(&sin6, avp);
+            ogs_assert(ret == 0);
+            ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+            ogs_assert(ret == 0);
+        }
     }
 
     /* Set Called-Station-Id */
@@ -486,6 +511,80 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     ogs_assert(ret == 0);
     ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
     ogs_assert(ret == 0);
+
+    if (cc_request_type != OGS_DIAM_GX_CC_REQUEST_TYPE_TERMINATION_REQUEST) {
+        /* Set Online to DISABLE */
+        ret = fd_msg_avp_new(ogs_diam_gx_online, 0, &avp);
+        ogs_assert(ret == 0);
+        val.u32 = OGS_DIAM_GX_DISABLE_ONLINE;
+        ret = fd_msg_avp_setvalue(avp, &val);
+        ogs_assert(ret == 0);
+        ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+        ogs_assert(ret == 0);
+
+        /* Set Offline to ENABLE */
+        ret = fd_msg_avp_new(ogs_diam_gx_offline, 0, &avp);
+        ogs_assert(ret == 0);
+        val.u32 = OGS_DIAM_GX_ENABLE_OFFLINE;
+        ret = fd_msg_avp_setvalue(avp, &val);
+        ogs_assert(ret == 0);
+        ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+        ogs_assert(ret == 0);
+
+        /* Set Access-Network-Charging-Address - Only 1 address */
+        if (ogs_gtp_self()->gtpc_addr) {
+            ret = fd_msg_avp_new(
+                    ogs_diam_gx_access_network_charging_address, 0, &avp);
+            ogs_assert(ret == 0);
+            sin.sin_family = AF_INET;
+            sin.sin_addr.s_addr =
+                ogs_gtp_self()->gtpc_addr->sin.sin_addr.s_addr;
+            ret = fd_msg_avp_value_encode(&sin, avp);
+            ogs_assert(ret == 0);
+            ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+            ogs_assert(ret == 0);
+        } else if (ogs_gtp_self()->gtpc_addr6) {
+            ret = fd_msg_avp_new(
+                    ogs_diam_gx_access_network_charging_address, 0, &avp);
+            ogs_assert(ret == 0);
+            sin6.sin6_family = AF_INET6;
+            memcpy(sin6.sin6_addr.s6_addr,
+                    ogs_gtp_self()->gtpc_addr6->sin6.sin6_addr.s6_addr,
+                    OGS_IPV6_LEN);
+            ret = fd_msg_avp_value_encode(&sin6, avp);
+            ogs_assert(ret == 0);
+            ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+            ogs_assert(ret == 0);
+        }
+
+        /* Set Access-Network-Charging-Identitifer-Gx */
+#if 0
+        ret = fd_msg_avp_new(
+                ogs_diam_gx_access_network_charging_identifier_gx, 0, &avp);
+        ogs_assert(ret == 0);
+
+        ret = fd_msg_avp_new(
+                ogs_diam_gx_access_network_charging_identifier_value, 0,
+                &avpch1);
+        ogs_assert(ret == 0);
+        val.u32 = 444;
+        ret = fd_msg_avp_setvalue (avpch1, &val);
+        ogs_assert(ret == 0);
+        ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+        ogs_assert(ret == 0);
+
+        ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+        ogs_assert(ret == 0);
+#endif
+
+        ret = fd_msg_avp_new(ogs_diam_gx_an_trusted, 0, &avp);
+        ogs_assert(ret == 0);
+        val.u32 = OGS_DIAM_GX_AN_UNTRUSTED;
+        ret = fd_msg_avp_setvalue (avp, &val);
+        ogs_assert(ret == 0);
+        ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+        ogs_assert(ret == 0);
+    }
     
     ret = clock_gettime(CLOCK_REALTIME, &sess_data->ts);
     

@@ -977,6 +977,9 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn)
     sess->smf_n4_teid = sess->index;
     sess->smf_n4_seid = sess->index;
 
+    /* Set Charging ID */
+    sess->charging.id = sess->index;
+
     /* Create BAR in PFCP Session */
     ogs_pfcp_bar_new(&sess->pfcp);
 
@@ -1107,6 +1110,9 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
     /* Set TEID & SEID */
     sess->smf_n4_teid = sess->index;
     sess->smf_n4_seid = sess->index;
+
+    /* Set Charging ID */
+    sess->charging.id = sess->index;
 
     /* Setup Timer */
     sess->t_release_holding = ogs_timer_add(

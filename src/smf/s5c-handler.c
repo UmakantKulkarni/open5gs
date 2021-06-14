@@ -212,13 +212,14 @@ void smf_s5c_handle_create_session_request(
     sgw_s5c_teid = req->sender_f_teid_for_control_plane.data;
     ogs_assert(sgw_s5c_teid);
     sess->sgw_s5c_teid = be32toh(sgw_s5c_teid->teid);
+    rv = ogs_gtp_f_teid_to_ip(sgw_s5c_teid, &sess->sgw_s5c_ip);
+    ogs_assert(rv == OGS_OK);
 
     ogs_debug("    SGW_S5C_TEID[0x%x] SMF_N4_TEID[0x%x]",
             sess->sgw_s5c_teid, sess->smf_n4_teid);
 
     switch (sess->gtp_rat_type) {
     case OGS_GTP_RAT_TYPE_EUTRAN:
-        /* Data Plane(DL) : SGW-S5U */
         sgw_s5u_teid = req->bearer_contexts_to_be_created.
             s5_s8_u_sgw_f_teid.data;
         ogs_assert(sgw_s5u_teid);

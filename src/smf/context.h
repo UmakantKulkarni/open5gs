@@ -168,8 +168,8 @@ typedef struct smf_bearer_s {
     ogs_ip_t        sgw_s5u_ip;     /* SGW-S5U IPv4/IPv6 */
 
     struct {
-        char            *name;      /* EPC: PCC Rule Name */
-        char            *id;        /* 5GC: PCC Rule Id */
+        char        *name;          /* EPC: PCC Rule Name */
+        char        *id;            /* 5GC: PCC Rule Id */
     } pcc_rule;
     ogs_qos_t       qos;            /* QoS Infomration */
 
@@ -193,7 +193,9 @@ typedef struct smf_sess_s {
     uint64_t        smpolicycontrol_features; /* SBI features */
 
     uint32_t        smf_n4_teid;    /* SMF-N4-TEID is derived from INDEX */
+
     uint32_t        sgw_s5c_teid;   /* SGW-S5C-TEID is received from SGW */
+    ogs_ip_t        sgw_s5c_ip;     /* SGW-S5C IPv4/IPv6 */
 
     uint64_t        smf_n4_seid;    /* SMF SEID is dervied from INDEX */
     uint64_t        upf_n4_seid;    /* UPF SEID is received from Peer */
@@ -316,6 +318,11 @@ typedef struct smf_sess_s {
         uint32_t gnb_dl_teid;
         ogs_ip_t gnb_dl_ip;
     } handover;
+
+    /* Charging */
+    struct {
+        uint32_t id;
+    } charging;
 
     /* Data Forwarding between the CP and UP functions */
     ogs_pfcp_pdr_t  *cp2up_pdr;

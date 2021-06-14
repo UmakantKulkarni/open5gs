@@ -123,10 +123,17 @@ extern struct dict_object *ogs_diam_gx_flow_number;
 extern struct dict_object *ogs_diam_gx_flow_usage;
 extern struct dict_object *ogs_diam_gx_3gpp_sgsn_mcc_mnc;
 extern struct dict_object *ogs_diam_gx_an_gw_address;
+#define OGS_DIAM_GX_DISABLE_ONLINE 0
+#define OGS_DIAM_GX_ENABLE_ONLINE 1
 extern struct dict_object *ogs_diam_gx_online;
+#define OGS_DIAM_GX_DISABLE_OFFLINE 0
+#define OGS_DIAM_GX_ENABLE_OFFLINE 1
 extern struct dict_object *ogs_diam_gx_offline;
 extern struct dict_object *ogs_diam_gx_access_network_charging_address;
 extern struct dict_object *ogs_diam_gx_access_network_charging_identifier_gx;
+extern struct dict_object *ogs_diam_gx_access_network_charging_identifier_value;
+#define OGS_DIAM_GX_AN_TRUSTED 0
+#define OGS_DIAM_GX_AN_UNTRUSTED 1
 extern struct dict_object *ogs_diam_gx_an_trusted;
 
 typedef struct ogs_diam_gx_message_s {
