@@ -139,7 +139,7 @@ static void test1_func(abts_case *tc, void *data)
     test_ue_remove(test_ue);
 }
 
-abts_suite *test_swx(abts_suite *suite)
+abts_suite *test_epdg(abts_suite *suite)
 {
     suite = ADD_SUITE(suite)
 

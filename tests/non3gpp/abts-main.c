@@ -22,12 +22,12 @@
 
 int parse_config(void);
 
-abts_suite *test_swx(abts_suite *suite);
+abts_suite *test_epdg(abts_suite *suite);
 
 const struct testlist {
     abts_suite *(*func)(abts_suite *suite);
 } alltests[] = {
-    {test_swx},
+    {test_epdg},
     {NULL},
 };
 

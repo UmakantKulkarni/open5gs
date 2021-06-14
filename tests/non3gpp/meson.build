@@ -22,7 +22,7 @@ testapp_non3gpp_sources = files('''
     gtp-path.c
 
     abts-main.c
-    swx-test.c
+    epdg-test.c
 '''.split())
 
 testapp_non3gpp_exe = executable('non3gpp',
