@@ -163,13 +163,10 @@ ogs_pkbuf_t *mme_s11_build_create_session_request(
             sess->request_type.type == OGS_NAS_EPS_PDN_TYPE_IPV6 ||
             sess->request_type.type == OGS_NAS_EPS_PDN_TYPE_IPV4V6);
 
-    req->pdn_type.u8 = ((session->session_type + 1) &
-            sess->request_type.type);
     if (session->session_type == OGS_PDU_SESSION_TYPE_IPV4 ||
         session->session_type == OGS_PDU_SESSION_TYPE_IPV6 ||
         session->session_type == OGS_PDU_SESSION_TYPE_IPV4V6) {
-        req->pdn_type.u8 =
-            (session->session_type & sess->request_type.type);
+        req->pdn_type.u8 = (session->session_type & sess->request_type.type);
         if (req->pdn_type.u8 == 0) {
             ogs_fatal("Cannot derive PDN Type [UE:%d,HSS:%d]",
                 sess->request_type.type, session->session_type);
