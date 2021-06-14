@@ -93,16 +93,36 @@ void smf_s5c_handle_create_session_request(
         ogs_error("No EPS Bearer QoS");
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
     }
-    if (req->bearer_contexts_to_be_created.s5_s8_u_sgw_f_teid.presence == 0) {
-        ogs_error("No TEID");
-        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
-    }
     if (req->pdn_address_allocation.presence == 0) {
         ogs_error("No PAA");
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
     }
     if (req->user_location_information.presence == 0) {
         ogs_error("No UE Location Information");
+        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+    }
+    if (req->rat_type.presence == 0) {
+        ogs_error("No RAT Type");
+        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+    }
+
+    switch (req->rat_type.u8) {
+    case OGS_GTP_RAT_TYPE_EUTRAN:
+        if (req->bearer_contexts_to_be_created.
+                s5_s8_u_sgw_f_teid.presence == 0) {
+            ogs_error("No S5/S8 SGW GTP-U TEID");
+            cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+        }
+        break;
+    case OGS_GTP_RAT_TYPE_WLAN:
+        if (req->bearer_contexts_to_be_created.
+                s2b_u_epdg_f_teid_5.presence == 0) {
+            ogs_error("No S2b ePDG GTP-U TEID");
+            cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
+        }
+        break;
+    default:
+        ogs_error("Unknown RAT Type [%d]", req->rat_type.u8);
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
     }
 
@@ -173,17 +193,30 @@ void smf_s5c_handle_create_session_request(
     ogs_assert(sgw_s5c_teid);
     sess->sgw_s5c_teid = be32toh(sgw_s5c_teid->teid);
 
-    /* Data Plane(DL) : SGW-S5U */
-    sgw_s5u_teid = req->bearer_contexts_to_be_created.s5_s8_u_sgw_f_teid.data;
-    ogs_assert(sgw_s5u_teid);
-    bearer->sgw_s5u_teid = be32toh(sgw_s5u_teid->teid);
-    rv = ogs_gtp_f_teid_to_ip(sgw_s5u_teid, &bearer->sgw_s5u_ip);
-    ogs_assert(rv == OGS_OK);
-
     ogs_debug("    SGW_S5C_TEID[0x%x] SMF_N4_TEID[0x%x]",
             sess->sgw_s5c_teid, sess->smf_n4_teid);
-    ogs_debug("    SGW_S5U_TEID[0x%x] PGW_S5U_TEID[0x%x]",
-            bearer->sgw_s5u_teid, bearer->pgw_s5u_teid);
+
+    switch (req->rat_type.u8) {
+    case OGS_GTP_RAT_TYPE_EUTRAN:
+        /* Data Plane(DL) : SGW-S5U */
+        sgw_s5u_teid = req->bearer_contexts_to_be_created.
+            s5_s8_u_sgw_f_teid.data;
+        ogs_assert(sgw_s5u_teid);
+        bearer->sgw_s5u_teid = be32toh(sgw_s5u_teid->teid);
+        rv = ogs_gtp_f_teid_to_ip(sgw_s5u_teid, &bearer->sgw_s5u_ip);
+        ogs_assert(rv == OGS_OK);
+
+        ogs_debug("    SGW_S5U_TEID[0x%x] PGW_S5U_TEID[0x%x]",
+                bearer->sgw_s5u_teid, bearer->pgw_s5u_teid);
+
+        break;
+    case OGS_GTP_RAT_TYPE_WLAN:
+        ogs_fatal("TODO");
+        break;
+    default:
+        ogs_error("Unknown RAT Type [%d]", req->rat_type.u8);
+        ogs_assert_if_reached();
+    }
 
     /* Set Bearer QoS */
     decoded = ogs_gtp_parse_bearer_qos(&bearer_qos,

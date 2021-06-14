@@ -120,8 +120,8 @@ ogs_pkbuf_t *test_s2b_build_create_session_request(
     req->bearer_contexts_to_be_created.eps_bearer_id.u8 = bearer->ebi;
 
     memset(&test_s2b_u_teid, 0, sizeof(ogs_gtp_f_teid_t));
-    test_s2b_u_teid.interface_type = OGS_GTP_F_TEID_S2B_U_EPDG_GTP_U;
     test_s2b_u_teid.teid = htobe32(sess->epdg_s2b_u_teid);
+    test_s2b_u_teid.interface_type = OGS_GTP_F_TEID_S2B_U_EPDG_GTP_U;
     ogs_assert(sess->gnode->sock);
     rv = ogs_gtp_sockaddr_to_f_teid(
             &sess->gnode->sock->local_addr, NULL, &test_s2b_u_teid, &len);
