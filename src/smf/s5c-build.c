@@ -99,8 +99,17 @@ ogs_pkbuf_t *smf_s5c_build_create_session_response(
     rsp->pdn_address_allocation.presence = 1;
 
     /* APN Restriction */
-    rsp->apn_restriction.presence = 1;
-    rsp->apn_restriction.u8 = OGS_GTP_APN_NO_RESTRICTION;
+    switch (sess->gtp_rat_type) {
+    case OGS_GTP_RAT_TYPE_EUTRAN:
+        rsp->apn_restriction.presence = 1;
+        rsp->apn_restriction.u8 = OGS_GTP_APN_NO_RESTRICTION;
+        break;
+    case OGS_GTP_RAT_TYPE_WLAN:
+        break;
+    default:
+        ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
+        ogs_assert_if_reached();
+    }
     
     /* APN-AMBR
      * if PCRF changes APN-AMBR, this should be included. */
