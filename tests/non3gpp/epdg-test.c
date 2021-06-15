@@ -101,16 +101,15 @@ static void test1_func(abts_case *tc, void *data)
     ABTS_PTR_NOTNULL(tc, doc);
     ABTS_INT_EQUAL(tc, OGS_OK, test_db_insert_ue(test_ue, doc));
 
-    /* Setup Test Session */
+    /* Setup WLAN Session */
     sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_WLAN);
     ogs_assert(sess);
 
     OGS_SETUP_GTP_NODE(sess, ogs_list_first(&test_self()->gtpc_list));
 
-    /* Setup Test Bearer */
+    /* Setup WLAN Bearer */
     bearer = test_bearer_add(sess, 5);
     ogs_assert(bearer);
-
 
     /* Send SWx MAR */
     test_swx_send(sess, test_s2b_send_create_session_request);
@@ -119,6 +118,115 @@ static void test1_func(abts_case *tc, void *data)
     recvbuf = test_gtpv2_read(gtpv2);
     ABTS_PTR_NOTNULL(tc, recvbuf);
     test_s2b_recv(sess, recvbuf);
+
+    /* Setup EUTRAN Session */
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    ogs_assert(sess);
+
+#if 0
+    /* Send Attach Request */
+    memset(&sess->pdn_connectivity_param,
+            0, sizeof(sess->pdn_connectivity_param));
+    sess->pdn_connectivity_param.eit = 1;
+    sess->pdn_connectivity_param.pco = 1;
+    esmbuf = testesm_build_pdn_connectivity_request(sess);
+    ABTS_PTR_NOTNULL(tc, esmbuf);
+
+    memset(&test_ue->attach_request_param,
+            0, sizeof(test_ue->attach_request_param));
+    test_ue->attach_request_param.drx_parameter = 1;
+    test_ue->attach_request_param.tmsi_status = 1;
+    test_ue->attach_request_param.mobile_station_classmark_2 = 1;
+    test_ue->attach_request_param.additional_update_type = 1;
+    test_ue->attach_request_param.ue_usage_setting = 1;
+    emmbuf = testemm_build_attach_request(test_ue, esmbuf);
+    ABTS_PTR_NOTNULL(tc, emmbuf);
+
+    memset(&test_ue->initial_ue_param, 0, sizeof(test_ue->initial_ue_param));
+    sendbuf = test_s1ap_build_initial_ue_message(
+            test_ue, emmbuf, S1AP_RRC_Establishment_Cause_mo_Signalling, false);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Receive Authentication Request */
+    recvbuf = testenb_s1ap_read(s1ap);
+    ABTS_PTR_NOTNULL(tc, recvbuf);
+    tests1ap_recv(test_ue, recvbuf);
+
+    /* Send Authentication response */
+    emmbuf = testemm_build_authentication_response(test_ue);
+    ABTS_PTR_NOTNULL(tc, emmbuf);
+    sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, emmbuf);
+    ABTS_PTR_NOTNULL(tc, sendbuf);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Receive Security mode Command */
+    recvbuf = testenb_s1ap_read(s1ap);
+    ABTS_PTR_NOTNULL(tc, recvbuf);
+    tests1ap_recv(test_ue, recvbuf);
+
+    /* Send Security mode complete */
+    test_ue->mobile_identity_imeisv_presence = true;
+    emmbuf = testemm_build_security_mode_complete(test_ue);
+    ABTS_PTR_NOTNULL(tc, emmbuf);
+    sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, emmbuf);
+    ABTS_PTR_NOTNULL(tc, sendbuf);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Receive ESM Information Request */
+    recvbuf = testenb_s1ap_read(s1ap);
+    ABTS_PTR_NOTNULL(tc, recvbuf);
+    tests1ap_recv(test_ue, recvbuf);
+
+    /* Send ESM Information Response */
+    esmbuf = testesm_build_esm_information_response(sess);
+    ABTS_PTR_NOTNULL(tc, esmbuf);
+    sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, esmbuf);
+    ABTS_PTR_NOTNULL(tc, sendbuf);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Receive Initial Context Setup Request +
+     * Attach Accept +
+     * Activate Default Bearer Context Request */
+    recvbuf = testenb_s1ap_read(s1ap);
+    ABTS_PTR_NOTNULL(tc, recvbuf);
+    tests1ap_recv(test_ue, recvbuf);
+
+    /* Send UE Capability Info Indication */
+    sendbuf = tests1ap_build_ue_radio_capability_info_indication(test_ue);
+    ABTS_PTR_NOTNULL(tc, sendbuf);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Send Initial Context Setup Response */
+    sendbuf = test_s1ap_build_initial_context_setup_response(test_ue);
+    ABTS_PTR_NOTNULL(tc, sendbuf);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Send Attach Complete + Activate default EPS bearer cotext accept */
+    test_ue->nr_cgi.cell_id = 0x1234502;
+    bearer = test_bearer_find_by_ue_ebi(test_ue, 5);
+    ogs_assert(bearer);
+    esmbuf = testesm_build_activate_default_eps_bearer_context_accept(
+            bearer, false);
+    ABTS_PTR_NOTNULL(tc, esmbuf);
+    emmbuf = testemm_build_attach_complete(test_ue, esmbuf);
+    ABTS_PTR_NOTNULL(tc, emmbuf);
+    sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, emmbuf);
+    ABTS_PTR_NOTNULL(tc, sendbuf);
+    rv = testenb_s1ap_send(s1ap, sendbuf);
+    ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* Receive EMM information */
+    recvbuf = testenb_s1ap_read(s1ap);
+    ABTS_PTR_NOTNULL(tc, recvbuf);
+    tests1ap_recv(test_ue, recvbuf);
+#endif
 
     ogs_msleep(300);
 
