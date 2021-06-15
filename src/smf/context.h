@@ -403,9 +403,6 @@ smf_bearer_t *smf_bearer_find_by_pcc_rule_name(
 smf_bearer_t *smf_bearer_find_by_pdr_id(
         smf_sess_t *sess, ogs_pfcp_pdr_id_t pdr_id);
 smf_bearer_t *smf_default_bearer_in_sess(smf_sess_t *sess);
-bool smf_bearer_is_default(smf_bearer_t *bearer);
-smf_bearer_t *smf_bearer_first(smf_sess_t *sess);
-smf_bearer_t *smf_bearer_next(smf_bearer_t *bearer);
 
 smf_ue_t *smf_ue_cycle(smf_ue_t *smf_ue);
 smf_sess_t *smf_sess_cycle(smf_sess_t *sess);
