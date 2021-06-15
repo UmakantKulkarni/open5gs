@@ -8,5 +8,5 @@ user@host ~/Documents/git/open5gs/lib/gtp/support$ \
   using Microsoft Office 2007+
 
 * Generate TLV support files
-user@host ~/Documents/git/open5gs/lib/s1ap/support$ \
+user@host ~/Documents/git/open5gs/lib/gtp/support$ \
     python3 gtp-tlv.py -f 29274-g30.docx -o ..

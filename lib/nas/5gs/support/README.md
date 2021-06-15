@@ -1,6 +1,6 @@
 
 * Install python-docx
-user@host ~/Documents/git/open5gs/lib/gtp/support$ \
+user@host ~/Documents/git/open5gs/lib/nas/5gs/support$ \
     sudo pip3 install python-docx
 
 * Change the format of standard specification 
@@ -8,5 +8,5 @@ user@host ~/Documents/git/open5gs/lib/gtp/support$ \
   using Microsoft Office 2007+
 
 * Generate Message support files
-user@host ~/Documents/git/open5gs/lib/s1ap/support$ \
+user@host ~/Documents/git/open5gs/lib/nas/5gs/support$ \
     python3 nas-message.py -f 24501-g41.docx -o ..

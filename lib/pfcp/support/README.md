@@ -1,6 +1,6 @@
 
 * Install python-docx
-user@host ~/Documents/git/open5gs/lib/gtp/support$ \
+user@host ~/Documents/git/open5gs/lib/pfcp/support$ \
     sudo pip3 install python-docx
 
 * Change the format of standard specification 
