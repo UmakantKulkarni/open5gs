@@ -628,8 +628,7 @@ void smf_epc_n4_handle_session_establishment_response(
     ogs_assert(up_f_seid);
     sess->upf_n4_seid = be64toh(up_f_seid->seid);
 
-    ogs_assert(OGS_OK ==
-        smf_gtp_send_create_session_response(sess, gtp_xact));
+    ogs_assert(OGS_OK == smf_gtp_send_create_session_response(sess, gtp_xact));
 
     smf_bearer_binding(sess);
 }
@@ -767,8 +766,7 @@ void smf_epc_n4_handle_session_deletion_response(
 
     ogs_assert(sess);
 
-    ogs_assert(OGS_OK ==
-        smf_gtp_send_delete_session_response(sess, gtp_xact));
+    ogs_assert(OGS_OK == smf_gtp_send_delete_session_response(sess, gtp_xact));
 
     SMF_SESS_CLEAR(sess);
 }
