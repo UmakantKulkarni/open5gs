@@ -114,12 +114,8 @@ void smf_s5c_handle_create_session_request(
                 req->serving_network.len);
         cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
     }
-    if (req->rat_type.presence == 0) {
-        ogs_error("No RAT Type");
-        cause_value = OGS_GTP_CAUSE_MANDATORY_IE_MISSING;
-    }
 
-    switch (req->rat_type.u8) {
+    switch (sess->gtp_rat_type) {
     case OGS_GTP_RAT_TYPE_EUTRAN:
         if (req->bearer_contexts_to_be_created.
                 s5_s8_u_sgw_f_teid.presence == 0) {
@@ -158,10 +154,6 @@ void smf_s5c_handle_create_session_request(
     ogs_assert(sess);
     smf_ue = sess->smf_ue;
     ogs_assert(smf_ue);
-
-    /* RAT Type */
-    sess->gtp_rat_type = req->rat_type.u8;
-    ogs_assert(sess->gtp_rat_type);
 
     /* UE Location Inforamtion*/
     ogs_gtp_parse_uli(&uli, &req->user_location_information);

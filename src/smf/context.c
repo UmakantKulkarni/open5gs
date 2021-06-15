@@ -949,7 +949,7 @@ void smf_sess_select_upf(smf_sess_t *sess)
             OGS_ADDR(&ogs_pfcp_self()->pfcp_node->addr, buf));
 }
 
-smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn)
+smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type)
 {
     smf_event_t e;
 
@@ -987,6 +987,10 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn)
     sess->session.name = ogs_strdup(apn);
     ogs_assert(sess->session.name);
 
+    /* Set RAT-Type */
+    sess->gtp_rat_type = rat_type;
+    ogs_assert(sess->gtp_rat_type);
+
     /* Setup Timer */
     sess->t_release_holding = ogs_timer_add(
             ogs_app()->timer_mgr, smf_timer_release_holding_expire, sess);
@@ -1021,6 +1025,10 @@ smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message)
         ogs_error("No APN");
         return NULL;
     }
+    if (req->rat_type.presence == 0) {
+        ogs_error("No RAT Type");
+        return NULL;
+    }
 
     ogs_fqdn_parse(apn,
             req->access_point_name.data, req->access_point_name.len);
@@ -1052,14 +1060,14 @@ smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message)
         ogs_assert(smf_ue);
     }
 
-    sess = smf_sess_find_by_apn(smf_ue, apn);
+    sess = smf_sess_find_by_apn(smf_ue, apn, req->rat_type.u8);
     if (sess) {
         ogs_warn("OLD Session Release [IMSI:%s,APN:%s]",
                 smf_ue->imsi_bcd, sess->session.name);
         smf_sess_remove(sess);
     }
 
-    sess = smf_sess_add_by_apn(smf_ue, apn);
+    sess = smf_sess_add_by_apn(smf_ue, apn, req->rat_type.u8);
     return sess;
 }
 
@@ -1479,7 +1487,7 @@ smf_sess_t *smf_sess_find_by_seid(uint64_t seid)
     return smf_sess_find(seid);
 }
 
-smf_sess_t *smf_sess_find_by_apn(smf_ue_t *smf_ue, char *apn)
+smf_sess_t *smf_sess_find_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type)
 {
     smf_sess_t *sess = NULL;
 
@@ -1487,7 +1495,8 @@ smf_sess_t *smf_sess_find_by_apn(smf_ue_t *smf_ue, char *apn)
     ogs_assert(apn);
 
     ogs_list_for_each(&smf_ue->sess_list, sess) {
-        if (!ogs_strcasecmp(sess->session.name, apn))
+        if (ogs_strcasecmp(sess->session.name, apn) == 0 &&
+            sess->gtp_rat_type == rat_type)
             return sess;
     }
 
