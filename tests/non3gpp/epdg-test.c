@@ -101,7 +101,6 @@ static void test1_func(abts_case *tc, void *data)
     ABTS_PTR_NOTNULL(tc, doc);
     ABTS_INT_EQUAL(tc, OGS_OK, test_db_insert_ue(test_ue, doc));
 
-#if 0
     /* Setup WLAN Session */
     sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_WLAN);
     ogs_assert(sess);
@@ -119,7 +118,6 @@ static void test1_func(abts_case *tc, void *data)
     recvbuf = test_gtpv2_read(gtpv2);
     ABTS_PTR_NOTNULL(tc, recvbuf);
     test_s2b_recv(sess, recvbuf);
-#endif
 
     /* Setup EUTRAN Session */
     sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);

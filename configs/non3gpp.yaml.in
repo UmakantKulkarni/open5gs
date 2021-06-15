@@ -102,8 +102,8 @@ smf:
       connect:
         - identity: pcrf.localdomain
           addr: 127.0.0.9
-        - identity: aaa.localdomain
-          addr: 127.0.0.1
+#        - identity: aaa.localdomain
+#          addr: 127.0.0.5
 amf:
     sbi:
       - addr: 127.0.0.5
@@ -168,7 +168,7 @@ hss:
         - identity: mme.localdomain
           addr: 127.0.0.2
         - identity: aaa.localdomain
-          addr: 127.0.0.1
+          addr: 127.0.0.5
 pcrf:
     freeDiameter:
       identity: pcrf.localdomain
