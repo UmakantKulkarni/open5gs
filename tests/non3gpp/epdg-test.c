@@ -72,16 +72,6 @@ static void test1_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    /* Setup Test Session */
-    sess = test_sess_add_by_apn(test_ue, "internet");
-    ogs_assert(sess);
-
-    OGS_SETUP_GTP_NODE(sess, ogs_list_first(&test_self()->gtpc_list));
-
-    /* Setup Test Bearer */
-    bearer = test_bearer_add(sess, 5);
-    ogs_assert(bearer);
-
     /* eNB connects to MME */
     s1ap = tests1ap_client(AF_INET);
     ABTS_PTR_NOTNULL(tc, s1ap);
@@ -110,6 +100,17 @@ static void test1_func(abts_case *tc, void *data)
     doc = test_db_new_non3gpp(test_ue);
     ABTS_PTR_NOTNULL(tc, doc);
     ABTS_INT_EQUAL(tc, OGS_OK, test_db_insert_ue(test_ue, doc));
+
+    /* Setup Test Session */
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_WLAN);
+    ogs_assert(sess);
+
+    OGS_SETUP_GTP_NODE(sess, ogs_list_first(&test_self()->gtpc_list));
+
+    /* Setup Test Bearer */
+    bearer = test_bearer_add(sess, 5);
+    ogs_assert(bearer);
+
 
     /* Send SWx MAR */
     test_swx_send(sess, test_s2b_send_create_session_request);

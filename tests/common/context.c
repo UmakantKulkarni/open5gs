@@ -951,7 +951,8 @@ void test_ue_remove_all(void)
         test_ue_remove(test_ue);
 }
 
-test_sess_t *test_sess_add_by_apn(test_ue_t *test_ue, char *apn)
+test_sess_t *test_sess_add_by_apn(
+        test_ue_t *test_ue, char *apn, uint8_t rat_type)
 {
     test_sess_t *sess = NULL;
 
@@ -966,6 +967,9 @@ test_sess_t *test_sess_add_by_apn(test_ue_t *test_ue, char *apn)
 
     sess->apn = ogs_strdup(apn);
     ogs_assert(sess->apn);
+    sess->gtp_rat_type = rat_type;
+    ogs_assert(sess->gtp_rat_type);
+
     sess->pti = 1; /* Default PTI : 1 */
 
     sess->epdg_s2b_c_teid = sess->index;
@@ -1038,7 +1042,8 @@ void test_sess_remove_all(test_ue_t *test_ue)
         test_sess_remove(sess);
 }
 
-test_sess_t *test_sess_find_by_apn(test_ue_t *test_ue, char *apn)
+test_sess_t *test_sess_find_by_apn(
+        test_ue_t *test_ue, char *apn, uint8_t rat_type)
 {
     test_sess_t *sess = NULL;
 
@@ -1046,7 +1051,9 @@ test_sess_t *test_sess_find_by_apn(test_ue_t *test_ue, char *apn)
     ogs_assert(apn);
 
     ogs_list_for_each(&test_ue->sess_list, sess)
-        if (ogs_strcasecmp(sess->apn, apn) == 0) return sess;
+        if (ogs_strcasecmp(sess->apn, apn) == 0 &&
+            sess->gtp_rat_type == rat_type)
+            return sess;
 
     return NULL;
 }

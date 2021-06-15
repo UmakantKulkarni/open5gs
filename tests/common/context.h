@@ -438,6 +438,10 @@ typedef struct test_sess_s {
         char *apn;
     };
 
+    /* RAT Type */
+    uint8_t gtp_rat_type;
+    OpenAPI_rat_type_e sbi_rat_type;
+
     ogs_ip_t ue_ip;
 
     ogs_ip_t upf_n3_ip;             /* UPF-N3 IPv4/IPv6 */
@@ -507,11 +511,13 @@ void test_ue_remove_all(void);
 
 test_sess_t *test_sess_add_by_dnn_and_psi(
         test_ue_t *test_ue, char *dnn, uint8_t psi);
-test_sess_t *test_sess_add_by_apn(test_ue_t *test_ue, char *apn);
+test_sess_t *test_sess_add_by_apn(
+        test_ue_t *test_ue, char *apn, uint8_t rat_type);
 void test_sess_remove(test_sess_t *sess);
 void test_sess_remove_all(test_ue_t *test_ue);
 
-test_sess_t *test_sess_find_by_apn(test_ue_t *test_ue, char *apn);
+test_sess_t *test_sess_find_by_apn(
+        test_ue_t *test_ue, char *apn, uint8_t rat_type);
 test_sess_t *test_sess_find_by_psi(test_ue_t *test_ue, uint8_t psi);
 
 test_bearer_t *test_bearer_add(test_sess_t *sess, uint8_t ebi);
