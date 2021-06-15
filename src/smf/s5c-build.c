@@ -159,6 +159,10 @@ ogs_pkbuf_t *smf_s5c_build_create_session_response(
                 &bearer_qos, bearer_qos_buf, GTP_BEARER_QOS_LEN);
     }
 
+    /* Bearer Charging ID */
+    rsp->bearer_contexts_created.charging_id.presence = 1;
+    rsp->bearer_contexts_created.charging_id.u32 = sess->charging.id;
+
     /* Data Plane(UL) : SMF-S5U */
     memset(&pgw_s5u_teid, 0, sizeof(ogs_gtp_f_teid_t));
     pgw_s5u_teid.teid = htobe32(bearer->pgw_s5u_teid);
