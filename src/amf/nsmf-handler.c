@@ -151,7 +151,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
     char *ue_key = sess->amf_ue->supi;
-    ogs_info("ukkkkkkkkkkkkkkkkkk %s", ue_key);
+    ogs_info("ukkkkkkkkkkkkkkkkkk %s, %s, %d", ue_key, sess->sm_context_ref, recvmsg->SmContextCreatedData->pdu_session_id);
     insert_data_to_db(ue_key);
     return OGS_OK;
 }
