@@ -23,6 +23,7 @@
 #include "sbi-path.h"
 
 #include "gmm-build.h"
+#include "pcs-mongo.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *recvmsg)
@@ -149,7 +150,9 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 sess, recvmsg->res_status));
         return OGS_ERROR;
     }
-
+    char *ue_key = sess->amf_ue->supi;
+    ogs_info("ukkkkkkkkkkkkkkkkkk %s", ue_key);
+    insert_data_to_db(ue_key);
     return OGS_OK;
 }
 

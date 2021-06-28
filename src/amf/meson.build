@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 libamf_sources = files('''
+    pcs-mongo.c
     context.c
     event.c
     timer.c
@@ -61,13 +62,16 @@ libamf_sources = files('''
     init.c
 '''.split())
 
+libmongoc_dep = dependency('libmongoc-1.0')
+
 libamf = static_library('amf',
     sources : libamf_sources,
     dependencies : [libapp_dep,
                     libsctp_dep,
                     libngap_dep,
                     libnas_5gs_dep,
-                    libsbi_dep],
+                    libsbi_dep,
+                    libmongoc_dep],
     install : false)
 
 libamf_dep = declare_dependency(
@@ -76,7 +80,8 @@ libamf_dep = declare_dependency(
                     libsctp_dep,
                     libngap_dep,
                     libnas_5gs_dep,
-                    libsbi_dep])
+                    libsbi_dep,
+                    libmongoc_dep])
 
 amf_sources = files('''
     app.c

@@ -86,6 +86,11 @@ if cc.get_id() == 'gcc' or cc.get_id() == 'clang'
         '-fstack-protector',
         '-fstack-protector-strong',
         '--param=ssp-buffer-size=4',
+        '-I/usr/local/include/libbson-1.0',
+        '-I/usr/local/include/libmongoc-1.0',
+        '-lmongoc-1.0',
+        '-lbson-1.0',
+        '-L/usr/local/lib',
     ]
 
     if cc.get_id() == 'clang'
