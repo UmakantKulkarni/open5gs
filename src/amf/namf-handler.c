@@ -170,6 +170,11 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
     sendmsg.N1N2MessageTransferRspData = &N1N2MessageTransferRspData;
 
+    ogs_nas_5gs_message_t nas_message;
+    ogs_nas_5gsm_decode(&nas_message, n1buf);
+    ogs_nas_5gs_pdu_session_establishment_accept_t *pdu_session_establishment_accept = &nas_message.gsm.pdu_session_establishment_accept;
+    ogs_info("Inside N1-N2 codeeeeeeeeee %d, %s, %d, %d", pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.downlink.value);
+
     switch (n2InfoContent->ngap_ie_type) {
     case OpenAPI_ngap_ie_type_PDU_RES_SETUP_REQ:
         if (!n2buf) {
