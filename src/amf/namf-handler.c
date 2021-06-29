@@ -380,16 +380,21 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     ogs_nas_5gs_message_t nas_message;
     ogs_nas_5gsm_decode(&nas_message, n1buf);
     ogs_nas_5gs_pdu_session_establishment_accept_t *pdu_session_establishment_accept = &nas_message.gsm.pdu_session_establishment_accept;
-    char* doc_json;
+    char *doc_json;
     char *imsi_str = sess->amf_ue->supi;
     imsi_str += 5;
     int rv;
-    asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"downlink\":\"%d\"}}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, pdu_session_id, pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.downlink.value);
+    char hex_qos[OGS_HUGE_LEN];
+    decode_buffer_to_hex(hex_qos, (void *)pdu_session_establishment_accept->authorized_qos_rules.buffer, pdu_session_establishment_accept->authorized_qos_rules.length);
+    asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"authorized_qos_rules\": [{\"hex_qos\":\"%s\"}]}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, pdu_session_id, pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.uplink.unit, pdu_session_establishment_accept->session_ambr.downlink.value, pdu_session_establishment_accept->session_ambr.downlink.unit, hex_qos);
     rv = insert_data_to_db("AMF", "update", imsi_str, doc_json);
-    if (rv != OGS_OK) {
-            ogs_error("PCS Error while updateing data to MongoDB for supi [%s]", sess->amf_ue->supi);
-    } else {
-            ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->amf_ue->supi);
+    if (rv != OGS_OK)
+    {
+        ogs_error("PCS Error while updateing data to MongoDB for supi [%s]", sess->amf_ue->supi);
+    }
+    else
+    {
+        ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->amf_ue->supi);
     }
 
     return OGS_OK;
