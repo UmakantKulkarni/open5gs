@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-int insert_data_to_db(char *doc_json);
+int insert_data_to_db(const char *db_coll, const char *db_op, char *doc_id, char *doc_json);
 
 #ifdef __cplusplus
 }

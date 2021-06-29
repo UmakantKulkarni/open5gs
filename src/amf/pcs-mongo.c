@@ -2,9 +2,9 @@
 #include "ogs-app.h"
 #include "bson.h"
 
-int insert_data_to_db(char *doc_json);
+int insert_data_to_db(const char *db_coll, const char *db_op, char *doc_id, char *doc_json);
 
-int insert_data_to_db (char *doc_json)
+int insert_data_to_db (const char *db_coll, const char *db_op, char *doc_id, char *doc_json)
 {
    const char *uri_string = "mongodb://mongodb-svc:27017";
    mongoc_uri_t *uri;
@@ -13,7 +13,7 @@ int insert_data_to_db (char *doc_json)
    mongoc_collection_t *collection;
    bson_t *bson_doc;
    bson_error_t error;
-   char *string;
+   bson_t *query = NULL;
 
    /*
     * Required to initialize libmongoc's internals
@@ -51,22 +51,33 @@ int insert_data_to_db (char *doc_json)
     * Get a handle on the database "db_name" and collection "coll_name"
     */
    database = mongoc_client_get_database (client, "db_name");
-   collection = mongoc_client_get_collection (client, "db_name", "coll_name");
-   bson_doc = bson_new_from_json ((const uint8_t *)doc_json, -1, &error);
-   //insert = BCON_NEW (key, BCON_UTF8 ("world_7"));
-   //update = BCON_NEW("$set", "{", "hello_3", BCON_UTF8("world_5"), "}");
+   collection = mongoc_client_get_collection (client, "db_name", db_coll);
 
-   //if (!mongoc_collection_update_one (collection, insert, update, NULL, NULL, &error)) {
-   //   fprintf (stderr, "%s\n", error.message);
-   //}
+   if (strcmp(db_op, "create") == 0) {
+      bson_doc = bson_new_from_json ((const uint8_t *)doc_json, -1, &error);
 
-   if (!mongoc_collection_insert_one (collection, bson_doc, NULL, NULL, &error)) {
-      fprintf (stderr, "%s\n", error.message);
+      if (!mongoc_collection_insert_one (collection, bson_doc, NULL, NULL, &error)) {
+         fprintf (stderr, "%s\n", error.message);
+      }
+      ogs_info("PCS Added new data to mongo by AMF");
+
+   } else if (strcmp(db_op, "update") == 0) {
+      query = BCON_NEW ("_id", doc_id);
+
+      if (!mongoc_collection_delete_one (collection, query, NULL, NULL, &error)) {
+              fprintf (stderr, "Delete failed: %s\n", error.message);
+      }
+      bson_doc = bson_new_from_json ((const uint8_t *)doc_json, -1, &error);
+
+      if (!mongoc_collection_insert_one (collection, bson_doc, NULL, NULL, &error)) {
+         fprintf (stderr, "%s\n", error.message);
+      }
+      ogs_info("PCS Updated data to mongo by AMF");
    }
-   ogs_info("UKK Added data to mongo by AMF");
 
-   //bson_destroy (insert);
-   //bson_destroy (update);
+   bson_destroy (query);
+   bson_destroy (bson_doc);
+
    /*
     * Release our handles and clean up libmongoc
     */

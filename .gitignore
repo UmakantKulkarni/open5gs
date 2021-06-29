@@ -3,3 +3,9 @@ subprojects/freeDiameter
 subprojects/usrsctp
 
 webui/.next
+docs/_includes/head-includes.html
+lib/ipfw/objs/include_e/libutil.h
+lib/ipfw/objs/include_e/net/if_var.h
+lib/ipfw/objs/include_e/sys/sockio.h
+lib/ipfw/objs/include_e/sys/sysctl.h
+lib/ipfw/objs/include_e/timeconv.h

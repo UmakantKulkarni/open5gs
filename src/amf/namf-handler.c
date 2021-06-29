@@ -23,6 +23,7 @@
 #include "nas-path.h"
 #include "ngap-path.h"
 #include "sbi-path.h"
+#include "pcs-mongo.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg)
@@ -169,11 +170,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         OpenAPI_n1_n2_message_transfer_cause_N1_N2_TRANSFER_INITIATED;
 
     sendmsg.N1N2MessageTransferRspData = &N1N2MessageTransferRspData;
-
-    ogs_nas_5gs_message_t nas_message;
-    ogs_nas_5gsm_decode(&nas_message, n1buf);
-    ogs_nas_5gs_pdu_session_establishment_accept_t *pdu_session_establishment_accept = &nas_message.gsm.pdu_session_establishment_accept;
-    ogs_info("Inside N1-N2 codeeeeeeeeee %d, %s, %d, %d", pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.downlink.value);
 
     switch (n2InfoContent->ngap_ie_type) {
     case OpenAPI_ngap_ie_type_PDU_RES_SETUP_REQ:
@@ -380,6 +376,21 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
+
+    ogs_nas_5gs_message_t nas_message;
+    ogs_nas_5gsm_decode(&nas_message, n1buf);
+    ogs_nas_5gs_pdu_session_establishment_accept_t *pdu_session_establishment_accept = &nas_message.gsm.pdu_session_establishment_accept;
+    char* doc_json;
+    char *imsi_str = sess->amf_ue->supi;
+    imsi_str += 5;
+    int rv;
+    asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"downlink\":\"%d\"}}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, pdu_session_id, pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.downlink.value);
+    rv = insert_data_to_db("AMF", "update", imsi_str, doc_json);
+    if (rv != OGS_OK) {
+            ogs_error("PCS Error while updateing data to MongoDB for supi [%s]", sess->amf_ue->supi);
+    } else {
+            ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->amf_ue->supi);
+    }
 
     return OGS_OK;
 }

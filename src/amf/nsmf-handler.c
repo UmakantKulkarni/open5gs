@@ -156,12 +156,13 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     //uintmax_t imsi_int = strtoumax(imsi_str, NULL, 10);
     //int imsi_int = atoi(imsi_str);
     asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\"}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, recvmsg->SmContextCreatedData->pdu_session_id);
-    rv = insert_data_to_db(doc_json);
+    rv = insert_data_to_db("AMF", "create", imsi_str, doc_json);
     if (rv != OGS_OK) {
-            ogs_error("Error while inserting data to MongoDB for supi [%s]", sess->amf_ue->supi);
+            ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->amf_ue->supi);
     } else {
-            ogs_info("Successfully inserted data to MongoDB for supi [%s]", sess->amf_ue->supi);
+            ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->amf_ue->supi);
     }
+
     return OGS_OK;
 }
 
