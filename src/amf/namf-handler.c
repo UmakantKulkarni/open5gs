@@ -393,9 +393,11 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     NGAP_AllocationAndRetentionPriority_t *allocationAndRetentionPriority;
     NGAP_PDUSessionAggregateMaximumBitRate_t *PDUSessionAggregateMaximumBitRate;
     ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &n2sm_message, sizeof(n2sm_message), n2buf);
-    for (k = 0; k < n2sm_message.protocolIEs.list.count; k++) {
+    for (k = 0; k < n2sm_message.protocolIEs.list.count; k++)
+    {
         ie2 = n2sm_message.protocolIEs.list.array[k];
-        switch (ie2->id) {
+        switch (ie2->id)
+        {
         case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
             PDUSessionAggregateMaximumBitRate = &ie2->value.choice.PDUSessionAggregateMaximumBitRate;
             asn_uint642INTEGER(&PDUSessionAggregateMaximumBitRate->pDUSessionAggregateMaximumBitRateUL, pdusessionaggregatemaximumbitrateul);
@@ -405,8 +407,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
             QosFlowSetupRequestList = &ie2->value.choice.QosFlowSetupRequestList;
             ogs_assert(QosFlowSetupRequestList);
-            for (l = 0; l < QosFlowSetupRequestList->list.count; l++) {
-                QosFlowSetupRequestItem = (struct NGAP_QosFlowSetupRequestItem *) QosFlowSetupRequestList->list.array[l];
+            for (l = 0; l < QosFlowSetupRequestList->list.count; l++)
+            {
+                QosFlowSetupRequestItem = (struct NGAP_QosFlowSetupRequestItem *)QosFlowSetupRequestList->list.array[l];
                 ogs_assert(QosFlowSetupRequestItem);
                 qosFlowLevelQosParameters = &QosFlowSetupRequestItem->qosFlowLevelQosParameters;
                 qosCharacteristics = &qosFlowLevelQosParameters->qosCharacteristics;
