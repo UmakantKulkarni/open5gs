@@ -377,24 +377,56 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
-    ogs_ngap_message_t ngap_message;
-    //NGAP_NGAP_PDU_t *pdu = NULL;
-    NGAP_InitiatingMessage_t *initiatingMessage = NULL;
-    NGAP_PDUSessionResourceSetupRequest_t *PDUSessionResourceSetupRequest;
-    ogs_ngap_decode(&ngap_message, n2buf);
-    //pdu = &message;
-    initiatingMessage = ngap_message.choice.initiatingMessage;
-    NGAP_PDUSessionResourceSetupRequestIEs_t *ie = NULL;
-    PDUSessionResourceSetupRequest = &initiatingMessage->value.choice.PDUSessionResourceSetupRequest;
-    int i = 0;
-    for (i = 0; i < PDUSessionResourceSetupRequest->protocolIEs.list.count; i++)
-    {
-        ie = PDUSessionResourceSetupRequest->protocolIEs.list.array[i];
-        if (ie->id == NGAP_ProtocolIE_ID_id_AMF_UE_NGAP_ID)
-        {
-            uint64_t amf_ue_ngap_id;
-            asn_INTEGER2ulong(&ie->value.choice.AMF_UE_NGAP_ID, (unsigned long *)&amf_ue_ngap_id);
-            ogs_info("NGAPPPPPPP %ld", amf_ue_ngap_id);
+    int k, l;
+    uint64_t pdusessionaggregatemaximumbitrateul = 0, pdusessionaggregatemaximumbitratedl = 0;
+    uint32_t upf_n3_teid;
+    ogs_ip_t upf_n3_ip;
+    long qosflowidentifier, fiveqi, plarp, preemptioncapability, preemptionvulnerability;
+    NGAP_PDUSessionResourceSetupRequestTransfer_t n2sm_message;
+    NGAP_PDUSessionResourceSetupRequestTransferIEs_t *ie2 = NULL;
+    NGAP_UPTransportLayerInformation_t *UPTransportLayerInformation = NULL;
+    NGAP_GTPTunnel_t *gTPTunnel = NULL;
+    NGAP_QosFlowSetupRequestList_t *QosFlowSetupRequestList = NULL;
+    NGAP_QosFlowSetupRequestItem_t *QosFlowSetupRequestItem = NULL;
+    NGAP_QosFlowLevelQosParameters_t *qosFlowLevelQosParameters = NULL;
+    NGAP_QosCharacteristics_t *qosCharacteristics = NULL;
+    NGAP_AllocationAndRetentionPriority_t *allocationAndRetentionPriority;
+    NGAP_PDUSessionAggregateMaximumBitRate_t *PDUSessionAggregateMaximumBitRate;
+    ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &n2sm_message, sizeof(n2sm_message), n2buf);
+    for (k = 0; k < n2sm_message.protocolIEs.list.count; k++) {
+        ie2 = n2sm_message.protocolIEs.list.array[k];
+        switch (ie2->id) {
+        case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
+            PDUSessionAggregateMaximumBitRate = &ie2->value.choice.PDUSessionAggregateMaximumBitRate;
+            asn_uint642INTEGER(&PDUSessionAggregateMaximumBitRate->pDUSessionAggregateMaximumBitRateUL, pdusessionaggregatemaximumbitrateul);
+            asn_uint642INTEGER(&PDUSessionAggregateMaximumBitRate->pDUSessionAggregateMaximumBitRateDL, pdusessionaggregatemaximumbitratedl);
+            ogs_info("pdusessionaggregatemaximumbitrateul & pdusessionaggregatemaximumbitratedl isss %ld, %ld", pdusessionaggregatemaximumbitrateul, pdusessionaggregatemaximumbitratedl);
+            break;
+        case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
+            QosFlowSetupRequestList = &ie2->value.choice.QosFlowSetupRequestList;
+            ogs_assert(QosFlowSetupRequestList);
+            for (l = 0; l < QosFlowSetupRequestList->list.count; l++) {
+                QosFlowSetupRequestItem = (struct NGAP_QosFlowSetupRequestItem *) QosFlowSetupRequestList->list.array[l];
+                ogs_assert(QosFlowSetupRequestItem);
+                qosFlowLevelQosParameters = &QosFlowSetupRequestItem->qosFlowLevelQosParameters;
+                qosCharacteristics = &qosFlowLevelQosParameters->qosCharacteristics;
+                allocationAndRetentionPriority = &qosFlowLevelQosParameters->allocationAndRetentionPriority;
+                preemptioncapability = allocationAndRetentionPriority->pre_emptionCapability;
+                preemptionvulnerability = allocationAndRetentionPriority->pre_emptionVulnerability;
+                plarp = allocationAndRetentionPriority->priorityLevelARP;
+                qosflowidentifier = QosFlowSetupRequestItem->qosFlowIdentifier;
+                fiveqi = qosCharacteristics->choice.nonDynamic5QI->fiveQI;
+                ogs_info("qosFlowIdentifier and fiveqi and plarp and pre_emptionCapability and pre_emptionVulnerability issssss %ld, %ld, %ld, %ld, %ld", qosflowidentifier, fiveqi, plarp, preemptioncapability, preemptionvulnerability);
+            }
+            break;
+        case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
+            UPTransportLayerInformation = &ie2->value.choice.UPTransportLayerInformation;
+            gTPTunnel = UPTransportLayerInformation->choice.gTPTunnel;
+            ogs_assert(gTPTunnel);
+            ogs_asn_BIT_STRING_to_ip(&gTPTunnel->transportLayerAddress, &upf_n3_ip);
+            ogs_asn_OCTET_STRING_to_uint32(&gTPTunnel->gTP_TEID, &upf_n3_teid);
+            ogs_info("upf_n3_teid & upf_n3_ip %d, %d", upf_n3_teid, upf_n3_ip.addr);
+            break;
         }
     }
 
