@@ -666,7 +666,9 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     imsi_str += 5;
     //uintmax_t imsi_int = strtoumax(imsi_str, NULL, 10);
     //int imsi_int = atoi(imsi_str);
+
     asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\"}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, recvmsg->SmContextCreatedData->pdu_session_id);
+
     rv = insert_data_to_db("AMF", "create", imsi_str, doc_json);
     if (rv != OGS_OK)
     {

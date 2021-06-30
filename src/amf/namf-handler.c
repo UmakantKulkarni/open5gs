@@ -377,16 +377,47 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
+    ogs_ngap_message_t ngap_message;
+    //NGAP_NGAP_PDU_t *pdu = NULL;
+    NGAP_InitiatingMessage_t *initiatingMessage = NULL;
+    NGAP_PDUSessionResourceSetupRequest_t *PDUSessionResourceSetupRequest;
+    ogs_ngap_decode(&ngap_message, n2buf);
+    //pdu = &message;
+    initiatingMessage = ngap_message.choice.initiatingMessage;
+    NGAP_PDUSessionResourceSetupRequestIEs_t *ie = NULL;
+    PDUSessionResourceSetupRequest = &initiatingMessage->value.choice.PDUSessionResourceSetupRequest;
+    int i = 0;
+    for (i = 0; i < PDUSessionResourceSetupRequest->protocolIEs.list.count; i++)
+    {
+        ie = PDUSessionResourceSetupRequest->protocolIEs.list.array[i];
+        if (ie->id == NGAP_ProtocolIE_ID_id_AMF_UE_NGAP_ID)
+        {
+            uint64_t amf_ue_ngap_id;
+            asn_INTEGER2ulong(&ie->value.choice.AMF_UE_NGAP_ID, (unsigned long *)&amf_ue_ngap_id);
+            ogs_info("NGAPPPPPPP %ld", amf_ue_ngap_id);
+        }
+    }
+
     ogs_nas_5gs_message_t nas_message;
     ogs_nas_5gsm_decode(&nas_message, n1buf);
     ogs_nas_5gs_pdu_session_establishment_accept_t *pdu_session_establishment_accept = &nas_message.gsm.pdu_session_establishment_accept;
+
     char *doc_json;
     char *imsi_str = sess->amf_ue->supi;
     imsi_str += 5;
     int rv;
-    char hex_qos[OGS_HUGE_LEN];
-    decode_buffer_to_hex(hex_qos, (void *)pdu_session_establishment_accept->authorized_qos_rules.buffer, pdu_session_establishment_accept->authorized_qos_rules.length);
-    asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"authorized_qos_rules\": [{\"hex_qos\":\"%s\"}]}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, pdu_session_id, pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.uplink.unit, pdu_session_establishment_accept->session_ambr.downlink.value, pdu_session_establishment_accept->session_ambr.downlink.unit, hex_qos);
+
+    char hex_qos_rule[OGS_HUGE_LEN];
+    decode_buffer_to_hex(hex_qos_rule, (void *)pdu_session_establishment_accept->authorized_qos_rules.buffer, pdu_session_establishment_accept->authorized_qos_rules.length);
+
+    char hex_qos_flow_desc[OGS_HUGE_LEN];
+    decode_buffer_to_hex(hex_qos_flow_desc, (void *)pdu_session_establishment_accept->authorized_qos_flow_descriptions.buffer, pdu_session_establishment_accept->authorized_qos_flow_descriptions.length);
+
+    char hex_epco[OGS_HUGE_LEN];
+    decode_buffer_to_hex(hex_epco, (void *)pdu_session_establishment_accept->extended_protocol_configuration_options.buffer, pdu_session_establishment_accept->extended_protocol_configuration_options.length);
+
+    asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"authorized_qos_rules\": [{\"hex_qos_rule\":\"%s\"}], \"pdu_session_type\": \"%d\", \"s-nssai\":{\"sst\":\"%d\", \"sd\": \"%s\"}, \"authorized_qos_flow_description\": [{\"hex_qos_flow_desc\":\"%s\"}], \"extended_protocol_configuration_options\": \"%s\"}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, pdu_session_id, pdu_session_establishment_accept->pdu_address.addr, pdu_session_establishment_accept->dnn.value, pdu_session_establishment_accept->session_ambr.uplink.value, pdu_session_establishment_accept->session_ambr.uplink.unit, pdu_session_establishment_accept->session_ambr.downlink.value, pdu_session_establishment_accept->session_ambr.downlink.unit, hex_qos_rule, pdu_session_establishment_accept->selected_pdu_session_type.value, sess->s_nssai.sst, ogs_s_nssai_sd_to_string(sess->s_nssai.sd), hex_qos_flow_desc, hex_epco);
+
     rv = insert_data_to_db("AMF", "update", imsi_str, doc_json);
     if (rv != OGS_OK)
     {
