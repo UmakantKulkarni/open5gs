@@ -383,7 +383,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     ogs_ip_t pcs_upfn3ip;
     long pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability;
     NGAP_PDUSessionResourceSetupRequestTransfer_t pcs_n2smmessage;
-    NGAP_PDUSessionResourceSetupRequestTransferIEs_t *pcs_ie2 = NULL;
+    NGAP_PDUSessionResourceSetupRequestTransferIEs_t *pcs_ie = NULL;
     NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
     NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
     NGAP_QosFlowSetupRequestList_t *pcs_qosflowsetuprequestlist = NULL;
@@ -393,7 +393,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     NGAP_AllocationAndRetentionPriority_t *pcs_allocationandretentionpriority;
     NGAP_PDUSessionAggregateMaximumBitRate_t *pcs_pdusessionaggregatemaximumbitrate;
     ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
-    for (k = 0; k < pcs_n2smmessage.protocolIEs.list.count; k++)
+    for (pcs_k = 0; pcs_k < pcs_n2smmessage.protocolIEs.list.count; pcs_k++)
     {
         pcs_ie = pcs_n2smmessage.protocolIEs.list.array[k];
         switch (pcs_ie->id)
@@ -407,7 +407,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
             pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
             ogs_assert(pcs_qosflowsetuprequestlist);
-            for (l = 0; l < pcs_qosflowsetuprequestlist->list.count; l++)
+            for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
             {
                 pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[l];
                 ogs_assert(pcs_qosflowsetuprequestitem);
@@ -442,13 +442,13 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     pcs_imsistr += 5;
     char *pcs_supi = sess->amf_ue->supi;
     char *pcs_smcontextref = sess->sm_context_ref;
-    char *pcs_pduaddress = pdu_session_establishment_accept->pdu_address.addr;
-    char *pcs_dnn = pdu_session_establishment_accept->dnn.value;
-    int pcs_sambrulv = pdu_session_establishment_accept->session_ambr.uplink.value;
-    int pcs_sambrulu = pdu_session_establishment_accept->session_ambr.uplink.unit;
-    int pcs_sambrdlv = pdu_session_establishment_accept->session_ambr.downlink.value;
-    int pcs_sambrdlu = pdu_session_establishment_accept->session_ambr.downlink.unit;
-    int pcs_pdusesstype = pdu_session_establishment_accept->selected_pdu_session_type.value;
+    char *pcs_pduaddress = pcs_pdusessionestablishmentaccept->pdu_address.addr;
+    char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
+    int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
+    int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
+    int pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
+    int pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
+    int pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
     int pcs_snssaisst = sess->s_nssai.sst;
     char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
     int pcs_rv;

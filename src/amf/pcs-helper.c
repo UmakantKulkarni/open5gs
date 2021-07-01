@@ -5,7 +5,7 @@
 int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, char *pcs_docjson);
 void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len);
 
-int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, char *pcs_docjson);
+int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, char *pcs_docjson)
 {
    const char *uri_string = "mongodb://mongodb-svc:27017";
    mongoc_uri_t *uri;
