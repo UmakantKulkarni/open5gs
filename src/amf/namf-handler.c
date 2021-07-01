@@ -377,7 +377,39 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
+    ogs_nas_5gs_message_t pcs_nasmessage;
+    ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
+    ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
+
+    char *pcs_docjson, *pcs_nasdbdata;
+    char *pcs_imsistr = sess->amf_ue->supi;
+    pcs_imsistr += 5;
+    char *pcs_supi = sess->amf_ue->supi;
+    char *pcs_smcontextref = sess->sm_context_ref;
+    int pcs_pduaddress = pcs_pdusessionestablishmentaccept->pdu_address.addr;
+    char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
+    int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
+    int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
+    int pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
+    int pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
+    int pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
+    int pcs_snssaisst = sess->s_nssai.sst;
+    char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
+    int pcs_rv;
+
+    char pcs_hexauthqosrule[OGS_HUGE_LEN];
+    decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
+
+    char pcs_hexqosflowdesc[OGS_HUGE_LEN];
+    decode_buffer_to_hex(pcs_hexqosflowdesc, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.length);
+
+    char pcs_hexepco[OGS_HUGE_LEN];
+    decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
+
+    asprintf(&pcs_nasdbdata, "{\"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"pdu_session_type\": \"%d\", \"s-nssai\":{\"sst\":\"%d\", \"sd\": \"%s\"}, \"authorized_qos_rules\":[{\"hex_qos_rule\":\"%s\"}], \"authorized_qos_flow_description\": [{\"hex_qos_flow_desc\":\"%s\"}], \"extended_protocol_configuration_options\": [{\"hex_epco\": \"%s\"}]}", pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_pdusesstype, pcs_snssaisst, pcs_snssaisd, pcs_hexauthqosrule, pcs_hexqosflowdesc, pcs_hexepco);
+
     int pcs_k, pcs_l;
+    char *pcs_ngapdbdata;
     uint64_t pcs_pdusessionaggregatemaximumbitrateul = 0, pcs_pdusessionaggregatemaximumbitratedl = 0;
     uint32_t pcs_upfn3teid;
     ogs_ip_t pcs_upfn3ip;
@@ -432,39 +464,14 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             break;
         }
     }
+    asprintf(&pcs_ngapdbdata, "{\"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": \"%ld\", \"pDUSessionAggregateMaximumBitRateDL\": \"%ld\"}, \"QosFlowSetupRequestList\": [{\"qosFlowIdentifier\": \"%ld\", \"fiveQI\": \"%ld\", \"priorityLevelARP\": \"%ld\", \"pre_emptionCapability\": \"%ld\", \"pre_emptionVulnerability\": \"%ld\"}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%d\", \"gTP_TEID\": \"%d\"}}", pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl, pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability, pcs_upfn3ip.addr, pcs_upfn3teid);
 
-    ogs_nas_5gs_message_t pcs_nasmessage;
-    ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
-    ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
-
-    char *pcs_docjson;
-    char *pcs_imsistr = sess->amf_ue->supi;
-    pcs_imsistr += 5;
-    char *pcs_supi = sess->amf_ue->supi;
-    char *pcs_smcontextref = sess->sm_context_ref;
-    int pcs_pduaddress = pcs_pdusessionestablishmentaccept->pdu_address.addr;
-    char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
-    int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
-    int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
-    int pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
-    int pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
-    int pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
-    int pcs_snssaisst = sess->s_nssai.sst;
-    char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
-    int pcs_rv;
-
-    char pcs_hexauthqosrule[OGS_HUGE_LEN];
-    decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
-
-    char pcs_hexqosflowdesc[OGS_HUGE_LEN];
-    decode_buffer_to_hex(pcs_hexqosflowdesc, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.length);
-
-    char pcs_hexepco[OGS_HUGE_LEN];
-    decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
-
-    asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"authorized_qos_rules\": [{\"hex_qos_rule\":\"%s\"}], \"pdu_session_type\": \"%d\", \"s-nssai\":{\"sst\":\"%d\", \"sd\": \"%s\"}, \"authorized_qos_flow_description\": [{\"hex_qos_flow_desc\":\"%s\"}], \"extended_protocol_configuration_options\": \"%s\"}}", pcs_imsistr, pcs_supi, pcs_smcontextref, pdu_session_id, pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_hexauthqosrule, pcs_pdusesstype, pcs_snssaisst, pcs_snssaisd, pcs_hexqosflowdesc, pcs_hexepco);
+    asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"nasData\": %s, \"ngapData\": %s}}", pcs_imsistr, pcs_supi, pcs_smcontextref, pdu_session_id, pcs_nasdbdata, pcs_ngapdbdata);
 
     pcs_rv = insert_data_to_db("amf", "update", pcs_imsistr, pcs_docjson);
+    free(pcs_nasdbdata);
+    free(pcs_ngapdbdata);
+    free(pcs_docjson);
     if (pcs_rv != OGS_OK)
     {
         ogs_error("PCS Error while updateing data to MongoDB for supi [%s]", sess->amf_ue->supi);

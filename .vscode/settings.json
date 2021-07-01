@@ -4,6 +4,16 @@
     "editor.renderLineHighlight": "none",
     "editor.occurrencesHighlight": false,
     "files.associations": {
-        "pcs-helper.h": "c"
-    }
+        "pcs-helper.h": "c",
+        "__locale": "cpp",
+        "atomic": "cpp",
+        "cstdlib": "cpp",
+        "locale": "cpp",
+        "ostream": "cpp",
+        "typeinfo": "cpp",
+        "algorithm": "cpp",
+        "complex": "cpp",
+        "new": "cpp"
+    },
+    "editor.parameterHints.enabled": false
 }
