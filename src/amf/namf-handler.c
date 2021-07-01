@@ -395,7 +395,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
     for (pcs_k = 0; pcs_k < pcs_n2smmessage.protocolIEs.list.count; pcs_k++)
     {
-        pcs_ie = pcs_n2smmessage.protocolIEs.list.array[k];
+        pcs_ie = pcs_n2smmessage.protocolIEs.list.array[pcs_k];
         switch (pcs_ie->id)
         {
         case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
@@ -409,7 +409,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ogs_assert(pcs_qosflowsetuprequestlist);
             for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
             {
-                pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[l];
+                pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[pcs_l];
                 ogs_assert(pcs_qosflowsetuprequestitem);
                 pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
                 pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
@@ -442,7 +442,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     pcs_imsistr += 5;
     char *pcs_supi = sess->amf_ue->supi;
     char *pcs_smcontextref = sess->sm_context_ref;
-    char *pcs_pduaddress = pcs_pdusessionestablishmentaccept->pdu_address.addr;
+    int pcs_pduaddress = pcs_pdusessionestablishmentaccept->pdu_address.addr;
     char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
     int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
     int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;

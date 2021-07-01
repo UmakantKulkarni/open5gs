@@ -155,13 +155,13 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     pcs_imsistr += 5;
     char *pcs_supi = sess->amf_ue->supi;
     char *pcs_smcontextref = sess->sm_context_ref;
-    char *pcs_pdusessionid = recvmsg->SmContextCreatedData->pdu_session_id;
-    int c;
+    int pcs_pdusessionid = recvmsg->SmContextCreatedData->pdu_session_id;
+    int pcs_rv;
     //uintmax_t imsi_int = strtoumax(imsi_str, NULL, 10);
     //int imsi_int = atoi(imsi_str);
     asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\"}}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid);
-    pcs_pdusessionid = insert_data_to_db("amf", "create", pcs_imsistr, pcs_docjson);
-    if (pcs_pdusessionid != OGS_OK)
+    pcs_rv = insert_data_to_db("amf", "create", pcs_imsistr, pcs_docjson);
+    if (pcs_rv != OGS_OK)
     {
         ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->amf_ue->supi);
     }
