@@ -2,10 +2,10 @@
 #include "ogs-app.h"
 #include "bson.h"
 
-int insert_data_to_db(const char *db_coll, const char *db_op, char *doc_id, char *doc_json);
-void decode_buffer_to_hex(char *dumpstr, const unsigned char *data, size_t len);
+int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, char *pcs_docjson);
+void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len);
 
-int insert_data_to_db(const char *db_coll, const char *db_op, char *doc_id, char *doc_json)
+int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, char *pcs_docjson);
 {
    const char *uri_string = "mongodb://mongodb-svc:27017";
    mongoc_uri_t *uri;
@@ -48,37 +48,37 @@ int insert_data_to_db(const char *db_coll, const char *db_op, char *doc_id, char
     * Register the application name so we can track it in the profile logs
     * on the server. This can also be done from the URI (see other examples).
     */
-   mongoc_client_set_appname(client, "connect-example");
+   mongoc_client_set_appname(client, "pcs-db");
 
    /*
     * Get a handle on the database "db_name" and collection "coll_name"
     */
-   database = mongoc_client_get_database(client, "db_name");
-   collection = mongoc_client_get_collection(client, "db_name", db_coll);
+   database = mongoc_client_get_database(client, "pcs_db");
+   collection = mongoc_client_get_collection(client, "pcs_db", pcs_dbcoll);
 
-   if (strcmp(db_op, "create") == 0)
+   if (strcmp(pcs_dbop, "create") == 0)
    {
-      bson_doc = bson_new_from_json((const uint8_t *)doc_json, -1, &error);
+      bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
 
       if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
       {
-         fprintf(stderr, "%s\n", error.message);
+         ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
       }
       ogs_info("PCS Added new data to mongo by AMF");
    }
-   else if (strcmp(db_op, "update") == 0)
+   else if (strcmp(pcs_dbop, "update") == 0)
    {
-      query = BCON_NEW("_id", doc_id);
+      query = BCON_NEW("_id", pcs_docid);
 
       if (!mongoc_collection_delete_one(collection, query, NULL, NULL, &error))
       {
-         fprintf(stderr, "Delete failed: %s\n", error.message);
+         ogs_error("PCS mongoc_collection_delete_one failed: %s\n", error.message);
       }
-      bson_doc = bson_new_from_json((const uint8_t *)doc_json, -1, &error);
+      bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
 
       if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
       {
-         fprintf(stderr, "%s\n", error.message);
+         ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
       }
       ogs_info("PCS Updated data to mongo by AMF");
    }
@@ -98,22 +98,22 @@ int insert_data_to_db(const char *db_coll, const char *db_op, char *doc_id, char
    return EXIT_SUCCESS;
 }
 
-void decode_buffer_to_hex(char *dumpstr, const unsigned char *data, size_t len)
+void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len)
 {
    size_t n, m;
    char *p, *last;
 
-   last = dumpstr + OGS_HUGE_LEN;
-   p = dumpstr;
+   last = pcs_hexstr + OGS_HUGE_LEN;
+   p = pcs_hexstr;
 
-   for (n = 0; n < len; n += 16)
+   for (n = 0; n < pcs_len; n += 16)
    {
       for (m = n; m < n + 16; m++)
       {
-         if (m < len)
-            p = ogs_slprintf(p, last, "%02x", data[m]);
+         if (m < pcs_len)
+            p = ogs_slprintf(p, last, "%02x", pcs_data[m]);
       }
       p = ogs_slprintf(p, last, "\n");
-      dumpstr[len * 2] = '\0';
+      pcs_hexstr[pcs_len * 2] = '\0';
    }
 }

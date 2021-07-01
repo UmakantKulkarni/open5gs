@@ -2,5 +2,8 @@
     "editor.wordWrap": "on",
     "editor.minimap.enabled": false,
     "editor.renderLineHighlight": "none",
-    "editor.occurrencesHighlight": false
+    "editor.occurrencesHighlight": false,
+    "files.associations": {
+        "pcs-helper.h": "c"
+    }
 }

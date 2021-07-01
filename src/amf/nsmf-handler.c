@@ -23,7 +23,7 @@
 #include "sbi-path.h"
 
 #include "gmm-build.h"
-#include "pcs-mongo.h"
+#include "pcs-helper.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *recvmsg)
@@ -150,14 +150,18 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 sess, recvmsg->res_status));
         return OGS_ERROR;
     }
-    char *doc_json;
-    char *imsi_str = sess->amf_ue->supi;
-    imsi_str += 5;
+    char *pcs_docjson;
+    char *pcs_imsistr = sess->amf_ue->supi;
+    pcs_imsistr += 5;
+    char *pcs_supi = sess->amf_ue->supi;
+    char *pcs_smcontextref = sess->sm_context_ref;
+    char *pcs_pdusessionid = recvmsg->SmContextCreatedData->pdu_session_id;
+    int c;
     //uintmax_t imsi_int = strtoumax(imsi_str, NULL, 10);
     //int imsi_int = atoi(imsi_str);
-    asprintf(&doc_json, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\"}}", imsi_str, sess->amf_ue->supi, sess->sm_context_ref, recvmsg->SmContextCreatedData->pdu_session_id);
-    rv = insert_data_to_db("AMF", "create", imsi_str, doc_json);
-    if (rv != OGS_OK)
+    asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\"}}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid);
+    pcs_pdusessionid = insert_data_to_db("amf", "create", pcs_imsistr, pcs_docjson);
+    if (pcs_pdusessionid != OGS_OK)
     {
         ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->amf_ue->supi);
     }
