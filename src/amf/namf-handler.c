@@ -466,8 +466,19 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     ogs_free(pcs_pduaddress);
     ogs_free(pcs_snssaisd);
     ogs_free(pcs_ie);
+    ogs_pkbuf_free(n1buf);
+    ogs_pkbuf_free(n2buf);
+    ogs_pkbuf_free(gmmbuf);
+    ogs_pkbuf_free(ngapbuf);
     ogs_free(pcs_gtptunnel);
     ogs_free(pcs_qosflowsetuprequestitem);
+    ogs_free(N1N2MessageTransferReqData);
+    ogs_free(n1MessageContainer);
+    ogs_free(n1MessageContent);
+    ogs_free(n2InfoContainer);
+    ogs_free(smInfo);
+    ogs_free(n2InfoContent);
+    ogs_free(ngapData);
     if (pcs_rv != OGS_OK)
     {
         ogs_error("PCS Error while updateing data to MongoDB for supi [%s]", sess->amf_ue->supi);

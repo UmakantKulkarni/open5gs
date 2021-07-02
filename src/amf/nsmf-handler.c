@@ -141,6 +141,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                     nas_5gs_send_gsm_reject_from_sbi(sess,
                         OGS_NAS_PAYLOAD_CONTAINER_N1_SM_INFORMATION,
                         n1smbuf, recvmsg->res_status));
+                ogs_pkbuf_free(n1smbuf);
                 return OGS_ERROR;
             }
         }
