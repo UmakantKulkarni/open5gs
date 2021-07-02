@@ -180,6 +180,9 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     bson_error_t error;
     bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
     pcs_rv = insert_data_to_db("amf", "create", pcs_imsistr, bson_doc);
+    ogs_free(pcs_snssaisd);
+    ogs_free(pcs_amfueamfid);
+    ogs_free(pcs_amfuetac);
     free(pcs_docjson);
     if (pcs_rv != OGS_OK)
     {
