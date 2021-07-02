@@ -2,10 +2,10 @@
 #include "ogs-app.h"
 #include "bson.h"
 
-int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc;);
+int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
 void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len);
 
-int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc;)
+int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
 {
    const char *uri_string = "mongodb://mongodb-svc:27017";
    mongoc_uri_t *uri;
@@ -57,8 +57,6 @@ int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_do
 
    if (strcmp(pcs_dbop, "create") == 0)
    {
-      //bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-
       if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
       {
          ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
@@ -68,12 +66,6 @@ int insert_data_to_db(const char *pcs_dbcoll, const char *pcs_dbop, char *pcs_do
    else if (strcmp(pcs_dbop, "update") == 0)
    {
       query = BCON_NEW("_id", pcs_docid);
-
-      //if (!mongoc_collection_delete_one(collection, query, NULL, NULL, &error))
-      //{
-      //   ogs_error("PCS mongoc_collection_delete_one failed: %s\n", error.message);
-      //}
-      //bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
