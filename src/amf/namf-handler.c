@@ -466,7 +466,11 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
     asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"data\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"nasData\": %s, \"ngapData\": %s}}", pcs_imsistr, pcs_smcontextref, pdu_session_id, pcs_nasdbdata, pcs_ngapdbdata);
 
-    pcs_rv = insert_data_to_db("amf", "update", pcs_imsistr, pcs_docjson);
+    bson_t *bson_doc = BCON_NEW ("$set", "{", "data", BCON_INT32 (1), "}");
+
+    bson_t *bson_doc = BCON_NEW ("$set", "{", "data", "{", "pdu-address", pcs_pduaddress, "dnn", pcs_dnn, "sesion-ambr", "{", "uplink", pcs_sambrulv, "ul_unit", pcs_sambrulu, "downlink", pcs_sambrdlv, "dl_unit", pcs_sambrdlu, "}", "pdu_session_type", , "s-nssai", "{", "sst", , "sd", , "}", "authorized_qos_rules", "[", "{", "hex_qos_rule", pcs_hexauthqosrule, "}", "]", "authorized_qos_flow_description", "[", "{", "hex_qos_flow_desc", pcs_hexqosflowdesc "}", "]", "extended_protocol_configuration_options", "[", "{", "hex_epco", pcs_hexepco "}", "]", "}" "}");
+
+    pcs_rv = insert_data_to_db("amf", "update", pcs_imsistr, bson_doc);
     free(pcs_nasdbdata);
     free(pcs_ngapdbdata);
     free(pcs_docjson);
