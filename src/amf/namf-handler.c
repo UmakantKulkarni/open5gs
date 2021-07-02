@@ -386,7 +386,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     pcs_imsistr += 5;
     char *pcs_supi = sess->amf_ue->supi;
     char *pcs_smcontextref = sess->sm_context_ref;
-    int pcs_pduaddress = pcs_pdusessionestablishmentaccept->pdu_address.addr;
+    char *pcs_pduaddress = ogs_ipv4_to_string(pcs_pdusessionestablishmentaccept->pdu_address.addr);
     char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
     int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
     int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
@@ -406,13 +406,13 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     char pcs_hexepco[OGS_HUGE_LEN];
     decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
 
-    asprintf(&pcs_nasdbdata, "{\"pdu-address\": \"%d\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"pdu_session_type\": \"%d\", \"s-nssai\":{\"sst\":\"%d\", \"sd\": \"%s\"}, \"authorized_qos_rules\":[{\"hex_qos_rule\":\"%s\"}], \"authorized_qos_flow_description\": [{\"hex_qos_flow_desc\":\"%s\"}], \"extended_protocol_configuration_options\": [{\"hex_epco\": \"%s\"}]}", pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_pdusesstype, pcs_snssaisst, pcs_snssaisd, pcs_hexauthqosrule, pcs_hexqosflowdesc, pcs_hexepco);
+    asprintf(&pcs_nasdbdata, "{\"pdu-address\": \"%s\", \"dnn\":\"%s\", \"sesion-ambr\":{\"uplink\":\"%d\", \"ul_unit\":\"%d\", \"downlink\":\"%d\", \"dl_unit\":\"%d\"}, \"pdu_session_type\": \"%d\", \"s-nssai\":{\"sst\":\"%d\", \"sd\": \"%s\"}, \"authorized_qos_rules\":[{\"hex_qos_rule\":\"%s\"}], \"authorized_qos_flow_description\": [{\"hex_qos_flow_desc\":\"%s\"}], \"extended_protocol_configuration_options\": [{\"hex_epco\": \"%s\"}]}", pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_pdusesstype, pcs_snssaisst, pcs_snssaisd, pcs_hexauthqosrule, pcs_hexqosflowdesc, pcs_hexepco);
 
     int pcs_k, pcs_l;
-    char *pcs_ngapdbdata;
+    char *pcs_ngapdbdata, *pcs_upfn3ip;
     uint64_t pcs_pdusessionaggregatemaximumbitrateul = 0, pcs_pdusessionaggregatemaximumbitratedl = 0;
     uint32_t pcs_upfn3teid;
-    ogs_ip_t pcs_upfn3ip;
+    ogs_ip_t pcs_upfn3ipbitstr;
     long pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability;
     NGAP_PDUSessionResourceSetupRequestTransfer_t pcs_n2smmessage;
     NGAP_PDUSessionResourceSetupRequestTransferIEs_t *pcs_ie = NULL;
@@ -434,7 +434,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             pcs_pdusessionaggregatemaximumbitrate = &pcs_ie->value.choice.PDUSessionAggregateMaximumBitRate;
             asn_uint642INTEGER(&pcs_pdusessionaggregatemaximumbitrate->pDUSessionAggregateMaximumBitRateUL, pcs_pdusessionaggregatemaximumbitrateul);
             asn_uint642INTEGER(&pcs_pdusessionaggregatemaximumbitrate->pDUSessionAggregateMaximumBitRateDL, pcs_pdusessionaggregatemaximumbitratedl);
-            ogs_info("pdusessionaggregatemaximumbitrateul & pdusessionaggregatemaximumbitratedl isss %ld, %ld", pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl);
             break;
         case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
             pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
@@ -451,22 +450,21 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
                 pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
                 pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
                 pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
-                ogs_info("qosFlowIdentifier and fiveqi and plarp and pre_emptionCapability and pre_emptionVulnerability issssss %ld, %ld, %ld, %ld, %ld", pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability);
             }
             break;
         case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
             pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
             pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
             ogs_assert(pcs_gtptunnel);
-            ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ip);
+            ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
             ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-            ogs_info("pcs_upfn3teid & pcs_upfn3ip %d, %d", pcs_upfn3teid, pcs_upfn3ip.addr);
+            pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
             break;
         }
     }
-    asprintf(&pcs_ngapdbdata, "{\"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": \"%ld\", \"pDUSessionAggregateMaximumBitRateDL\": \"%ld\"}, \"QosFlowSetupRequestList\": [{\"qosFlowIdentifier\": \"%ld\", \"fiveQI\": \"%ld\", \"priorityLevelARP\": \"%ld\", \"pre_emptionCapability\": \"%ld\", \"pre_emptionVulnerability\": \"%ld\"}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%d\", \"gTP_TEID\": \"%d\"}}", pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl, pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability, pcs_upfn3ip.addr, pcs_upfn3teid);
+    asprintf(&pcs_ngapdbdata, "{\"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": \"%ld\", \"pDUSessionAggregateMaximumBitRateDL\": \"%ld\"}, \"QosFlowSetupRequestList\": [{\"qosFlowIdentifier\": \"%ld\", \"fiveQI\": \"%ld\", \"priorityLevelARP\": \"%ld\", \"pre_emptionCapability\": \"%ld\", \"pre_emptionVulnerability\": \"%ld\"}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": \"%d\"}}", pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl, pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability, pcs_upfn3ip, pcs_upfn3teid);
 
-    asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"%s\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"nasData\": %s, \"ngapData\": %s}}", pcs_imsistr, pcs_supi, pcs_smcontextref, pdu_session_id, pcs_nasdbdata, pcs_ngapdbdata);
+    asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"data\":{\"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"nasData\": %s, \"ngapData\": %s}}", pcs_imsistr, pcs_smcontextref, pdu_session_id, pcs_nasdbdata, pcs_ngapdbdata);
 
     pcs_rv = insert_data_to_db("amf", "update", pcs_imsistr, pcs_docjson);
     free(pcs_nasdbdata);
