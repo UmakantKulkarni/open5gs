@@ -25,9 +25,10 @@ extern "C" {
 #endif
 
 #include "context.h"
+#include "mongoc.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
-        amf_sess_t *sess, ogs_sbi_message_t *message);
+        amf_sess_t *sess, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection);
 int amf_nsmf_pdusession_handle_update_sm_context(
         amf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg);
 int amf_nsmf_pdusession_handle_release_sm_context(amf_sess_t *sess, int state);

@@ -25,9 +25,10 @@ extern "C" {
 #endif
 
 #include "context.h"
+#include "mongoc.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
-        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg);
+        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection);
 int amf_namf_callback_handle_sm_context_status(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg);
 
