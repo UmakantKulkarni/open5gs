@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 
+#include "mongoc.h"
 extern const char *OGS_FSM_NAME_INIT_SIG;
 extern const char *OGS_FSM_NAME_ENTRY_SIG;
 extern const char *OGS_FSM_NAME_EXIT_SIG;
@@ -44,6 +45,7 @@ typedef struct _ogs_fsm_t {
     ogs_fsm_handler_t init;
     ogs_fsm_handler_t fini;
     ogs_fsm_handler_t state;
+    mongoc_collection_t *pcs_dbcollection;
 } ogs_fsm_t;
 
 #define ogs_fsm_create(__s, __i, __f) \

@@ -24,9 +24,10 @@
 #include "ngap-path.h"
 #include "sbi-path.h"
 #include "pcs-helper.h"
+#include "mongoc.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
-        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg)
+        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection)
 {
     int status;
 
@@ -461,7 +462,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
     bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "authorized-qos-rules", "[", "{", "hex-qos-rule", BCON_UTF8(pcs_hexauthqosrule), "}", "]", "authorized-qos-flow_description", "[", "{", "hex-qos-flow-desc", BCON_UTF8(pcs_hexqosflowdesc), "}", "]", "extended-protocol-configuration-options", "[", "{", "hex-epco", BCON_UTF8(pcs_hexepco), "}", "]", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "}");
 
-    pcs_rv = insert_data_to_db("amf", "update", pcs_imsistr, bson_doc);
+    pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
     ogs_free(pcs_upfn3ip);
     ogs_free(pcs_pduaddress);
     ogs_free(pcs_snssaisd);

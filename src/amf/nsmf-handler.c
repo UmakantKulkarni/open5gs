@@ -24,9 +24,10 @@
 
 #include "gmm-build.h"
 #include "pcs-helper.h"
+#include "mongoc.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
-        amf_sess_t *sess, ogs_sbi_message_t *recvmsg)
+        amf_sess_t *sess, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection)
 {
     int rv;
 
@@ -180,7 +181,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": \"%d\", \"ue-ambr\": {\"uplink\": \"%d\", \"downlink\": \"%d\"}, \"ue-access-type\": \"%d\", \"allowed_pdu_session_status\": \"%d\", \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": \"%d\", \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": \"%ld\", \"ran-ue-ngap-id\": \"%d\", \"amf-ue-ngap-id\": \"%d\", \"gnb-id\": \"%d\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_amfueambrul, pcs_amfueambrdl, pcs_amfueaccesstype, pcs_amfueallowedpdusessionstatus, pcs_amfuepei, pcs_amfsessdnn, pcs_snssaisst, pcs_snssaisd, pcs_amfueplmnid, pcs_amfueamfid, pcs_amfuetac, (long)pcs_amfuelocts, pcs_ranuengapid, pcs_amfuengapid, pcs_ranuegnbid, pcs_ranuerattype);
     bson_error_t error;
     bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-    pcs_rv = insert_data_to_db("amf", "create", pcs_imsistr, bson_doc);
+    pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
     ogs_free(pcs_snssaisd);
     ogs_free(pcs_amfueamfid);
     ogs_free(pcs_amfuetac);

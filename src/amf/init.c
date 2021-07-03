@@ -19,6 +19,8 @@
 
 #include "sbi-path.h"
 #include "ngap-path.h"
+#include "stdlib.h"
+#include "mongoc.h"
 
 static ogs_thread_t *thread;
 static void amf_main(void *data);
@@ -103,6 +105,74 @@ static void amf_main(void *data)
     ogs_fsm_t amf_sm;
     int rv;
 
+    const char *uri_string = "mongodb://mongodb-svc:27017";
+    mongoc_uri_t *uri;
+    mongoc_client_t *client;
+    mongoc_database_t *database;
+    mongoc_collection_t *collection;
+    bson_error_t error;
+    bson_t *command, reply;
+    char *str;
+    bool retval;
+
+    /*
+     * Required to initialize libmongoc's internals
+     */
+    mongoc_init();
+
+    /*
+     * Safely create a MongoDB URI object from the given string
+     */
+    uri = mongoc_uri_new_with_error(uri_string, &error);
+    if (!uri)
+    {
+        ogs_error("PCS failed to parse URI: %s. Error message is: %s ", uri_string, error.message);
+        return EXIT_FAILURE;
+    }
+
+    /*
+     * Create a new client instance
+     */
+    client = mongoc_client_new_from_uri(uri);
+    if (!client)
+    {
+        ogs_info("PCS client create failure");
+        return EXIT_FAILURE;
+    }
+
+    /*
+     * Register the application name so we can track it in the profile logs
+     * on the server. This can also be done from the URI (see other examples).
+     */
+    mongoc_client_set_appname(client, "pcs-db");
+
+    /*
+     * Get a handle on the database "db_name" and collection "coll_name"
+     */
+    database = mongoc_client_get_database(client, "pcs_db");
+    collection = mongoc_client_get_collection(client, "pcs_db", "amf");
+
+    /*
+    * Do work. This example pings the database, prints the result as JSON and
+    * performs an insert
+    */
+    command = BCON_NEW("ping", BCON_INT32(1));
+
+    retval = mongoc_client_command_simple(
+        client, "admin", command, NULL, &reply, &error);
+
+    if (!retval)
+    {
+        ogs_error("PCS mongoc_client_command_simple error %s", error.message);
+        return EXIT_FAILURE;
+    }
+
+    str = bson_as_json(&reply, NULL);
+    ogs_info("PCS MongoDB Ping reply is %s", str);
+
+    amf_sm.pcs_dbcollection = collection;
+    ogs_info("PCS Created handle on the database in the initialization phase");
+
     ogs_fsm_create(&amf_sm, amf_state_initial, amf_state_final);
     ogs_fsm_init(&amf_sm, 0);
 
@@ -141,6 +211,12 @@ static void amf_main(void *data)
         }
     }
 done:
+
+    mongoc_collection_destroy(collection);
+    mongoc_database_destroy(database);
+    mongoc_uri_destroy(uri);
+    mongoc_client_destroy(client);
+    mongoc_cleanup();
 
     ogs_fsm_fini(&amf_sm, 0);
     ogs_fsm_delete(&amf_sm);
