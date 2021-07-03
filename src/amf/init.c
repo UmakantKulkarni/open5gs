@@ -19,7 +19,6 @@
 
 #include "sbi-path.h"
 #include "ngap-path.h"
-#include "stdlib.h"
 #include "mongoc.h"
 
 static ogs_thread_t *thread;
@@ -127,7 +126,6 @@ static void amf_main(void *data)
     if (!uri)
     {
         ogs_error("PCS failed to parse URI: %s. Error message is: %s ", uri_string, error.message);
-        return EXIT_FAILURE;
     }
 
     /*
@@ -137,7 +135,6 @@ static void amf_main(void *data)
     if (!client)
     {
         ogs_info("PCS client create failure");
-        return EXIT_FAILURE;
     }
 
     /*
@@ -164,7 +161,6 @@ static void amf_main(void *data)
     if (!retval)
     {
         ogs_error("PCS mongoc_client_command_simple error %s", error.message);
-        return EXIT_FAILURE;
     }
 
     str = bson_as_json(&reply, NULL);
