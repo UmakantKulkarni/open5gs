@@ -1557,7 +1557,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 amf_nsmf_pdusession_build_update_sm_context));
 
         NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
-        NGAP_QosFlowPerTNLInformation_t pcs_dlqosflowpertnlinformation;
+        NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
         NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
         NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
         int pcs_rv;
@@ -1567,8 +1567,8 @@ void ngap_handle_pdu_session_resource_setup_response(
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), param.n2smbuf);
-        pcs_dlqosflowpertnlinformation = pcs_n2smmessage.dLQosFlowPerTNLInformation;
-        pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation.uPTransportLayerInformation;
+        pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
+        pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
         pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
         ogs_assert(pcs_gtptunnel);
         ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
@@ -1590,6 +1590,9 @@ void ngap_handle_pdu_session_resource_setup_response(
 
         ogs_free(pcs_upfn3ip);
         ogs_free(pcs_gtptunnel);
+        ogs_free(ie);
+        ogs_free(successfulOutcome);
+        ogs_free(PDUSessionItem);
 
         ogs_pkbuf_free(param.n2smbuf);
     }
