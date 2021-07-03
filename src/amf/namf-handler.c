@@ -482,11 +482,11 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     ogs_free(ngapData);
     if (pcs_rv != OGS_OK)
     {
-        ogs_error("PCS Error while updateing data to MongoDB for supi [%s]", sess->amf_ue->supi);
+        ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
     }
     else
     {
-        ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->amf_ue->supi);
+        ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
     }
 
     return OGS_OK;
