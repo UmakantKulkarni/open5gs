@@ -610,7 +610,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 
         gnb = amf_gnb_find_by_addr(addr);
         if (!gnb) {
-            gnb = amf_gnb_add(sock, addr);
+            gnb = amf_gnb_add(sock, addr, pcs_dbcollection);
             ogs_assert(gnb);
         } else {
             ogs_warn("gNB context duplicated with IP-address [%s]!!!",
@@ -632,7 +632,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 
         gnb = amf_gnb_find_by_addr(addr);
         if (!gnb) {
-            gnb = amf_gnb_add(sock, addr);
+            gnb = amf_gnb_add(sock, addr, pcs_dbcollection);
             ogs_assert(gnb);
         } else {
             ogs_free(addr);
