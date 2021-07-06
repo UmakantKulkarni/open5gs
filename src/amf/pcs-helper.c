@@ -120,24 +120,24 @@ void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_
    }
 }
 
-bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexauthqosrule)
+bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexipdata)
 {
    char pcs_temp[8];
    int pcs_num_qos_rules = 0;
    char *pcs_docjson, *pcs_docjson2;
-   char pcs_hexauthqosruledup[strlen(pcs_hexauthqosrule)];
-   pcs_get_substring(pcs_hexauthqosrule, pcs_hexauthqosruledup, 0, strlen(pcs_hexauthqosrule));
-   while (pcs_hexauthqosruledup[0] != '\0')
+   char pcs_hexipdatadup[strlen(pcs_hexipdata)];
+   pcs_get_substring(pcs_hexipdata, pcs_hexipdatadup, 0, strlen(pcs_hexipdata));
+   while (pcs_hexipdatadup[0] != '\0')
    {
       if (pcs_num_qos_rules > 0)
       {
          strcat(pcs_docjson2, ",");
       }
-      int pcs_qosruleid = pcs_hex_to_int(pcs_hexauthqosrule, 0, 2);
+      int pcs_qosruleid = pcs_hex_to_int(pcs_hexipdata, 0, 2);
       char pcs_qosruleopcodedesc[20], pcs_qosrulepfdirdesc[34], pcs_qosrulepfcompdesc[34];
-      int pcs_qosrulelen = pcs_hex_to_int(pcs_hexauthqosrule, 2, 6);
+      int pcs_qosrulelen = pcs_hex_to_int(pcs_hexipdata, 2, 6);
       char pcs_qosrulef1[9], pcs_qosrulef2[9], pcs_qosrulef3[9];
-      pcs_hex_to_binary_str(pcs_hexauthqosrule, pcs_qosrulef1, 6, 8);
+      pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef1, 6, 8);
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 0, 3);
       int pcs_qosruleopcode = pcs_binary_to_decimal(pcs_temp);
       if (pcs_qosruleopcode == 1)
@@ -152,7 +152,7 @@ bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexauthqosrule)
       int pcs_qosruledqr = pcs_binary_to_decimal(pcs_temp);
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 4, 8);
       int pcs_qosrulenumpf = pcs_binary_to_decimal(pcs_temp);
-      pcs_hex_to_binary_str(pcs_hexauthqosrule, pcs_qosrulef2, 8, 10);
+      pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef2, 8, 10);
       pcs_get_substring(pcs_qosrulef2, pcs_temp, 2, 4);
       int pcs_qosrulepfdir = pcs_binary_to_decimal(pcs_temp);
       if (pcs_qosrulepfdir == 3)
@@ -165,8 +165,8 @@ bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexauthqosrule)
       }
       pcs_get_substring(pcs_qosrulef2, pcs_temp, 4, 8);
       int pcs_qosrulepfid = pcs_binary_to_decimal(pcs_temp);
-      int pcs_qosrulepflen = pcs_hex_to_int(pcs_hexauthqosrule, 10, 12);
-      int pcs_qosrulepfcomp = pcs_hex_to_int(pcs_hexauthqosrule, 12, 14);
+      int pcs_qosrulepflen = pcs_hex_to_int(pcs_hexipdata, 10, 12);
+      int pcs_qosrulepfcomp = pcs_hex_to_int(pcs_hexipdata, 12, 14);
       if (pcs_qosrulepfcomp == 1)
       {
          strcpy(pcs_qosrulepfcompdesc, "MATCH_ALL_PACKET_FILTER");
@@ -175,8 +175,8 @@ bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexauthqosrule)
       {
          strcpy(pcs_qosrulepfcompdesc, "INCORRECT_PACKET_FILTER_COMPONENT");
       }
-      int pcs_qosrulepreced = pcs_hex_to_int(pcs_hexauthqosrule, 14, 16);
-      pcs_hex_to_binary_str(pcs_hexauthqosrule, pcs_qosrulef3, 16, 18);
+      int pcs_qosrulepreced = pcs_hex_to_int(pcs_hexipdata, 14, 16);
+      pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef3, 16, 18);
       pcs_get_substring(pcs_qosrulef3, pcs_temp, 2, 8);
       int pcs_qosruleqfid = pcs_binary_to_decimal(pcs_temp);
 
@@ -190,10 +190,53 @@ bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexauthqosrule)
          pcs_docjson2 = pcs_docjson;
       }
       pcs_num_qos_rules = pcs_num_qos_rules + 1;
-      pcs_get_substring(pcs_hexauthqosrule, pcs_hexauthqosruledup, 2 * (3 + pcs_qosrulelen), strlen(pcs_hexauthqosrule));
+      pcs_get_substring(pcs_hexipdata, pcs_hexipdatadup, 2 * (3 + pcs_qosrulelen), strlen(pcs_hexipdata));
    }
    bson_error_t error;
    bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_docjson2, -1, &error);
    free(pcs_docjson);
    return bson_doc_nas_qos_rule;
+}
+
+bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata)
+{
+   char pcs_temp[8];
+   char *pcs_docjson;
+   char pcs_hexipdatadup[strlen(pcs_hexipdata)];
+   pcs_get_substring(pcs_hexipdata, pcs_hexipdatadup, 0, strlen(pcs_hexipdata));
+
+   char pcs_qosflowf1[9], char pcs_qosflowopcodedesc[20];
+   pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 2, 8);
+   int pcs_qosflowid = pcs_binary_to_decimal(pcs_temp);
+
+   pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 2, 4);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 3);
+   int pcs_qosflowopcode = pcs_binary_to_decimal(pcs_temp);
+   if (pcs_qosflowopcode == 1)
+   {
+      strcpy(pcs_qosflowopcodedesc, "CREATE_NEW_QOS_FLOW");
+   }
+   else
+   {
+      strcpy(pcs_qosflowopcodedesc, "INCORRECT_QOS_FLOW");
+   }
+
+   pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 4, 6);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 2);
+   int pcs_qosflowebit = pcs_binary_to_decimal(pcs_temp);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 2, 8);
+   int pcs_qosflownumparam = pcs_binary_to_decimal(pcs_temp);
+   for (int c = 1; c <= pcs_qosflownumparam; c++)
+   {
+      int pcs_qosflowparamid = pcs_hex_to_int(pcs_hexipdata, 6, 8);
+      int pcs_qosflowparamlen = pcs_hex_to_int(pcs_hexipdata, 8, 10);
+      int pcs_qosflowparam5qi = pcs_hex_to_int(pcs_hexipdata, 10, 12);
+   }
+
+   asprintf(&pcs_docjson, "{\"%d\": {\"QOS-Flow-Identifier\": %d, \"QOS-Flow-Operation-Code-Value\": %d, \"QOS-Flow-Operation-Code-Description\": \"%s\", \"QOS-Flow-Ebit\": %d, \"QOS-Rule-Num-Parameters\": %d, \"Parameter-1\": { \"QOS-Flow-Param-Identifier\": %d, \"QOS-Flow-Param-Length\": %d, \"QOS-Flow-Param-5QI\": %d } } }", pcs_qosflowid, pcs_qosflowopcode, pcs_qosflowopcodedesc, pcs_qosflowebit, pcs_qosflownumparam, pcs_qosflowparamid, pcs_qosflowparamlen, pcs_qosflowparam5qi);
+
+   bson_error_t error;
+   bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+   return bson_doc_nas_qos_flow;
 }
