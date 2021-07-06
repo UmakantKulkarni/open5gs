@@ -400,19 +400,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
         char pcs_hexauthqosrule[OGS_HUGE_LEN];
         decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
-        char pcs_temp[OGS_HUGE_LEN];
-        int pcs_qosruleid = pcs_hex_to_int(pcs_hexauthqosrule, 0, 2);
-        int pcs_qosrulelen = pcs_hex_to_int(pcs_hexauthqosrule, 2, 6);
-        char pcs_qosrulef1[9];
-        pcs_hex_to_binary_str(pcs_hexauthqosrule, pcs_qosrulef1, 6, 8);
-        pcs_get_substring(pcs_qosrulef1, pcs_temp, 0, 3);
-        int pcs_ruleopcode = pcs_binary_to_decimal(pcs_temp);
-        pcs_get_substring(pcs_qosrulef1, pcs_temp, 3, 4);
-        int pcs_ruledqr = pcs_binary_to_decimal(pcs_temp);
-        pcs_get_substring(pcs_qosrulef1, pcs_temp, 4, 8);
-        int pcs_rulenumpf = pcs_binary_to_decimal(pcs_temp);
-        ogs_info("pcs_qosruleid, pcs_qosrulelen, pcs_qosrulef1, pcs_ruleopcode, pcs_ruledqr, pcs_rulenumpf is %d, %d, %s, %d, %d, %d", pcs_qosruleid, pcs_qosrulelen, pcs_qosrulef1, pcs_ruleopcode, pcs_ruledqr, pcs_rulenumpf);
-
+        bson_t *bson_doc_nas_qos_rule = decode_nas_qos_rule_hex_to_bson(pcs_hexauthqosrule);
 
         char pcs_hexqosflowdesc[OGS_HUGE_LEN];
         decode_buffer_to_hex(pcs_hexqosflowdesc, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.length);
@@ -475,9 +463,10 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             }
         }
 
-        bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "authorized-qos-rules", "[", "{", "hex-qos-rule", BCON_UTF8(pcs_hexauthqosrule), "}", "]", "authorized-qos-flow_description", "[", "{", "hex-qos-flow-desc", BCON_UTF8(pcs_hexqosflowdesc), "}", "]", "extended-protocol-configuration-options", "[", "{", "hex-epco", BCON_UTF8(pcs_hexepco), "}", "]", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "}");
+        bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "authorized-qos-rules", "[", "{", "hex-qos-rule", BCON_UTF8(pcs_hexauthqosrule), "}", "]", "authorized-qos-flow_description", "[", "{", "hex-qos-flow-desc", BCON_UTF8(pcs_hexqosflowdesc), "}", "]", "extended-protocol-configuration-options", "[", "{", "hex-epco", BCON_UTF8(pcs_hexepco), "}", "]", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nasQosRules", BCON_ARRAY(bson_doc_nas_qos_rule), "}");
 
         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+        bson_destroy(bson_doc_nas_qos_rule);
         ogs_free(pcs_upfn3ip);
         ogs_free(pcs_pduaddress);
         ogs_free(pcs_snssaisd);
