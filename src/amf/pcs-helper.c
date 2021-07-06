@@ -24,6 +24,8 @@ int pcs_hex_to_int(char *pcs_hex_str, int pcs_start_index, int pcs_end_index)
 int pcs_binary_to_decimal(char *pcs_bin_str)
 {
    int pcs_result = 0;
+   char pcs_bin_str_dup[strlen(pcs_bin_str)];
+   pcs_get_substring(pcs_bin_str, pcs_bin_str_dup, 0, strlen(pcs_bin_str));
    for (; *pcs_bin_str; pcs_bin_str++)
    {
       if ((*pcs_bin_str != '0') && (*pcs_bin_str != '1'))
@@ -32,6 +34,7 @@ int pcs_binary_to_decimal(char *pcs_bin_str)
       if (pcs_result < 0)
          return -1;
    }
+   pcs_get_substring(pcs_bin_str_dup, pcs_bin_str, 0, strlen(pcs_bin_str_dup));
    ogs_info("PCS Conversion of binary string %s to int is %d", pcs_bin_str, pcs_result);
    return pcs_result;
 }
@@ -62,7 +65,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
       }
       p++;
    }
-   ogs_info("PCS Conversion of Hex string %s to binary string is %s", pcs_hex_str, pcs_bin_str);
+   ogs_info("PCS Conversion of Hex string %s to binary string is %s", pcs_substr, pcs_bin_str);
 }
 
 int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
