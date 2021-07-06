@@ -408,6 +408,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
         char pcs_hexepco[OGS_HUGE_LEN];
         decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
+        bson_t *bson_doc_nas_epco = decode_nas_epco_hex_to_bson(pcs_hexepco);
 
         int pcs_k, pcs_l;
         char *pcs_upfn3ip;
@@ -464,11 +465,12 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             }
         }
 
-        bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "authorized-qos-rules", "[", "{", "hex-qos-rule", BCON_UTF8(pcs_hexauthqosrule), "}", "]", "authorized-qos-flow_description", "[", "{", "hex-qos-flow-desc", BCON_UTF8(pcs_hexqosflowdesc), "}", "]", "extended-protocol-configuration-options", "[", "{", "hex-epco", BCON_UTF8(pcs_hexepco), "}", "]", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nasQosRules", BCON_ARRAY(bson_doc_nas_qos_rule), "nasQosFlows", BCON_ARRAY(bson_doc_nas_qos_flow), "}");
+        bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "authorized-qos-rules", "[", "{", "hex-qos-rule", BCON_UTF8(pcs_hexauthqosrule), "}", "]", "authorized-qos-flow_description", "[", "{", "hex-qos-flow-desc", BCON_UTF8(pcs_hexqosflowdesc), "}", "]", "extended-protocol-configuration-options", "[", "{", "hex-epco", BCON_UTF8(pcs_hexepco), "}", "]", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nasQosRules", BCON_ARRAY(bson_doc_nas_qos_rule), "nasQosFlows", BCON_ARRAY(bson_doc_nas_qos_flow), "nasEPCO", BCON_ARRAY(bson_doc_nas_epco), "}");
 
         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
         bson_destroy(bson_doc_nas_qos_rule);
         bson_destroy(bson_doc_nas_qos_flow);
+        bson_destroy(bson_doc_nas_epco);
         ogs_free(pcs_upfn3ip);
         ogs_free(pcs_pduaddress);
         ogs_free(pcs_snssaisd);

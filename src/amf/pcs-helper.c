@@ -239,3 +239,45 @@ bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata)
    bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
    return bson_doc_nas_qos_flow;
 }
+
+bson_t *decode_nas_epco_hex_to_bson(char *pcs_hexipdata)
+{
+   char pcs_temp[8];
+   char *pcs_docjson;
+   char pcs_qosflowf1[9], pcs_epcocpdesc[33], pcs_protcnt1id[5], pcs_protcnt1iddesc[24], pcs_protcnt2id[5], pcs_protcnt2iddesc[24];
+   pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 4);
+   int pcs_epcoextension = pcs_binary_to_decimal(pcs_temp);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 5, 8);
+   int pcs_epcocp = pcs_binary_to_decimal(pcs_temp);
+   if (pcs_epcocp == 0)
+   {
+      strcpy(pcs_epcocpdesc, "Configuration_Protocol_PPP");
+   }
+   else
+   {
+      strcpy(pcs_epcocpdesc, "INCORRECT_Configuration_Protocol");
+   }
+   
+   pcs_get_substring(pcs_hexipdata, pcs_protcnt1id, 2, 6);
+   if (strcmp(pcs_protcnt1id, "000d") == 0)
+   {
+      strcpy(pcs_protcnt1iddesc, "DNS_SERVER_IPV4_ADDRESS");
+      int pcs_procont1len = pcs_hex_to_int(pcs_hexipdata, 6, 8);
+      int pcs_procont1ip = pcs_hex_to_int(pcs_hexipdata, 8, 16);
+   }
+
+   pcs_get_substring(pcs_hexipdata, pcs_protcnt2id, 16, 20);
+   if (strcmp(pcs_protcnt2id, "000d") == 0)
+   {
+      strcpy(pcs_protcnt2iddesc, "DNS_SERVER_IPV4_ADDRESS");
+      int pcs_procont2len = pcs_hex_to_int(pcs_hexipdata, 20, 22);
+      int pcs_procont2ip = pcs_hex_to_int(pcs_hexipdata, 22, 30);
+   }
+
+   asprintf(&pcs_docjson, "{\"IS-Extension\": %d, \"Configuration-Protocol-Value\": %d, \"Configuration-Protocol-Description\": \"%s\", \"Protocol-Containers\": [{\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%d\"}, {\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%d\"}] }", pcs_epcoextension, pcs_epcocp, pcs_epcocpdesc, pcs_protcnt1id, pcs_protcnt1iddesc, pcs_procont1len, pcs_procont1ip, pcs_protcnt2id, pcs_protcnt2iddesc, pcs_procont2len, pcs_procont2ip);
+
+   bson_error_t error;
+   bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+   return bson_doc_nas_epco;
+}
