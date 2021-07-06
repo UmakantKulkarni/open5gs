@@ -400,12 +400,18 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
         char pcs_hexauthqosrule[OGS_HUGE_LEN];
         decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
+        char pcs_temp[OGS_HUGE_LEN];
         int pcs_qosruleid = pcs_hex_to_int(pcs_hexauthqosrule, 0, 2);
         int pcs_qosrulelen = pcs_hex_to_int(pcs_hexauthqosrule, 2, 6);
         char pcs_qosrulef1[9];
         pcs_hex_to_binary_str(pcs_hexauthqosrule, pcs_qosrulef1, 6, 8);
-        int pcs_ruleopcode = pcs_binary_to_decimal("001");
-        ogs_info("pcs_qosruleid, pcs_qosrulelen, pcs_qosrulef1, pcs_ruleopcode is %d, %d, %s, %d", pcs_qosruleid, pcs_qosrulelen, pcs_qosrulef1, pcs_ruleopcode);
+        pcs_get_substring(pcs_qosrulef1, pcs_temp, 0, 3);
+        int pcs_ruleopcode = pcs_binary_to_decimal(pcs_temp);
+        pcs_get_substring(pcs_qosrulef1, pcs_temp, 3, 4);
+        int pcs_ruledqr = pcs_binary_to_decimal(pcs_temp);
+        pcs_get_substring(pcs_qosrulef1, pcs_temp, 4, 8);
+        int pcs_rulenumpf = pcs_binary_to_decimal(pcs_temp);
+        ogs_info("pcs_qosruleid, pcs_qosrulelen, pcs_qosrulef1, pcs_ruleopcode, pcs_ruledqr, pcs_rulenumpf is %d, %d, %s, %d, %d, %d", pcs_qosruleid, pcs_qosrulelen, pcs_qosrulef1, pcs_ruleopcode, pcs_ruledqr, pcs_rulenumpf);
 
 
         char pcs_hexqosflowdesc[OGS_HUGE_LEN];

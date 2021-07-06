@@ -1,47 +1,46 @@
 #include "mongoc.h"
 #include "ogs-app.h"
 #include "bson.h"
+#include "pcs-helper.h"
 
-int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
-void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len);
-int pcs_hex_to_int(char *pcs_hex_str, int pcs_start_index, int pcs_end_index);
-int pcs_binary_to_decimal(char *pcs_bin_str);
-void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_index, int pcs_end_index);
+void pcs_get_substring(char *pcs_str, char *pcs_sub_str, int pcs_start_index, int pcs_end_index)
+{
+   char *pcs_start = &pcs_str[pcs_start_index];
+   char *pcs_end = &pcs_str[pcs_end_index];
+   strncpy(pcs_sub_str, pcs_start, pcs_end - pcs_start);
+   pcs_sub_str[pcs_end_index - pcs_start_index] = '\0';
+   ogs_info("PCS Substring of %s from index %d to index %d is %s", pcs_str, pcs_start_index, pcs_end_index, pcs_sub_str);
+}
 
 int pcs_hex_to_int(char *pcs_hex_str, int pcs_start_index, int pcs_end_index)
 {
-   char *pcs_start = &pcs_hex_str[pcs_start_index];
-   char *pcs_end = &pcs_hex_str[pcs_end_index];
-   char *pcs_substr = (char *)calloc(1, pcs_end - pcs_start + 1);
-   memcpy(pcs_substr, pcs_start, pcs_end - pcs_start);
-   ogs_info("HEX Substring is %s", pcs_substr);
-   int pcs_qosrulenum = strtol(pcs_substr, NULL, 16);
-   free(pcs_substr);
-   return pcs_qosrulenum;
+   char pcs_substr[pcs_end_index - pcs_start_index];
+   pcs_get_substring(pcs_hex_str, pcs_substr, pcs_start_index, pcs_end_index);
+   int pcs_h2i = strtol(pcs_substr, NULL, 16);
+   ogs_info("PCS Conversion of Hex string %s to int is %d", pcs_substr, pcs_h2i);
+   return pcs_h2i;
 }
 
 int pcs_binary_to_decimal(char *pcs_bin_str)
 {
-   int result = 0;
+   int pcs_result = 0;
    for (; *pcs_bin_str; pcs_bin_str++)
    {
       if ((*pcs_bin_str != '0') && (*pcs_bin_str != '1'))
          return -1;
-      result = result * 2 + (*pcs_bin_str - '0');
-      if (result <= 0)
+      pcs_result = pcs_result * 2 + (*pcs_bin_str - '0');
+      if (pcs_result < 0)
          return -1;
    }
-   return result;
+   ogs_info("PCS Conversion of binary string %s to int is %d", pcs_bin_str, pcs_result);
+   return pcs_result;
 }
 
 void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_index, int pcs_end_index)
 {
-   char *pcs_start = &pcs_hex_str[pcs_start_index];
-   char *pcs_end = &pcs_hex_str[pcs_end_index];
-   char *pcs_substr = (char *)calloc(1, pcs_end - pcs_start + 1);
-   memcpy(pcs_substr, pcs_start, pcs_end - pcs_start);
+   char pcs_substr[pcs_end_index - pcs_start_index];
+   pcs_get_substring(pcs_hex_str, pcs_substr, pcs_start_index, pcs_end_index);
    pcs_bin_str[0] = '\0';
-   ogs_info("HEX Substring is %s", pcs_substr);
    int p = 0;
    int value = 0;
    char binary_str_ar[16][5] = {"0000", "0001", "0010", "0011", "0100", "0101", "0110", "0111", "1000", "1001", "1010", "1011", "1100", "1101", "1110", "1111"};
@@ -63,7 +62,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
       }
       p++;
    }
-   free(pcs_substr);
+   ogs_info("PCS Conversion of Hex string %s to binary string is %s", pcs_hex_str, pcs_bin_str);
 }
 
 int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
