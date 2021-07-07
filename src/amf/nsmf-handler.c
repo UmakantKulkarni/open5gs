@@ -695,7 +695,10 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         return OGS_ERROR;
     }
 
-    ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
+    if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
+    {
+        ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
+    }
 
     return OGS_OK;
 }
