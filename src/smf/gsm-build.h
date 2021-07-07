@@ -21,12 +21,13 @@
 #define GSM_BUILD_H
 
 #include "context.h"
+#include "mongoc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-ogs_pkbuf_t *gsm_build_pdu_session_establishment_accept(smf_sess_t *sess);
+ogs_pkbuf_t *gsm_build_pdu_session_establishment_accept(smf_sess_t *sess, mongoc_collection_t *pcs_dbcollection);
 ogs_pkbuf_t *gsm_build_pdu_session_establishment_reject(
         smf_sess_t *sess, ogs_nas_5gsm_cause_t gsm_cause);
 

@@ -18,12 +18,15 @@
  */
 
 #include "gsm-build.h"
+#include "pcs-helper.h"
+#include "mongoc.h"
 
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __gsm_log_domain
 
-ogs_pkbuf_t *gsm_build_pdu_session_establishment_accept(smf_sess_t *sess)
+ogs_pkbuf_t *gsm_build_pdu_session_establishment_accept(smf_sess_t *sess, mongoc_collection_t *pcs_dbcollection)
 {
+    mongoc_collection_t *pcs_dbcollection = sess->sm.pcs_dbcollection;
     ogs_pkbuf_t *pkbuf = NULL;
     smf_bearer_t *qos_flow = NULL;
     int num_of_param, rv;

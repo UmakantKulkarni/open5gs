@@ -25,6 +25,7 @@
 #include "binding.h"
 #include "sbi-path.h"
 #include "ngap-path.h"
+#include "mongoc.h"
 
 static uint8_t gtp_cause_from_pfcp(uint8_t pfcp_cause)
 {
@@ -99,7 +100,7 @@ static int sbi_status_from_pfcp(uint8_t pfcp_cause)
 
 void smf_5gc_n4_handle_session_establishment_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_establishment_response_t *rsp)
+        ogs_pfcp_session_establishment_response_t *rsp, mongoc_collection_t *pcs_dbcollection)
 {
     int i;
 
@@ -201,7 +202,7 @@ void smf_5gc_n4_handle_session_establishment_response(
 
     memset(&param, 0, sizeof(param));
     param.state = SMF_UE_REQUESTED_PDU_SESSION_ESTABLISHMENT;
-    param.n1smbuf = gsm_build_pdu_session_establishment_accept(sess);
+    param.n1smbuf = gsm_build_pdu_session_establishment_accept(sess, pcs_dbcollection);
     ogs_assert(param.n1smbuf);
     param.n2smbuf = ngap_build_pdu_session_resource_setup_request_transfer(
                         sess);
