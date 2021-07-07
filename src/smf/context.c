@@ -18,6 +18,7 @@
  */
 
 #include "context.h"
+#include "mongoc.h"
 
 static smf_context_t self;
 static ogs_diam_config_t g_diam_conf;
@@ -952,7 +953,7 @@ void smf_sess_select_upf(smf_sess_t *sess)
             OGS_ADDR(&ogs_pfcp_self()->pfcp_node->addr, buf));
 }
 
-smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type)
+smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, mongoc_collection_t *pcs_dbcollection)
 {
     smf_event_t e;
 
@@ -1000,6 +1001,7 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type)
 
     memset(&e, 0, sizeof(e));
     e.sess = sess;
+    sess->sm.pcs_dbcollection = pcs_dbcollection;
     ogs_fsm_create(&sess->sm, smf_gsm_state_initial, smf_gsm_state_final);
     ogs_fsm_init(&sess->sm, &e);
 
@@ -1012,7 +1014,7 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type)
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message)
+smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, mongoc_collection_t *pcs_dbcollection)
 {
     smf_ue_t *smf_ue = NULL;
     smf_sess_t *sess = NULL;
@@ -1070,11 +1072,11 @@ smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message)
         smf_sess_remove(sess);
     }
 
-    sess = smf_sess_add_by_apn(smf_ue, apn, req->rat_type.u8);
+    sess = smf_sess_add_by_apn(smf_ue, apn, req->rat_type.u8, pcs_dbcollection);
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
+smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, mongoc_collection_t *pcs_dbcollection)
 {
     smf_event_t e;
 
@@ -1132,6 +1134,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
 
     memset(&e, 0, sizeof(e));
     e.sess = sess;
+    sess->sm.pcs_dbcollection = pcs_dbcollection;
     ogs_fsm_create(&sess->sm, smf_gsm_state_initial, smf_gsm_state_final);
     ogs_fsm_init(&sess->sm, &e);
 
@@ -1144,7 +1147,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message)
+smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection)
 {
     smf_ue_t *smf_ue = NULL;
     smf_sess_t *sess = NULL;
@@ -1179,7 +1182,7 @@ smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message)
         smf_sess_remove(sess);
     }
 
-    sess = smf_sess_add_by_psi(smf_ue, SmContextCreateData->pdu_session_id);
+    sess = smf_sess_add_by_psi(smf_ue, SmContextCreateData->pdu_session_id, pcs_dbcollection);
 
     return sess;
 }

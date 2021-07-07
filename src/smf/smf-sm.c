@@ -26,6 +26,7 @@
 #include "gx-handler.h"
 #include "nnrf-handler.h"
 #include "namf-handler.h"
+#include "mongoc.h"
 
 void smf_state_initial(ogs_fsm_t *s, smf_event_t *e)
 {
@@ -45,6 +46,7 @@ void smf_state_final(ogs_fsm_t *s, smf_event_t *e)
 
 void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
 {
+    mongoc_collection_t *pcs_dbcollection = s->pcs_dbcollection;
     int rv;
     const char *api_version = NULL;
 
@@ -124,7 +126,7 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
         case OGS_GTP_CREATE_SESSION_REQUEST_TYPE:
             if (gtp_message.h.teid == 0) {
                 ogs_expect(!sess);
-                sess = smf_sess_add_by_gtp_message(&gtp_message);
+                sess = smf_sess_add_by_gtp_message(&gtp_message, pcs_dbcollection);
                 if (sess)
                     OGS_SETUP_GTP_NODE(sess, gnode);
             }
@@ -340,7 +342,7 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
                         break;
 
                     DEFAULT
-                        sess = smf_sess_add_by_sbi_message(&sbi_message);
+                        sess = smf_sess_add_by_sbi_message(&sbi_message, pcs_dbcollection);
                         ogs_assert(sess);
                     END
                     break;

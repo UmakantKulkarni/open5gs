@@ -22,9 +22,11 @@
 #include "ngap-path.h"
 #include "pfcp-path.h"
 #include "nsmf-handler.h"
+#include "pcs-helper.h"
+#include "mongoc.h"
 
 bool smf_nsmf_handle_create_sm_context(
-    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message)
+    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection)
 {
     smf_ue_t *smf_ue = NULL;
 
@@ -210,7 +212,7 @@ bool smf_nsmf_handle_create_sm_context(
 }
 
 bool smf_nsmf_handle_update_sm_context(
-    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message)
+    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection)
 {
     int i;
     smf_ue_t *smf_ue = NULL;
