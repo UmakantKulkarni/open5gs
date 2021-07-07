@@ -4,6 +4,7 @@
 #include "ogs-app.h"
 #include "bson.h"
 #include "pcs-helper.h"
+#include <arpa/inet.h>
 
 void pcs_get_substring(char *pcs_str, char *pcs_sub_str, int pcs_start_index, int pcs_end_index)
 {
@@ -194,7 +195,7 @@ bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexipdata)
    }
    bson_error_t error;
    bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_docjson2, -1, &error);
-   free(pcs_docjson);
+   free(pcs_docjson2);
    return bson_doc_nas_qos_rule;
 }
 
@@ -237,47 +238,60 @@ bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata)
 
    bson_error_t error;
    bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+   free(pcs_docjson);
    return bson_doc_nas_qos_flow;
 }
 
 bson_t *decode_nas_epco_hex_to_bson(char *pcs_hexipdata)
 {
    char pcs_temp[8];
-   char *pcs_docjson;
+   char *pcs_docjson, *pcs_protcnt1ipv4, *pcs_protcnt2ipv4;
    char pcs_qosflowf1[9], pcs_epcocpdesc[33], pcs_protcnt1id[5], pcs_protcnt1iddesc[24], pcs_protcnt2id[5], pcs_protcnt2iddesc[24];
+   int pcs_procont1len, pcs_procont1ip, pcs_procont2len, pcs_procont2ip;
+   struct in_addr pcs_addr;
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
-   pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 4);
+   pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 1);
    int pcs_epcoextension = pcs_binary_to_decimal(pcs_temp);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 5, 8);
    int pcs_epcocp = pcs_binary_to_decimal(pcs_temp);
    if (pcs_epcocp == 0)
    {
-      strcpy(pcs_epcocpdesc, "Configuration_Protocol_PPP");
+      strcpy(pcs_epcocpdesc, "CONFIGURATION_PROTOCOL_PPP");
    }
    else
    {
-      strcpy(pcs_epcocpdesc, "INCORRECT_Configuration_Protocol");
+      strcpy(pcs_epcocpdesc, "INCORRECT_CONFIGURATION_PROTOCOL");
    }
-   
+
    pcs_get_substring(pcs_hexipdata, pcs_protcnt1id, 2, 6);
    if (strcmp(pcs_protcnt1id, "000d") == 0)
    {
       strcpy(pcs_protcnt1iddesc, "DNS_SERVER_IPV4_ADDRESS");
-      int pcs_procont1len = pcs_hex_to_int(pcs_hexipdata, 6, 8);
-      int pcs_procont1ip = pcs_hex_to_int(pcs_hexipdata, 8, 16);
+      pcs_procont1len = pcs_hex_to_int(pcs_hexipdata, 6, 8);
+      pcs_procont1ip = pcs_hex_to_int(pcs_hexipdata, 8, 16);
+      unsigned char bytes[4];
+      bytes[0] = pcs_procont1ip & 0xFF;
+      bytes[1] = (pcs_procont1ip >> 8) & 0xFF;
+      bytes[2] = (pcs_procont1ip >> 16) & 0xFF;
+      bytes[3] = (pcs_procont1ip >> 24) & 0xFF;
+      asprintf(&pcs_protcnt1ipv4, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
    }
 
    pcs_get_substring(pcs_hexipdata, pcs_protcnt2id, 16, 20);
    if (strcmp(pcs_protcnt2id, "000d") == 0)
    {
       strcpy(pcs_protcnt2iddesc, "DNS_SERVER_IPV4_ADDRESS");
-      int pcs_procont2len = pcs_hex_to_int(pcs_hexipdata, 20, 22);
-      int pcs_procont2ip = pcs_hex_to_int(pcs_hexipdata, 22, 30);
+      pcs_procont2len = pcs_hex_to_int(pcs_hexipdata, 20, 22);
+      pcs_procont2ip = pcs_hex_to_int(pcs_hexipdata, 22, 30);
+      pcs_addr.s_addr = htonl(pcs_procont2ip);
+      pcs_protcnt2ipv4 = inet_ntoa(pcs_addr);
    }
 
-   asprintf(&pcs_docjson, "{\"IS-Extension\": %d, \"Configuration-Protocol-Value\": %d, \"Configuration-Protocol-Description\": \"%s\", \"Protocol-Containers\": [{\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%d\"}, {\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%d\"}] }", pcs_epcoextension, pcs_epcocp, pcs_epcocpdesc, pcs_protcnt1id, pcs_protcnt1iddesc, pcs_procont1len, pcs_procont1ip, pcs_protcnt2id, pcs_protcnt2iddesc, pcs_procont2len, pcs_procont2ip);
+   asprintf(&pcs_docjson, "{\"IS-Extension\": %d, \"Configuration-Protocol-Value\": %d, \"Configuration-Protocol-Description\": \"%s\", \"Protocol-Containers\": [{\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}, {\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}] }", pcs_epcoextension, pcs_epcocp, pcs_epcocpdesc, pcs_protcnt1id, pcs_protcnt1iddesc, pcs_procont1len, pcs_protcnt1ipv4, pcs_protcnt2id, pcs_protcnt2iddesc, pcs_procont2len, pcs_protcnt2ipv4);
 
    bson_error_t error;
    bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+   free(pcs_protcnt1ipv4);
+   free(pcs_docjson);
    return bson_doc_nas_epco;
 }
