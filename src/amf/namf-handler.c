@@ -412,7 +412,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
         int pcs_k, pcs_l;
         char *pcs_upfn3ip;
-        uint64_t pcs_pdusessionaggregatemaximumbitrateul = 0, pcs_pdusessionaggregatemaximumbitratedl = 0;
+        uint64_t pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl;
         uint32_t pcs_upfn3teid;
         ogs_ip_t pcs_upfn3ipbitstr;
         long pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability;
@@ -425,7 +425,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         NGAP_QosFlowLevelQosParameters_t *pcs_qosflowlevelqosparameters = NULL;
         NGAP_QosCharacteristics_t *pcs_qoscharacteristics = NULL;
         NGAP_AllocationAndRetentionPriority_t *pcs_allocationandretentionpriority;
-        NGAP_PDUSessionAggregateMaximumBitRate_t *pcs_pdusessionaggregatemaximumbitrate;
         ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
         for (pcs_k = 0; pcs_k < pcs_n2smmessage.protocolIEs.list.count; pcs_k++)
         {
@@ -433,9 +432,8 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             switch (pcs_ie->id)
             {
             case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
-                pcs_pdusessionaggregatemaximumbitrate = &pcs_ie->value.choice.PDUSessionAggregateMaximumBitRate;
-                asn_uint642INTEGER(&pcs_pdusessionaggregatemaximumbitrate->pDUSessionAggregateMaximumBitRateUL, pcs_pdusessionaggregatemaximumbitrateul);
-                asn_uint642INTEGER(&pcs_pdusessionaggregatemaximumbitrate->pDUSessionAggregateMaximumBitRateDL, pcs_pdusessionaggregatemaximumbitratedl);
+                pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
+                pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
                 break;
             case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
                 pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
