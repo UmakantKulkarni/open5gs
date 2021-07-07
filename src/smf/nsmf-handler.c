@@ -211,11 +211,30 @@ bool smf_nsmf_handle_create_sm_context(
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
         char *pcs_docjson;
+        int pcs_rv;
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_supi = sess->smf_ue->supi;
-        int pcs_rv;
-        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"supi\": \"%s\", \"method\": \"create\" }", pcs_imsistr, pcs_supi);
+        char *pcs_pei = SmContextCreateData->pei;
+        char *pcs_dnn = SmContextCreateData->dnn;
+        char *pcs_smcontextref = sess->sm_context_ref;
+        int pcs_snssaisst = sess->s_nssai.sst;
+        char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
+        int pcs_pdusessionid = sess->psi;
+        char *pcs_mcc = SmContextCreateData->guami->plmn_id->mcc;
+        char *pcs_mnc = SmContextCreateData->guami->plmn_id->mnc;
+        char *pcs_amfid = SmContextCreateData->guami->amf_id;
+        int pcs_antype = SmContextCreateData->an_type;
+        char *pcs_rattype = OpenAPI_rat_type_ToString(SmContextCreateData->rat_type);
+        char *pcs_tac = SmContextCreateData->ue_location->nr_location->tai->tac;
+        char *pcs_cellid = SmContextCreateData->ue_location->nr_location->ncgi->nr_cell_id;
+        char *pcs_uelocts = SmContextCreateData->ue_location->nr_location->ue_location_timestamp;
+        char *pcs_uetimezone = SmContextCreateData->ue_time_zone;
+        char *pcs_smcntxsttsuri = SmContextCreateData->sm_context_status_uri;
+        char *pcs_pcfid = SmContextCreateData->pcf_id;
+
+        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_antype, pcs_pei, pcs_dnn, pcs_snssaisst, pcs_snssaisd, pcs_mcc, pcs_mnc, pcs_amfid, pcs_tac, pcs_cellid, pcs_uelocts, pcs_uetimezone, pcs_smcntxsttsuri, pcs_pcfid, pcs_rattype);
+
         bson_error_t error;
         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
@@ -598,7 +617,7 @@ bool smf_nsmf_handle_update_sm_context(
         return false;
     }
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && SmContextUpdateData->n2_sm_info_type == 2)
     {
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
@@ -614,7 +633,7 @@ bool smf_nsmf_handle_update_sm_context(
             ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->smf_ue->supi);
         }
     }
-    else
+    else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && SmContextUpdateData->n2_sm_info_type == 2)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
     }
