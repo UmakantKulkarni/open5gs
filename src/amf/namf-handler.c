@@ -497,6 +497,10 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
+    else
+    {
+        ogs_info("PCS Successfully completed n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
+    }
 
     return OGS_OK;
 }

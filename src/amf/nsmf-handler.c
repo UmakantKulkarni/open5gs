@@ -198,6 +198,10 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
+    else
+    {
+        ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
+    }
 
     return OGS_OK;
 }
@@ -693,6 +697,8 @@ int amf_nsmf_pdusession_handle_update_sm_context(
 
         return OGS_ERROR;
     }
+
+    ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
 
     return OGS_OK;
 }
