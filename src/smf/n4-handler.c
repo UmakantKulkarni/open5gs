@@ -25,6 +25,7 @@
 #include "binding.h"
 #include "sbi-path.h"
 #include "ngap-path.h"
+#include "pcs-helper.h"
 #include "mongoc.h"
 
 static uint8_t gtp_cause_from_pfcp(uint8_t pfcp_cause)
@@ -219,7 +220,6 @@ void smf_5gc_n4_handle_session_establishment_response(
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_pduaddress = ogs_ipv4_to_string(pcs_pdusessionestablishmentaccept->pdu_address.addr);
-        char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
         int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
         int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
         int pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
@@ -307,7 +307,7 @@ void smf_5gc_n4_handle_session_establishment_response(
         ogs_pkbuf_free(param.n2smbuf);
         ogs_free(pcs_gtptunnel);
         ogs_free(pcs_qosflowsetuprequestitem);
-        f (pcs_rv != OGS_OK)
+        if (pcs_rv != OGS_OK)
         {
             ogs_error("PCS Error while updating n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
         }
