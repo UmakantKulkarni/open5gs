@@ -35,6 +35,7 @@ endforeach
 configure_file(output : 'smf-config.h', configuration : smf_conf)
 
 libsmf_sources = files('''
+    pcs-helper.h
     event.h
     timer.h
     context.h
@@ -65,6 +66,7 @@ libsmf_sources = files('''
     ngap-handler.h
     ngap-path.h
 
+    pcs-helper.c
     init.c
     event.c
     timer.c
@@ -102,6 +104,8 @@ libsmf_sources = files('''
     ngap-path.c
 '''.split())
 
+libmongoc_dep = dependency('libmongoc-1.0')
+
 libsmf = static_library('smf',
     sources : libsmf_sources,
     dependencies : [libapp_dep,
@@ -111,7 +115,8 @@ libsmf = static_library('smf',
                     libdiameter_gx_dep,
                     libdiameter_s6b_dep,
                     libgtp_dep,
-                    libpfcp_dep],
+                    libpfcp_dep,
+                    libmongoc_dep],
     install : false)
 
 libsmf_dep = declare_dependency(
@@ -123,7 +128,8 @@ libsmf_dep = declare_dependency(
                     libdiameter_gx_dep,
                     libdiameter_s6b_dep,
                     libgtp_dep,
-                    libpfcp_dep])
+                    libpfcp_dep,
+                    libmongoc_dep])
 
 smf_sources = files('''
     app.c
