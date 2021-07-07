@@ -25,10 +25,11 @@ extern "C" {
 #endif
 
 #include "context.h"
+#include "mongoc.h"
 
 bool smf_npcf_smpolicycontrol_handle_create(
         smf_sess_t *sess, ogs_sbi_stream_t *stream, int state,
-        ogs_sbi_message_t *recvmsg);
+        ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection);
 bool smf_npcf_smpolicycontrol_handle_delete(
         smf_sess_t *sess, ogs_sbi_stream_t *stream, int state,
         ogs_sbi_message_t *recvmsg);

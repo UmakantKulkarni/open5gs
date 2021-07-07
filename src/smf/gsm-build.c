@@ -26,7 +26,6 @@
 
 ogs_pkbuf_t *gsm_build_pdu_session_establishment_accept(smf_sess_t *sess, mongoc_collection_t *pcs_dbcollection)
 {
-    mongoc_collection_t *pcs_dbcollection = sess->sm.pcs_dbcollection;
     ogs_pkbuf_t *pkbuf = NULL;
     smf_bearer_t *qos_flow = NULL;
     int num_of_param, rv;
@@ -233,6 +232,27 @@ ogs_pkbuf_t *gsm_build_pdu_session_establishment_accept(smf_sess_t *sess, mongoc
 
     ogs_free(authorized_qos_rules->buffer);
     ogs_free(authorized_qos_flow_descriptions->buffer);
+
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    {
+        char *pcs_imsistr = sess->smf_ue->supi;
+        pcs_imsistr += 5;
+        int pcs_rv;
+        bson_t *bson_doc = BCON_NEW("$set", "{", "n1n2Data", "{", "method", BCON_UTF8("n1-n2"), "dnn", BCON_UTF8(dnn->value), "}", "}");
+        pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+        if (pcs_rv != OGS_OK)
+        {
+            ogs_error("PCS Error while updating n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
+        }
+        else
+        {
+            ogs_info("PCS Successfully updated n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
+        }
+    }
+    else
+    {
+        ogs_info("PCS Successfully completed n1-n2 transfer transaction for supi [%s]", sess->smf_ue->supi);
+    }
 
     return pkbuf;
 }

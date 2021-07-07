@@ -208,6 +208,31 @@ bool smf_nsmf_handle_create_sm_context(
     ogs_assert(n1smbuf);
     nas_5gs_send_to_gsm(sess, stream, n1smbuf);
 
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    {
+        char *pcs_docjson;
+        char *pcs_imsistr = sess->smf_ue->supi;
+        pcs_imsistr += 5;
+        char *pcs_supi = sess->smf_ue->supi;
+        int pcs_rv;
+        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"supi\": \"%s\", \"method\": \"create\" }", pcs_imsistr, pcs_supi);
+        bson_error_t error;
+        bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+        if (pcs_rv != OGS_OK)
+        {
+            ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->smf_ue->supi);
+        }
+        else
+        {
+            ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->smf_ue->supi);
+        }
+    }
+    else
+    {
+        ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
+    }
+
     return true;
 }
 
@@ -571,6 +596,27 @@ bool smf_nsmf_handle_update_sm_context(
                 OGS_SBI_HTTP_STATUS_BAD_REQUEST,
                 "No UpdateData", smf_ue->supi, NULL, NULL);
         return false;
+    }
+
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    {
+        char *pcs_imsistr = sess->smf_ue->supi;
+        pcs_imsistr += 5;
+        int pcs_rv;
+        bson_t *bson_doc = BCON_NEW("$set", "{", "updateData", "{", "method", BCON_UTF8("modify"), "psi", BCON_INT32(sess->psi), "}", "}");
+        pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+        if (pcs_rv != OGS_OK)
+        {
+            ogs_error("PCS Error while updating data to MongoDB for supi [%s]", sess->smf_ue->supi);
+        }
+        else
+        {
+            ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->smf_ue->supi);
+        }
+    }
+    else
+    {
+        ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
     }
 
     return true;

@@ -182,7 +182,7 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
                     }
 
                     smf_npcf_smpolicycontrol_handle_create(
-                            sess, stream, state, sbi_message);
+                            sess, stream, state, sbi_message, pcs_dbcollection);
                 } else {
                     SWITCH(sbi_message->h.resource.component[2])
                     CASE(OGS_SBI_RESOURCE_NAME_DELETE)

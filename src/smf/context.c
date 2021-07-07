@@ -901,12 +901,14 @@ static ogs_pfcp_node_t *selected_upf_node(
     /* continue search from current position */
     next = ogs_list_next(current);
     for (node = next; node; node = ogs_list_next(node)) {
+        node->sm.pcs_dbcollection = sess->sm.pcs_dbcollection;
         if (OGS_FSM_CHECK(&node->sm, smf_pfcp_state_associated) &&
             compare_ue_info(node, sess) == true) return node;
     }
     /* cyclic search from top to current position */
     for (node = ogs_list_first(&ogs_pfcp_self()->pfcp_peer_list);
             node != next; node = ogs_list_next(node)) {
+        node->sm.pcs_dbcollection = sess->sm.pcs_dbcollection;
         if (OGS_FSM_CHECK(&node->sm, smf_pfcp_state_associated) &&
             compare_ue_info(node, sess) == true) return node;
     }
@@ -915,12 +917,14 @@ static ogs_pfcp_node_t *selected_upf_node(
         /* continue search from current position */
         next = ogs_list_next(current);
         for (node = next; node; node = ogs_list_next(node)) {
+            node->sm.pcs_dbcollection = sess->sm.pcs_dbcollection;
             if (OGS_FSM_CHECK(&node->sm, smf_pfcp_state_associated))
                 return node;
         }
         /* cyclic search from top to current position */
         for (node = ogs_list_first(&ogs_pfcp_self()->pfcp_peer_list);
                 node != next; node = ogs_list_next(node)) {
+            node->sm.pcs_dbcollection = sess->sm.pcs_dbcollection;
             if (OGS_FSM_CHECK(&node->sm, smf_pfcp_state_associated))
                 return node;
         }
