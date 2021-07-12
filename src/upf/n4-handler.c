@@ -166,7 +166,7 @@ void upf_n4_handle_session_establishment_request(
 
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
-        char *pcs_upfn4ip, *pcs_docjson, *pcs_pdrone, *pcs_pdrmany;
+        char *pcs_upfnodeip, *pcs_docjson, *pcs_pdrone, *pcs_pdrmany, *pcs_pdrpreced, *pcs_smfn4seidstr;
         int pcs_rv;
         pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
         uint64_t pcs_upfn4seid = sess->upf_n4_seid;
@@ -177,27 +177,33 @@ void upf_n4_handle_session_establishment_request(
 
             if (i == 0)
             {
-                asprintf(&pcs_pdrs, "[");
+                asprintf(&pcs_pdrmany, "[");
             }
             else
             {
-                strcat(pcs_pdrs, ",");
+                strcat(pcs_pdrmany, ",");
             }
 
-            asprintf(&pcs_pdrone, "\"{\"pdr-id\": %d,", pdr->id);
+            asprintf(&pcs_pdrone, "{\"pdr-id\": %d,", pdr->id);
             strcat(pcs_pdrone, "\"pdr-precedence\":");
-            strcat(pcs_pdrone, pdr->precedence);
-            strcat(pcs_pdrone, "}\"");
+            asprintf(&pcs_pdrpreced, "%d", pdr->precedence);
+            strcat(pcs_pdrone, pcs_pdrpreced);
+            strcat(pcs_pdrone, "}");
             ogs_info("PDR-%d is %s", i+1, pcs_pdrone);
-            strcat(pcs_pdrs, pcs_pdrone);
+            strcat(pcs_pdrmany, pcs_pdrone);
+            free(pcs_pdrpreced);
+            free(pcs_pdrone);
         }
-        strcat(pcs_pdrs, "]");
-        ogs_info("UKKKK Inside UPF %s %ld, %ld %s", pcs_upfn4ip, pcs_upfn4seid, pcs_smfn4seid, pcs_pdrs);
+        strcat(pcs_pdrmany, "]");
+        ogs_info("UKKKK Inside UPF %s %ld, %ld %s", pcs_upfnodeip, pcs_upfn4seid, pcs_smfn4seid, pcs_pdrmany);
         asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"UPF-IP\": \"%s\"}", pcs_smfn4seid, pcs_upfnodeip);
+        asprintf(&pcs_smfn4seidstr, "%ld", pcs_smfn4seid);
         bson_error_t error;
         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", "123456789", bson_doc);
+        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_smfn4seidstr, bson_doc);
         ogs_free(pcs_upfnodeip);
+        free(pcs_smfn4seidstr);
+        free(pcs_pdrmany);
         free(pcs_docjson);
         if (pcs_rv != OGS_OK)
         {
