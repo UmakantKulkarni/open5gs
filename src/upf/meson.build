@@ -45,6 +45,7 @@ endif
 configure_file(output : 'upf-config.h', configuration : upf_conf)
 
 libupf_sources = files('''
+    pcs-helper.h
     rule-match.h
     event.h
     timer.h
@@ -55,6 +56,7 @@ libupf_sources = files('''
     n4-build.h
     n4-handler.h
 
+    pcs-helper.c
     rule-match.c
     init.c
     event.c
@@ -67,6 +69,8 @@ libupf_sources = files('''
     n4-build.c
     n4-handler.c
 '''.split())
+
+libmongoc_dep = dependency('libmongoc-1.0')
 
 libtins_dep = dependency('libtins',
     version: ['>=3.4'],
@@ -92,6 +96,7 @@ libupf = static_library('upf',
         libpfcp_dep,
         libtun_dep,
         libarp_nd_dep,
+        libmongoc_dep,
     ],
     install : false)
 
@@ -104,6 +109,7 @@ libupf_dep = declare_dependency(
         libpfcp_dep,
         libtun_dep,
         libarp_nd_dep,
+        libmongoc_dep,
     ])
 
 upf_sources = files('''
