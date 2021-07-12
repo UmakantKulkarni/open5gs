@@ -17,6 +17,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#define _GNU_SOURCE
+#include <stdio.h>
 #include "context.h"
 #include "pfcp-path.h"
 #include "gtp-path.h"
@@ -88,7 +90,7 @@ void upf_n4_handle_session_establishment_request(
         if (far->gnode)
             ogs_pfcp_far_f_teid_hash_set(far);
     }
-
+   
     for (i = 0; i < num_of_created_pdr; i++) {
         pdr = created_pdr[i];
         ogs_assert(pdr);
@@ -164,15 +166,38 @@ void upf_n4_handle_session_establishment_request(
 
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
-        char *pcs_upfn4ip, *pcs_docjson;
+        char *pcs_upfn4ip, *pcs_docjson, *pcs_pdrone, *pcs_pdrmany;
         int pcs_rv;
-        pcs_upfn4ip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
-        ogs_info("UKKKK Inside UPF %s", pcs_upfn4ip);
-        asprintf(&pcs_docjson, "{\"UPF-IP\": \"%s\"}", pcs_upfn4ip);
+        pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
+        uint64_t pcs_upfn4seid = sess->upf_n4_seid;
+        uint64_t pcs_smfn4seid = sess->smf_n4_seid;
+        for (i = 0; i < num_of_created_pdr; i++) {
+            pdr = created_pdr[i];
+            ogs_assert(pdr);
+
+            if (i == 0)
+            {
+                asprintf(&pcs_pdrs, "[");
+            }
+            else
+            {
+                strcat(pcs_pdrs, ",");
+            }
+
+            asprintf(&pcs_pdrone, "\"{\"pdr-id\": %d,", pdr->id);
+            strcat(pcs_pdrone, "\"pdr-precedence\":");
+            strcat(pcs_pdrone, pdr->precedence);
+            strcat(pcs_pdrone, "}\"");
+            ogs_info("PDR-%d is %s", i+1, pcs_pdrone);
+            strcat(pcs_pdrs, pcs_pdrone);
+        }
+        strcat(pcs_pdrs, "]");
+        ogs_info("UKKKK Inside UPF %s %ld, %ld %s", pcs_upfn4ip, pcs_upfn4seid, pcs_smfn4seid, pcs_pdrs);
+        asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"UPF-IP\": \"%s\"}", pcs_smfn4seid, pcs_upfnodeip);
         bson_error_t error;
         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", "123456789", bson_doc);
-        ogs_free(pcs_upfn4ip);
+        ogs_free(pcs_upfnodeip);
         free(pcs_docjson);
         if (pcs_rv != OGS_OK)
         {
@@ -198,7 +223,7 @@ cleanup:
 
 void upf_n4_handle_session_modification_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
-        ogs_pfcp_session_modification_request_t *req)
+        ogs_pfcp_session_modification_request_t *req, mongoc_collection_t *pcs_dbcollection)
 {
     ogs_pfcp_pdr_t *pdr = NULL;
     ogs_pfcp_far_t *far = NULL;
