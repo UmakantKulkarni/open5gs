@@ -37,7 +37,7 @@ void upf_n4_handle_session_establishment_request(
     uint8_t cause_value = 0;
     uint8_t offending_ie_value = 0;
     int i;
-
+    
     ogs_assert(xact);
     ogs_assert(req);
 
@@ -166,12 +166,14 @@ void upf_n4_handle_session_establishment_request(
 
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
-        char *pcs_upfnodeip, *pcs_docjson, *pcs_pdrone, *pcs_pdrs, *pcs_pdrpreced, *pcs_smfn4seidstr;
+        char *pcs_upfnodeip, *pcs_smfnodeip, *pcs_docjson, *pcs_pdrone, *pcs_pdrthis, *pcs_pdrs, *pcs_pdrvar, *pcs_pdrtemp;
         char pcs_comma[] = ",";
         char pcs_curlybrace[] = "}";
         char pcs_squarebrace[] = "]";
+        char pcs_emptyspace[] = " ";
         int pcs_rv;
         pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
+        pcs_smfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
         uint64_t pcs_upfn4seid = sess->upf_n4_seid;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
         asprintf(&pcs_pdrs, "[");
@@ -179,45 +181,84 @@ void upf_n4_handle_session_establishment_request(
         {
             pdr = created_pdr[i];
             ogs_assert(pdr);
-
+            
             if (i > 0)
             {
-                pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_comma);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrs, pcs_comma);
+                pcs_pdrs = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
             }
 
             asprintf(&pcs_pdrone, "{\"pdr-id\": %d", pdr->id);
-            asprintf(&pcs_pdrpreced, ", \"pdr-precedence\": %d", pdr->precedence);
-            pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_pdrpreced);
-            pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_curlybrace);
-            ogs_info("PDR-%d is %s", i + 1, pcs_pdrone);
-            pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_pdrone);
-            free(pcs_pdrpreced);
-            free(pcs_pdrone);
+            asprintf(&pcs_pdrvar, ", \"pdr-precedence\": %d", pdr->precedence);
+            pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar);
+            pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+            if (pdr->f_teid_len)
+            {
+                asprintf(&pcs_pdrvar, ", \"UPF-SEID\": {\"pdr-fteid\": %d", pdr->f_teid.teid);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar); 
+                pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+                pcs_pdrtemp = ogs_ipv4_to_string(ogs_gtp_self()->gtpu_addr->sin.sin_addr.s_addr);
+                asprintf(&pcs_pdrvar, ", \"pdr-fteid-ip\": \"%s\"", pcs_pdrtemp);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar); 
+                pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+                ogs_free(pcs_pdrtemp);
+                asprintf(&pcs_pdrvar, ", \"pdr-ip-type\": %d}", pdr->f_teid.ipv4);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar); 
+                pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+            }
+            if (pdr->ue_ip_addr.addr)
+            {
+                pcs_pdrtemp = ogs_ipv4_to_string(pdr->ue_ip_addr.addr);
+                asprintf(&pcs_pdrvar, ", \"pdr-ue-ip\": \"%s\"", pcs_pdrtemp);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar); 
+                pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+                ogs_free(pcs_pdrtemp);
+            }
+            if (pdr->src_if)
+            {
+                asprintf(&pcs_pdrvar, ", \"pdr-src-if\": %d", pdr->src_if);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar); 
+                pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+            }
+            if (pdr->dnn)
+            {
+                asprintf(&pcs_pdrvar, ", \"pdr-dnn\": \"%s\"", pdr->dnn);
+                pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_pdrvar); 
+                pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+            }
+            pcs_pdrthis = pcs_combine_strings(pcs_pdrone, pcs_curlybrace); 
+            pcs_pdrone = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
+            pcs_pdrthis = pcs_combine_strings(pcs_pdrs, pcs_pdrone); 
+            pcs_pdrs = pcs_combine_strings(pcs_pdrthis, pcs_emptyspace);
         }
-        pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_squarebrace);
-        ogs_info("UKKKK Inside UPF %s %ld, %ld %s", pcs_upfnodeip, pcs_upfn4seid, pcs_smfn4seid, pcs_pdrs);
-        asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"UPF-IP\": \"%s\", \"pdr-data\": %s}", pcs_smfn4seid, pcs_upfnodeip, pcs_pdrs);
-        asprintf(&pcs_smfn4seidstr, "%ld", pcs_smfn4seid);
+        pcs_pdrthis = pcs_combine_strings(pcs_pdrs, pcs_squarebrace); 
+        asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s}", pcs_smfn4seid, pcs_upfnodeip, pcs_smfnodeip, pcs_upfn4seid, pcs_smfn4seid, cause_value, pcs_pdrthis);
+        asprintf(&pcs_pdrvar, "%ld", pcs_smfn4seid);
+        ogs_info("UKKKKKK pcs_docjson is %s", pcs_docjson);
         bson_error_t error;
         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_smfn4seidstr, bson_doc);
+        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_pdrvar, bson_doc);
         ogs_free(pcs_upfnodeip);
-        free(pcs_smfn4seidstr);
+        ogs_free(pcs_smfnodeip);
+        free(pcs_pdrvar);
+        free(pcs_pdrone);
         free(pcs_pdrs);
+        free(pcs_pdrthis);
         free(pcs_docjson);
         if (pcs_rv != OGS_OK)
         {
-            ogs_error("PCS Error while inserting N4 data to MongoDB for supi");
+            ogs_error("PCS Error while inserting N4 data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
         else
         {
-            ogs_info("PCS Successfully inserted N4 data to MongoDB for supi");
+            ogs_info("PCS Successfully inserted N4 data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
     }
     else
     {
-        ogs_info("PCS Successfully N4 Session Establishment transaction for supi");
+        ogs_info("PCS Successfully completed N4 Session Establishment transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
+
     return;
 
 cleanup:

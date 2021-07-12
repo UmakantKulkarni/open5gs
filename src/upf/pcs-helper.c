@@ -14,7 +14,7 @@ char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b)
    while (pcs_input_b[pcs_len_b] != '\0')
       pcs_len_b++;
    char *pcs_output_str = malloc(pcs_len_a + pcs_len_b);
-   sprintf((char *)pcs_output_str, "%s%s", pcs_input_a, pcs_input_b);
+   asprintf(&pcs_output_str, "%s%s", pcs_input_a, pcs_input_b);
    return pcs_output_str;
 }
 
