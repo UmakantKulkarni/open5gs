@@ -164,6 +164,7 @@ void upf_pfcp_state_associated(ogs_fsm_t *s, upf_event_t *e)
     upf_sm_debug(e);
 
     node = e->pfcp_node;
+    mongoc_collection_t *pcs_dbcollection = node->sm.pcs_dbcollection;
     ogs_assert(node);
     addr = node->sa_list;
     ogs_assert(addr);
@@ -216,7 +217,7 @@ void upf_pfcp_state_associated(ogs_fsm_t *s, upf_event_t *e)
                     OGS_SETUP_PFCP_NODE(sess, node);
             }
             upf_n4_handle_session_establishment_request(
-                sess, xact, &message->pfcp_session_establishment_request);
+                sess, xact, &message->pfcp_session_establishment_request, pcs_dbcollection);
             break;
         case OGS_PFCP_SESSION_MODIFICATION_REQUEST_TYPE:
             upf_n4_handle_session_modification_request(

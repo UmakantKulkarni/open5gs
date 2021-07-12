@@ -13,7 +13,8 @@
         "typeinfo": "cpp",
         "algorithm": "cpp",
         "complex": "cpp",
-        "new": "cpp"
+        "new": "cpp",
+        "iterator": "cpp"
     },
     "editor.parameterHints.enabled": false
 }

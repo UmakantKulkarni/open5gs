@@ -21,10 +21,12 @@
 #include "pfcp-path.h"
 #include "gtp-path.h"
 #include "n4-handler.h"
+#include "pcs-helper.h"
+#include "mongoc.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
-        ogs_pfcp_session_establishment_request_t *req)
+        ogs_pfcp_session_establishment_request_t *req, mongoc_collection_t *pcs_dbcollection)
 {
     ogs_pfcp_pdr_t *pdr = NULL;
     ogs_pfcp_far_t *far = NULL;
@@ -159,6 +161,32 @@ void upf_n4_handle_session_establishment_request(
     ogs_assert(OGS_OK ==
         upf_pfcp_send_session_establishment_response(
             xact, sess, created_pdr, num_of_created_pdr));
+
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    {
+        char *pcs_upfn4ip, *pcs_docjson;
+        int pcs_rv;
+        pcs_upfn4ip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
+        ogs_info("UKKKK Inside UPF %s", pcs_upfn4ip);
+        asprintf(&pcs_docjson, "{\"UPF-IP\": \"%s\"}", pcs_upfn4ip);
+        bson_error_t error;
+        bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", "123456789", bson_doc);
+        ogs_free(pcs_upfn4ip);
+        free(pcs_docjson);
+        if (pcs_rv != OGS_OK)
+        {
+            ogs_error("PCS Error while inserting N4 data to MongoDB for supi");
+        }
+        else
+        {
+            ogs_info("PCS Successfully inserted N4 data to MongoDB for supi");
+        }
+    }
+    else
+    {
+        ogs_info("PCS Successfully N4 Session Establishment transaction for supi");
+    }
     return;
 
 cleanup:
