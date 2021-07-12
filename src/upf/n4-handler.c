@@ -166,10 +166,10 @@ void upf_n4_handle_session_establishment_request(
 
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
-        char *pcs_upfnodeip, *pcs_docjson, *pcs_pdrid, *pcs_pdrs, *pcs_pdrpreced, *pcs_smfn4seidstr;
-        char pcs_comma[1] = ",";
-        char pcs_curlybrace[1] = "}";
-        char pcs_squarebrace[1] = "]";
+        char *pcs_upfnodeip, *pcs_docjson, *pcs_pdrone, *pcs_pdrs, *pcs_pdrpreced, *pcs_smfn4seidstr;
+        char pcs_comma[] = ",";
+        char pcs_curlybrace[] = "}";
+        char pcs_squarebrace[] = "]";
         int pcs_rv;
         pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
         uint64_t pcs_upfn4seid = sess->upf_n4_seid;
@@ -185,12 +185,14 @@ void upf_n4_handle_session_establishment_request(
                 pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_comma);
             }
 
-            asprintf(&pcs_pdrid, "{\"pdr-id\": %d", pdr->id);
+            asprintf(&pcs_pdrone, "{\"pdr-id\": %d", pdr->id);
             asprintf(&pcs_pdrpreced, ", \"pdr-precedence\": %d", pdr->precedence);
-            pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_pdrid);
-            pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_pdrpreced);
-            pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_curlybrace);
-            ogs_info("PDR-%d is %s", i + 1, pcs_pdrs);
+            pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_pdrpreced);
+            pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_curlybrace);
+            ogs_info("PDR-%d is %s", i + 1, pcs_pdrone);
+            pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_pdrone);
+            free(pcs_pdrpreced);
+            free(pcs_pdrone);
         }
         pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_squarebrace);
         ogs_info("UKKKK Inside UPF %s %ld, %ld %s", pcs_upfnodeip, pcs_upfn4seid, pcs_smfn4seid, pcs_pdrs);
@@ -201,8 +203,6 @@ void upf_n4_handle_session_establishment_request(
         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_smfn4seidstr, bson_doc);
         ogs_free(pcs_upfnodeip);
         free(pcs_smfn4seidstr);
-        free(pcs_pdrid);
-        free(pcs_pdrpreced);
         free(pcs_pdrs);
         free(pcs_docjson);
         if (pcs_rv != OGS_OK)
