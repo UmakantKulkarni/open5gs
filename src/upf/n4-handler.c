@@ -217,6 +217,22 @@ void upf_n4_handle_session_establishment_request(
                 asprintf(&pcs_pdrvar, ", \"pdr-dnn\": \"%s\"", pdr->dnn);
                 pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_pdrvar);
             }
+            if (pdr->far)
+            {
+                if (pdr->far->id)
+                {
+                    asprintf(&pcs_pdrvar, ", \"pdr-far-id\": %d", pdr->far->id);
+                    pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_pdrvar);
+                }
+            }
+            if (pdr->qer)
+            {
+                if (pdr->qer->id)
+                {
+                    asprintf(&pcs_pdrvar, ", \"pdr-qer-id\": %d", pdr->qer->id);
+                    pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_pdrvar);
+                }
+            }
             pcs_pdrone = pcs_combine_strings(pcs_pdrone, pcs_curlybrace);
             pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_pdrone);
         }
