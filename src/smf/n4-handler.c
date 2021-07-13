@@ -297,6 +297,8 @@ void smf_5gc_n4_handle_session_establishment_response(
         char pcs_curlybrace[] = "}";
         char pcs_squarebrace[] = "]";
         int pcs_numpdr = 0, pcs_numfar = 0, pcs_numqer = 0;
+        ogs_pfcp_pdr_t *pdr = NULL;
+        ogs_pfcp_far_t *far = NULL;
         ogs_pfcp_qer_t *qer = NULL;
         pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
         pcs_smfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
@@ -342,10 +344,13 @@ void smf_5gc_n4_handle_session_establishment_response(
                 asprintf(&pcs_var, ", \"dnn\": \"%s\"", pdr->dnn);
                 pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
             }
-            if (sizeof(pdr->rule_list))
+            if (sizeof(*pdr->flow_description))
             {
-                asprintf(&pcs_var, ", \"flow-description\": \"%s\"", (char *)pdr->flow_description);
-                pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                asprintf(&pcs_var, ", \"flow-description\": \"%s\"", *pdr->flow_description);
+                if (strcmp(pcs_var, "(null)") != 0)
+                {
+                    pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                }
             }
             if (pdr->qfi)
             {
@@ -461,7 +466,6 @@ void smf_5gc_n4_handle_session_establishment_response(
         free(pcs_pfcpie);
         free(pcs_pdrs);
         free(pcs_fars);
-        free(pcs_docjson);
         if (pcs_rv != OGS_OK)
         {
             ogs_error("PCS Error while updating n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
