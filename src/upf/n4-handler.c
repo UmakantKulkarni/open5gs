@@ -218,10 +218,13 @@ void upf_n4_handle_session_establishment_request(
                 asprintf(&pcs_var, ", \"dnn\": \"%s\"", pdr->dnn);
                 pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
             }
-            if (sizeof(pdr->rule_list))
+            if (sizeof(*pdr->flow_description))
             {
-                asprintf(&pcs_var, ", \"flow-description\": \"%s\"", (char *)pdr->flow_description);
-                pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                asprintf(&pcs_var, ", \"flow-description\": \"%s\"", *pdr->flow_description);
+                if(strstr(pcs_var, "null") == NULL)
+                {
+                    pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                }
             }
             if (pdr->qfi)
             {
@@ -562,7 +565,6 @@ void upf_n4_handle_session_modification_request(
         ogs_list_for_each(&sess->pfcp.far_list, far)
         {
             pcs_numfar = pcs_numfar + 1;
-
             if (pcs_numfar > 1)
             {
                 pcs_fars = pcs_combine_strings(pcs_fars, pcs_comma);
@@ -611,7 +613,7 @@ void upf_n4_handle_session_modification_request(
     }
     else
     {
-        ogs_info("PCS Successfully completed N4 Session Establishment transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+        ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
 
     return;

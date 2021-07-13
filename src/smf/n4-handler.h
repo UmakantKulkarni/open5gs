@@ -32,7 +32,7 @@ void smf_5gc_n4_handle_session_establishment_response(
         ogs_pfcp_session_establishment_response_t *rsp, mongoc_collection_t *pcs_dbcollection);
 void smf_5gc_n4_handle_session_modification_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_modification_response_t *rsp);
+        ogs_pfcp_session_modification_response_t *rsp, mongoc_collection_t *pcs_dbcollection);
 void smf_5gc_n4_handle_session_deletion_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_deletion_response_t *rsp);

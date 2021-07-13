@@ -300,8 +300,8 @@ void smf_5gc_n4_handle_session_establishment_response(
         ogs_pfcp_pdr_t *pdr = NULL;
         ogs_pfcp_far_t *far = NULL;
         ogs_pfcp_qer_t *qer = NULL;
-        pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
-        pcs_smfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
+        pcs_smfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
+        pcs_upfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
         uint64_t pcs_upfn4seid = sess->upf_n4_seid;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
 
@@ -347,7 +347,7 @@ void smf_5gc_n4_handle_session_establishment_response(
             if (sizeof(*pdr->flow_description))
             {
                 asprintf(&pcs_var, ", \"flow-description\": \"%s\"", *pdr->flow_description);
-                if (strcmp(pcs_var, "(null)") != 0)
+                if(strstr(pcs_var, "null") == NULL)
                 {
                     pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
                 }
@@ -484,7 +484,7 @@ void smf_5gc_n4_handle_session_establishment_response(
 
 void smf_5gc_n4_handle_session_modification_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_modification_response_t *rsp)
+        ogs_pfcp_session_modification_response_t *rsp, mongoc_collection_t *pcs_dbcollection)
 {
     int status = 0;
     uint64_t flags = 0;
@@ -579,6 +579,74 @@ void smf_5gc_n4_handle_session_modification_response(
             } else if (pdr->src_if == OGS_PFCP_INTERFACE_CP_FUNCTION) {
                 ogs_assert(OGS_ERROR != ogs_pfcp_setup_pdr_gtpu_node(pdr));
             }
+        }
+
+        if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+        {
+            char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
+            char pcs_comma[] = ",";
+            char pcs_curlybrace[] = "}";
+            char pcs_squarebrace[] = "]";
+            int pcs_rv, pcs_numfar = 0;
+            ogs_pfcp_far_t *far = NULL;
+            uint64_t pcs_smfn4seid = sess->smf_n4_seid;
+            char *pcs_imsistr = sess->smf_ue->supi;
+            pcs_imsistr += 5;
+
+            asprintf(&pcs_fars, "[");
+            ogs_list_for_each(&sess->pfcp.far_list, far)
+            {
+                pcs_numfar = pcs_numfar + 1;
+
+                if (pcs_numfar > 1)
+                {
+                    pcs_fars = pcs_combine_strings(pcs_fars, pcs_comma);
+                }
+
+                asprintf(&pcs_pfcpie, "{\"id\": %d", far->id);
+                asprintf(&pcs_var, ", \"apply-action\": %d", far->apply_action);
+                pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                if (far->dst_if)
+                {
+                    asprintf(&pcs_var, ", \"dst-if\": %d", far->dst_if);
+                    pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                }
+                if (far->outer_header_creation.addr)
+                {
+                    asprintf(&pcs_var, ", \"outer-header-creation\": {\"teid\": %d", far->outer_header_creation.teid);
+                    pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                    pcs_temp = ogs_ipv4_to_string(far->outer_header_creation.addr);
+                    asprintf(&pcs_var, ", \"ip-addr\": \"%s\"}", pcs_temp);
+                    pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+                    ogs_free(pcs_temp);
+                }
+                pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_curlybrace);
+                pcs_fars = pcs_combine_strings(pcs_fars, pcs_pfcpie);
+            }
+            pcs_fars = pcs_combine_strings(pcs_fars, pcs_squarebrace);
+
+            bson_error_t error;
+            bson_t *bson_doc_ary = bson_new_from_json((const uint8_t *)pcs_fars, -1, &error);
+            asprintf(&pcs_var, "%ld", pcs_smfn4seid);
+
+            bson_t *bson_doc = BCON_NEW("$set", "{", "FARs", BCON_ARRAY(bson_doc_ary), "}");
+            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+            bson_destroy(bson_doc_ary);
+            free(pcs_var);
+            free(pcs_pfcpie);
+            free(pcs_fars);
+            if (pcs_rv != OGS_OK)
+            {
+                ogs_error("PCS Error while inserting N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+            }
+            else
+            {
+                ogs_info("PCS Successfully inserted N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+            }
+        }
+        else
+        {
+            ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
 
         status = sbi_status_from_pfcp(pfcp_cause_value);
