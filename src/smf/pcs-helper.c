@@ -6,6 +6,18 @@
 #include "pcs-helper.h"
 #include <arpa/inet.h>
 
+char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b)
+{
+   size_t pcs_len_a = 0, pcs_len_b = 0;
+   while (pcs_input_a[pcs_len_a] != '\0')
+      pcs_len_a++;
+   while (pcs_input_b[pcs_len_b] != '\0')
+      pcs_len_b++;
+   char *pcs_output_str = malloc(pcs_len_a + pcs_len_b);
+   asprintf(&pcs_output_str, "%s%s", pcs_input_a, pcs_input_b);
+   return pcs_output_str;
+}
+
 void pcs_get_substring(char *pcs_str, char *pcs_sub_str, int pcs_start_index, int pcs_end_index)
 {
    char *pcs_start = &pcs_str[pcs_start_index];
