@@ -581,7 +581,7 @@ void smf_5gc_n4_handle_session_modification_response(
             }
         }
 
-        if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+        if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && !sess->paging.ue_requested_pdu_session_establishment_done)
         {
             char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
             char pcs_comma[] = ",";
@@ -644,7 +644,7 @@ void smf_5gc_n4_handle_session_modification_response(
                 ogs_info("PCS Successfully inserted N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
         }
-        else
+        else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && !sess->paging.ue_requested_pdu_session_establishment_done)
         {
             ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }

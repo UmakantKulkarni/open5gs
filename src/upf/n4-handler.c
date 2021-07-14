@@ -552,7 +552,7 @@ void upf_n4_handle_session_modification_request(
         upf_pfcp_send_session_modification_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && !req->update_far->bar_id.presence)
     {
         char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
         char pcs_comma[] = ",";
@@ -611,7 +611,7 @@ void upf_n4_handle_session_modification_request(
             ogs_info("PCS Successfully inserted N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
     }
-    else
+    else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && !req->update_far->bar_id.presence)
     {
         ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
