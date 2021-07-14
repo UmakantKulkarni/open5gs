@@ -486,6 +486,8 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_free(smInfo);
         ogs_free(n2InfoContent);
         ogs_free(ngapData);
+        ogs_free(pcs_smcontextref);
+        ogs_free(pcs_ie);
         if (pcs_rv != OGS_OK)
         {
             ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
