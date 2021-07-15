@@ -69,7 +69,7 @@ static void recalculate_pool_size(void)
     self.pool.bearer = self.pool.sess * OGS_MAX_NUM_OF_BEARER;
     self.pool.tunnel = self.pool.bearer * MAX_NUM_OF_TUNNEL;
 
-#define MAX_NUM_OF_TIMER        16
+#define MAX_NUM_OF_TIMER        2048
     self.pool.timer = self.max.ue * MAX_NUM_OF_TIMER;
     self.pool.message = self.max.ue;
     self.pool.event = self.max.ue;
@@ -78,26 +78,26 @@ static void recalculate_pool_size(void)
 
     self.pool.nf = self.max.gnb;
 
-#define MAX_NUM_OF_SOCKET       4   /* Num of socket per NF */
+#define MAX_NUM_OF_SOCKET       2048   /* Num of socket per NF */
     self.pool.socket = self.pool.nf * MAX_NUM_OF_SOCKET;
 
-#define MAX_NUM_OF_XACT         8
+#define MAX_NUM_OF_XACT         2048
     self.pool.gtp_xact = self.max.ue * MAX_NUM_OF_XACT;
     self.pool.gtp_node = self.pool.nf;
 
     self.pool.pfcp_xact = self.max.ue * MAX_NUM_OF_XACT;
     self.pool.pfcp_node = self.pool.nf;
 
-#define MAX_NUM_OF_NF_SERVICE   16  /* Num of NF Service per NF Instance */
-#define MAX_NUM_OF_SBI_MESSAGE  4   /* Num of HTTP(s) Request/Response per NF */
-#define MAX_NUM_OF_NF_SUBSCRIPTION  4 /* Num of Subscription per NF */
+#define MAX_NUM_OF_NF_SERVICE   2048  /* Num of NF Service per NF Instance */
+#define MAX_NUM_OF_SBI_MESSAGE  4096   /* Num of HTTP(s) Request/Response per NF */
+#define MAX_NUM_OF_NF_SUBSCRIPTION  2048 /* Num of Subscription per NF */
     self.pool.nf_service = self.pool.nf * MAX_NUM_OF_NF_SERVICE;
     self.pool.nf_subscription = self.pool.nf * MAX_NUM_OF_NF_SUBSCRIPTION;
 
 #define MAX_CSMAP_POOL          128
     self.pool.csmap = MAX_CSMAP_POOL;   /* Num of TAI-LAI Mapping Table */
 
-#define MAX_NUM_OF_IMPU         8
+#define MAX_NUM_OF_IMPU         256
     self.pool.impi = self.max.ue;
     self.pool.impu = self.pool.impi * MAX_NUM_OF_IMPU;
 }
@@ -108,10 +108,10 @@ static void regenerate_all_timer_duration(void)
 
     self.time.message.sbi.client_wait_duration = self.time.message.duration;
     self.time.message.sbi.connection_deadline =
-        self.time.message.sbi.client_wait_duration + ogs_time_from_sec(1);
+        self.time.message.sbi.client_wait_duration + ogs_time_from_sec(3);
     self.time.message.sbi.nf_register_interval =
-        ogs_max(ogs_time_from_sec(3),
-            self.time.message.sbi.client_wait_duration + ogs_time_from_sec(1));
+        ogs_max(ogs_time_from_sec(5),
+            self.time.message.sbi.client_wait_duration + ogs_time_from_sec(3));
     self.time.message.sbi.nf_register_interval_in_exception =
                 ogs_time_from_msec(300);
 
