@@ -260,7 +260,7 @@ bool smf_nsmf_handle_create_sm_context(
 bool smf_nsmf_handle_update_sm_context(
     smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection)
 {
-    int i, pcs_status = 0;
+    int i;
     smf_ue_t *smf_ue = NULL;
 
     ogs_sbi_message_t sendmsg;
@@ -389,7 +389,6 @@ bool smf_nsmf_handle_update_sm_context(
         ogs_assert(n2smbuf);
         ngap_send_to_n2sm(
                 sess, stream, SmContextUpdateData->n2_sm_info_type, n2smbuf);
-        pcs_status = 1;
 
     } else if (SmContextUpdateData->up_cnx_state) {
 
@@ -620,7 +619,7 @@ bool smf_nsmf_handle_update_sm_context(
         return false;
     }
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info && pcs_status)
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
     {
         NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
         NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
@@ -671,7 +670,7 @@ bool smf_nsmf_handle_update_sm_context(
             ogs_error("PCS ogs_asn_decode failed");
         }
     }
-    else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && SmContextUpdateData->n2_sm_info_type == 2 && pcs_status)
+    else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && SmContextUpdateData->n2_sm_info_type == 2)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
     }

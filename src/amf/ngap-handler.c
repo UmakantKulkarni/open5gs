@@ -1410,7 +1410,7 @@ void ngap_handle_pdu_session_resource_setup_response(
         amf_gnb_t *gnb, ogs_ngap_message_t *message, mongoc_collection_t *pcs_dbcollection)
 {
     char buf[OGS_ADDRSTRLEN];
-    int i, pcs_status = 0;
+    int i;
 
     amf_ue_t *amf_ue = NULL;
     ran_ue_t *ran_ue = NULL;
@@ -1571,12 +1571,12 @@ void ngap_handle_pdu_session_resource_setup_response(
         param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
         ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
 
-        pcs_status =
+        ogs_assert(true ==
             amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
                 sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
-                amf_nsmf_pdusession_build_update_sm_context);
+                amf_nsmf_pdusession_build_update_sm_context));
 
-        if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && pcs_status)
+        if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
         {
             NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
             NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
@@ -1627,7 +1627,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 {
                     ogs_error("PCS Error while updateing dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
                 }
-                else if (pcs_status)
+                else
                 {
                     ogs_info("PCS Successfully updated dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
                 }

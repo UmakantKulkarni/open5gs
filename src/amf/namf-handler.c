@@ -29,7 +29,7 @@
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection)
 {
-    int status, pcs_status = 0;
+    int status;
 
     amf_ue_t *amf_ue = NULL;
     amf_sess_t *sess = NULL;
@@ -373,17 +373,17 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
     response = ogs_sbi_build_response(&sendmsg, status);
     ogs_assert(response);
-    pcs_status = ogs_sbi_server_send_response(stream, response);
+    ogs_assert(true == ogs_sbi_server_send_response(stream, response));
 
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && pcs_status)
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
-        int pcs_decode_status = 1;
+        int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
         ogs_nas_5gs_message_t pcs_nasmessage;
-        pcs_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
-        if (pcs_decode_status == 0)
+        pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
+        if (pcs_nas_decode_status == 0 && pcs_nasmessage.gsm.h.message_type == 194)
         {
             ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
 
@@ -428,76 +428,83 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             NGAP_QosFlowLevelQosParameters_t *pcs_qosflowlevelqosparameters = NULL;
             NGAP_QosCharacteristics_t *pcs_qoscharacteristics = NULL;
             NGAP_AllocationAndRetentionPriority_t *pcs_allocationandretentionpriority;
-            ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
-            for (pcs_k = 0; pcs_k < pcs_n2smmessage.protocolIEs.list.count; pcs_k++)
+            pcs_ngap_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
+            if (pcs_ngap_decode_status == 0)
             {
-                pcs_ie = pcs_n2smmessage.protocolIEs.list.array[pcs_k];
-                switch (pcs_ie->id)
+                for (pcs_k = 0; pcs_k < pcs_n2smmessage.protocolIEs.list.count; pcs_k++)
                 {
-                case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
-                    pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
-                    pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
-                    break;
-                case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
-                    pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
-                    ogs_assert(pcs_qosflowsetuprequestlist);
-                    for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
+                    pcs_ie = pcs_n2smmessage.protocolIEs.list.array[pcs_k];
+                    switch (pcs_ie->id)
                     {
-                        pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[pcs_l];
-                        ogs_assert(pcs_qosflowsetuprequestitem);
-                        pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
-                        pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
-                        pcs_allocationandretentionpriority = &pcs_qosflowlevelqosparameters->allocationAndRetentionPriority;
-                        pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
-                        pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
-                        pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
-                        pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
-                        pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
+                    case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
+                        pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
+                        pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
+                        break;
+                    case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
+                        pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
+                        ogs_assert(pcs_qosflowsetuprequestlist);
+                        for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
+                        {
+                            pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[pcs_l];
+                            ogs_assert(pcs_qosflowsetuprequestitem);
+                            pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
+                            pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
+                            pcs_allocationandretentionpriority = &pcs_qosflowlevelqosparameters->allocationAndRetentionPriority;
+                            pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
+                            pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
+                            pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
+                            pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
+                            pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
+                        }
+                        break;
+                    case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
+                        pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
+                        pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
+                        ogs_assert(pcs_gtptunnel);
+                        ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+                        ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
+                        pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+                        break;
                     }
-                    break;
-                case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
-                    pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
-                    pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
-                    ogs_assert(pcs_gtptunnel);
-                    ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-                    ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-                    pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-                    break;
                 }
-            }
 
-            bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
+                bson_t *bson_doc = BCON_NEW("$set", "{", "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
-            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-            bson_destroy(bson_doc_nas_qos_rule);
-            bson_destroy(bson_doc_nas_qos_flow);
-            bson_destroy(bson_doc_nas_epco);
-            ogs_free(pcs_upfn3ip);
-            ogs_free(pcs_pduaddress);
-            ogs_free(pcs_snssaisd);
-            ogs_free(pcs_ie);
-            ogs_pkbuf_free(n1buf);
-            ogs_pkbuf_free(n2buf);
-            ogs_pkbuf_free(gmmbuf);
-            ogs_pkbuf_free(ngapbuf);
-            ogs_free(pcs_gtptunnel);
-            ogs_free(pcs_qosflowsetuprequestitem);
-            ogs_free(N1N2MessageTransferReqData);
-            ogs_free(n1MessageContainer);
-            ogs_free(n1MessageContent);
-            ogs_free(n2InfoContainer);
-            ogs_free(smInfo);
-            ogs_free(n2InfoContent);
-            ogs_free(ngapData);
-            ogs_free(pcs_smcontextref);
-            ogs_free(pcs_ie);
-            if (pcs_rv != OGS_OK)
-            {
-                ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                bson_destroy(bson_doc_nas_qos_rule);
+                bson_destroy(bson_doc_nas_qos_flow);
+                bson_destroy(bson_doc_nas_epco);
+                ogs_free(pcs_upfn3ip);
+                ogs_free(pcs_pduaddress);
+                ogs_free(pcs_snssaisd);
+                ogs_free(pcs_ie);
+                ogs_pkbuf_free(n1buf);
+                ogs_pkbuf_free(n2buf);
+                ogs_pkbuf_free(gmmbuf);
+                ogs_pkbuf_free(ngapbuf);
+                ogs_free(pcs_gtptunnel);
+                ogs_free(pcs_qosflowsetuprequestitem);
+                ogs_free(N1N2MessageTransferReqData);
+                ogs_free(n1MessageContainer);
+                ogs_free(n1MessageContent);
+                ogs_free(n2InfoContainer);
+                ogs_free(smInfo);
+                ogs_free(n2InfoContent);
+                ogs_free(ngapData);
+                ogs_free(pcs_smcontextref);
+                ogs_free(pcs_ie);
+                if (pcs_rv != OGS_OK)
+                {
+                    ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                }
+                else
+                {
+                    ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                }
             }
             else
             {
-                ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                ogs_error("PCS ogs_asn_decode failed");
             }
         }
         else
@@ -505,7 +512,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ogs_error("PCS ogs_nas_5gsm_decode failed");
         }
     }
-    else if (pcs_status)
+    else
     {
         ogs_info("PCS Successfully completed n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
     }

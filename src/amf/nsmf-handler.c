@@ -29,7 +29,7 @@
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection)
 {
-    int rv, pcs_status = 0;
+    int rv;
 
     ogs_assert(sess);
     ogs_assert(recvmsg);
@@ -105,7 +105,6 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         ogs_assert(sess->sm_context_ref);
 
         ogs_sbi_header_free(&header);
-        pcs_status = 1;
 
     } else {
         OpenAPI_sm_context_create_error_t *SmContextCreateError = NULL;
@@ -154,7 +153,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && pcs_status)
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
         char *pcs_docjson;
         char *pcs_imsistr = sess->amf_ue->supi;
@@ -196,7 +195,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
-    else if (pcs_status)
+    else
     {
         ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
     }
