@@ -29,7 +29,7 @@
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection)
 {
-    int status;
+    int status, pcs_status = 0;
 
     amf_ue_t *amf_ue = NULL;
     amf_sess_t *sess = NULL;
@@ -373,12 +373,12 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
     response = ogs_sbi_build_response(&sendmsg, status);
     ogs_assert(response);
-    ogs_assert(true == ogs_sbi_server_send_response(stream, response));
+    pcs_status = ogs_sbi_server_send_response(stream, response);
 
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && pcs_status)
     {
         ogs_nas_5gs_message_t pcs_nasmessage;
         ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
@@ -497,7 +497,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
-    else
+    else if (pcs_status)
     {
         ogs_info("PCS Successfully completed n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
     }
