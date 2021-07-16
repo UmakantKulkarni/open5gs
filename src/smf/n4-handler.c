@@ -457,8 +457,8 @@ void smf_5gc_n4_handle_session_establishment_response(
                 ogs_free(pcs_upfn3ip);
                 ogs_free(pcs_pduaddress);
                 ogs_free(pcs_ie);
-                ogs_pkbuf_free(param.n1smbuf);
-                ogs_pkbuf_free(param.n2smbuf);
+                //ogs_pkbuf_free(param.n1smbuf);
+                //ogs_pkbuf_free(param.n2smbuf);
                 ogs_free(pcs_gtptunnel);
                 ogs_free(pcs_qosflowsetuprequestitem);
                 bson_destroy(bson_pdr_ary);
