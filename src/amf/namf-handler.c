@@ -474,13 +474,13 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
                 bson_destroy(bson_doc_nas_qos_rule);
                 bson_destroy(bson_doc_nas_qos_flow);
                 bson_destroy(bson_doc_nas_epco);
-                ogs_free(pcs_upfn3ip);
+                /* ogs_free(pcs_upfn3ip);
                 ogs_free(pcs_pduaddress);
                 ogs_free(pcs_snssaisd);
                 ogs_free(pcs_ie);
                 ogs_free(pcs_gtptunnel);
                 ogs_free(pcs_qosflowsetuprequestitem);
-                ogs_free(pcs_smcontextref);
+                ogs_free(pcs_smcontextref); */
                 if (pcs_rv != OGS_OK)
                 {
                     ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
