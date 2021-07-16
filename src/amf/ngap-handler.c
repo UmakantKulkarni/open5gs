@@ -1598,11 +1598,8 @@ void ngap_handle_pdu_session_resource_setup_response(
                 pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
                 pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
                 ogs_assert(pcs_gtptunnel);
-                if (pcs_gtptunnel->transportLayerAddress.size == OGS_IPV4_LEN)
-                {
-                    ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-                    pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-                }
+                ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+                pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
                 ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
                 
                 pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
@@ -1615,14 +1612,9 @@ void ngap_handle_pdu_session_resource_setup_response(
 
                 bson_t *bson_doc = BCON_NEW("$set", "{", "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
                 pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-                if (pcs_gtptunnel->transportLayerAddress.size == OGS_IPV4_LEN)
-                {
-                    ogs_free(pcs_upfn3ip);
-                    ogs_free(pcs_gtptunnel);
-                }
-                ogs_free(ie);
-                ogs_free(successfulOutcome);
-                ogs_free(PDUSessionItem);
+                //ogs_free(pcs_upfn3ip);
+                //ogs_free(pcs_gtptunnel);
+                //ogs_free(ie);
                 if (pcs_rv != OGS_OK)
                 {
                     ogs_error("PCS Error while updateing dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
