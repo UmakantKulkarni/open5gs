@@ -663,7 +663,11 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
         }
 
         ogs_assert(sess);
-        ogs_assert(OGS_FSM_STATE(&sess->sm));
+        //ogs_assert(OGS_FSM_STATE(&sess->sm));
+        if (&sess->sm)
+            ogs_debug("PCS Valid SM for session");
+        else
+            break;
 
         sess->pti = nas_message.gsm.h.procedure_transaction_identity;
 

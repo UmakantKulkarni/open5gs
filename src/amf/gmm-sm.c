@@ -637,9 +637,10 @@ void gmm_state_authentication(ogs_fsm_t *s, amf_event_t *e)
                     if (rv != OGS_OK) {
                         ogs_error("[%s] Cannot handle SBI message",
                                 amf_ue->suci);
-                        ogs_assert(OGS_OK ==
-                            nas_5gs_send_authentication_reject(amf_ue));
-                        OGS_FSM_TRAN(&amf_ue->sm, &gmm_state_exception);
+                        //ogs_assert(OGS_OK ==
+                        //    nas_5gs_send_authentication_reject(amf_ue));
+                        //OGS_FSM_TRAN(&amf_ue->sm, &gmm_state_exception);
+                        break;
                     }
                     break;
                 CASE(OGS_SBI_HTTP_METHOD_PUT)
@@ -699,8 +700,10 @@ void gmm_state_security_mode(ogs_fsm_t *s, amf_event_t *e)
     switch (e->id) {
     case OGS_FSM_ENTRY_SIG:
         CLEAR_AMF_UE_TIMER(amf_ue->t3560);
-        ogs_assert(OGS_OK ==
-            nas_5gs_send_security_mode_command(amf_ue));
+        int pcs = 1;
+        pcs = nas_5gs_send_security_mode_command(amf_ue);
+        if (pcs != OGS_OK)
+            break;
         break;
     case OGS_FSM_EXIT_SIG:
         break;
