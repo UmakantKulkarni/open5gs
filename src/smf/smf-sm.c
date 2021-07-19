@@ -343,7 +343,15 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
 
                     DEFAULT
                         sess = smf_sess_add_by_sbi_message(&sbi_message, pcs_dbcollection);
-                        ogs_assert(sess);
+                        //ogs_assert(sess);
+                        if (sess == NULL)
+                        {
+                            ogs_error("PCS JSON Parse Error during SmContextCreate");
+                            ogs_sbi_server_send_error(stream,
+                                                      OGS_SBI_HTTP_STATUS_BAD_REQUEST, &sbi_message,
+                                                      "PCS JSON Parse Error", sbi_message.h.method);
+                            break;
+                        }
                     END
                     break;
 
@@ -530,7 +538,15 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
             ogs_assert(sbi_xact);
 
             sess = (smf_sess_t *)sbi_xact->sbi_object;
-            ogs_assert(sess);
+            //ogs_assert(sess);
+            if (sess == NULL)
+            {
+                ogs_error("sess is NULL during NAMF_COMM event");
+                ogs_sbi_server_send_error(stream,
+                                          OGS_SBI_HTTP_STATUS_BAD_REQUEST, &sbi_message,
+                                          "PCS sess is NULL", sbi_message.h.method);
+                break;
+            }
 
             e->sbi.data = sbi_xact->assoc_stream;
             e->sbi.state = sbi_xact->state;

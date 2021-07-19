@@ -1160,7 +1160,12 @@ smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, mongoc_colle
 
     ogs_assert(message);
     SmContextCreateData = message->SmContextCreateData;
-    ogs_assert(SmContextCreateData);
+    //ogs_assert(SmContextCreateData);
+    if (SmContextCreateData == NULL)
+    {
+        ogs_error("PCS SmContextCreateData is NULL");
+        return NULL;
+    }
 
     if (!SmContextCreateData->supi) {
         ogs_error("No SUPI");
