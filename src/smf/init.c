@@ -140,7 +140,7 @@ static void smf_main(void *data)
 
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
-        amf_sm.pcs_fsmdata.pcs_dbcommenabled = 1;
+        smf_sm.pcs_fsmdata.pcs_dbcommenabled = 1;
         const char *uri_string = "mongodb://mongodb-svc:27017";
         mongoc_uri_t *uri;
         mongoc_client_t *client;
