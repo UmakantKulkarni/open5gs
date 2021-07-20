@@ -40,7 +40,7 @@ void ngap_handle_initial_context_setup_failure(
         amf_gnb_t *gnb, ogs_ngap_message_t *message);
 
 void ngap_handle_pdu_session_resource_setup_response(
-        amf_gnb_t *gnb, ogs_ngap_message_t *message, pcs_fsm_struct_t pcs_fsmdata);
+        amf_gnb_t *gnb, ogs_ngap_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
 void ngap_handle_pdu_session_resource_modify_response(
         amf_gnb_t *gnb, ogs_ngap_message_t *message);
 void ngap_handle_pdu_session_resource_release_response(

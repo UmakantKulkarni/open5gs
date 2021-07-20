@@ -1407,7 +1407,7 @@ void ngap_handle_ue_context_release_action(ran_ue_t *ran_ue)
 }
 
 void ngap_handle_pdu_session_resource_setup_response(
-        amf_gnb_t *gnb, ogs_ngap_message_t *message, pcs_fsm_struct_t pcs_fsmdata)
+        amf_gnb_t *gnb, ogs_ngap_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
 {
     char buf[OGS_ADDRSTRLEN];
     int i;
@@ -1576,9 +1576,9 @@ void ngap_handle_pdu_session_resource_setup_response(
                 sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
                 amf_nsmf_pdusession_build_update_sm_context));
 
-        if (pcs_fsmdata.pcs_dbcommenabled)
+        if (pcs_fsmdata->pcs_dbcommenabled)
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
+            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
             NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
             NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;

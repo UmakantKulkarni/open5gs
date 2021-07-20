@@ -573,7 +573,7 @@ amf_context_t *amf_self(void);
 
 int amf_context_parse_config(void);
 
-amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t pcs_fsmdata);
+amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t *pcs_fsmdata);
 void amf_gnb_remove(amf_gnb_t *gnb);
 void amf_gnb_remove_all(void);
 amf_gnb_t *amf_gnb_find_by_addr(ogs_sockaddr_t *addr);

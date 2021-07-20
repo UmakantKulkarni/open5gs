@@ -27,7 +27,7 @@
 #include "mongoc.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
-        amf_sess_t *sess, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t pcs_fsmdata)
+        amf_sess_t *sess, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
 {
     int rv;
 
@@ -153,9 +153,9 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata.pcs_dbcommenabled)
+    if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_docjson;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;

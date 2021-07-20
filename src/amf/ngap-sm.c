@@ -39,7 +39,7 @@ void ngap_state_final(ogs_fsm_t *s, amf_event_t *e)
 
 void ngap_state_operational(ogs_fsm_t *s, amf_event_t *e)
 {
-    pcs_fsm_struct_t pcs_fsmdata = s->pcs_fsmdata;
+    pcs_fsm_struct_t *pcs_fsmdata = &s->pcs_fsmdata;
     amf_gnb_t *gnb = NULL;
     ogs_pkbuf_t *pkbuf = NULL;
 

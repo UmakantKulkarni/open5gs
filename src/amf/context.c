@@ -822,7 +822,7 @@ int amf_context_parse_config(void)
     return OGS_OK;
 }
 
-amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t pcs_fsmdata)
+amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t *pcs_fsmdata)
 {
     amf_gnb_t *gnb = NULL;
     amf_event_t e;
