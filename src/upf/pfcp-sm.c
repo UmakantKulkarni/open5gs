@@ -164,7 +164,7 @@ void upf_pfcp_state_associated(ogs_fsm_t *s, upf_event_t *e)
     upf_sm_debug(e);
 
     node = e->pfcp_node;
-    pcs_fsm_struct_t pcs_fsmdata = node->sm.pcs_fsmdata;
+    pcs_fsm_struct_t *pcs_fsmdata = &node->sm.pcs_fsmdata;
     ogs_assert(node);
     addr = node->sa_list;
     ogs_assert(addr);

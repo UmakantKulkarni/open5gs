@@ -101,7 +101,7 @@ static int sbi_status_from_pfcp(uint8_t pfcp_cause)
 
 void smf_5gc_n4_handle_session_establishment_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_establishment_response_t *rsp, pcs_fsm_struct_t pcs_fsmdata)
+        ogs_pfcp_session_establishment_response_t *rsp, pcs_fsm_struct_t *pcs_fsmdata)
 {
     int i;
 
@@ -211,9 +211,9 @@ void smf_5gc_n4_handle_session_establishment_response(
 
     smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
 
-    if (pcs_fsmdata.pcs_dbcommenabled)
+    if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
         ogs_nas_5gs_message_t pcs_nasmessage;
         pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, param.n1smbuf);
@@ -500,7 +500,7 @@ void smf_5gc_n4_handle_session_establishment_response(
 
 void smf_5gc_n4_handle_session_modification_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_modification_response_t *rsp, pcs_fsm_struct_t pcs_fsmdata)
+        ogs_pfcp_session_modification_response_t *rsp, pcs_fsm_struct_t *pcs_fsmdata)
 {
     int status = 0;
     uint64_t flags = 0;
@@ -597,9 +597,9 @@ void smf_5gc_n4_handle_session_modification_response(
             }
         }
 
-        if (pcs_fsmdata.pcs_dbcommenabled && !sess->paging.ue_requested_pdu_session_establishment_done)
+        if (pcs_fsmdata->pcs_dbcommenabled && !sess->paging.ue_requested_pdu_session_establishment_done)
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
+            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
             char pcs_comma[] = ",";
             char pcs_curlybrace[] = "}";
@@ -661,7 +661,7 @@ void smf_5gc_n4_handle_session_modification_response(
                 ogs_info("PCS Successfully inserted N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
         }
-        else if (!pcs_fsmdata.pcs_dbcommenabled && !sess->paging.ue_requested_pdu_session_establishment_done)
+        else if (!pcs_fsmdata->pcs_dbcommenabled && !sess->paging.ue_requested_pdu_session_establishment_done)
         {
             ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }

@@ -861,7 +861,7 @@ amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t 
 
     memset(&e, 0, sizeof(e));
     e.gnb = gnb;
-    gnb->sm.pcs_fsmdata = pcs_fsmdata;
+    gnb->sm.pcs_fsmdata = *pcs_fsmdata;
     ogs_fsm_create(&gnb->sm, ngap_state_initial, ngap_state_final);
     ogs_fsm_init(&gnb->sm, &e);
 

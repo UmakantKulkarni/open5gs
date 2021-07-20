@@ -956,7 +956,7 @@ void smf_sess_select_upf(smf_sess_t *sess)
             OGS_ADDR(&ogs_pfcp_self()->pfcp_node->addr, buf));
 }
 
-smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, pcs_fsm_struct_t pcs_fsmdata)
+smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, pcs_fsm_struct_t *pcs_fsmdata)
 {
     smf_event_t e;
 
@@ -1004,7 +1004,7 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, p
 
     memset(&e, 0, sizeof(e));
     e.sess = sess;
-    sess->sm.pcs_fsmdata = pcs_fsmdata;
+    sess->sm.pcs_fsmdata = *pcs_fsmdata;
     ogs_fsm_create(&sess->sm, smf_gsm_state_initial, smf_gsm_state_final);
     ogs_fsm_init(&sess->sm, &e);
 
@@ -1017,7 +1017,7 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, p
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_struct_t pcs_fsmdata)
+smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
 {
     smf_ue_t *smf_ue = NULL;
     smf_sess_t *sess = NULL;
@@ -1079,7 +1079,7 @@ smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_stru
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, pcs_fsm_struct_t pcs_fsmdata)
+smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, pcs_fsm_struct_t *pcs_fsmdata)
 {
     smf_event_t e;
 
@@ -1137,7 +1137,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, pcs_fsm_struct_t 
 
     memset(&e, 0, sizeof(e));
     e.sess = sess;
-    sess->sm.pcs_fsmdata = pcs_fsmdata;
+    sess->sm.pcs_fsmdata = *pcs_fsmdata;
     ogs_fsm_create(&sess->sm, smf_gsm_state_initial, smf_gsm_state_final);
     ogs_fsm_init(&sess->sm, &e);
 
@@ -1150,7 +1150,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, pcs_fsm_struct_t 
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata)
+smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
 {
     smf_ue_t *smf_ue = NULL;
     smf_sess_t *sess = NULL;

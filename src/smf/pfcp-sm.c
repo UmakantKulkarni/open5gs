@@ -150,7 +150,7 @@ void smf_pfcp_state_will_associate(ogs_fsm_t *s, smf_event_t *e)
 
 void smf_pfcp_state_associated(ogs_fsm_t *s, smf_event_t *e)
 {
-    pcs_fsm_struct_t pcs_fsmdata = s->pcs_fsmdata;
+    pcs_fsm_struct_t *pcs_fsmdata = &s->pcs_fsmdata;
     char buf[OGS_ADDRSTRLEN];
 
     ogs_pfcp_node_t *node = NULL;

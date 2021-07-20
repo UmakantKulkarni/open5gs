@@ -41,7 +41,7 @@ void smf_gsm_state_final(ogs_fsm_t *s, smf_event_t *e)
 
 void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
 {
-    pcs_fsm_struct_t pcs_fsmdata = s->pcs_fsmdata;
+    pcs_fsm_struct_t *pcs_fsmdata = &s->pcs_fsmdata;
     int rv, ngap_state;
     char *strerror = NULL;
     smf_ue_t *smf_ue = NULL;
