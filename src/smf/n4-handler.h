@@ -21,7 +21,6 @@
 #define SMF_N4_HANDLER_H
 
 #include "ogs-gtp.h"
-#include "mongoc.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -29,10 +28,10 @@ extern "C" {
 
 void smf_5gc_n4_handle_session_establishment_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_establishment_response_t *rsp, mongoc_collection_t *pcs_dbcollection);
+        ogs_pfcp_session_establishment_response_t *rsp, pcs_fsm_struct_t pcs_fsmdata);
 void smf_5gc_n4_handle_session_modification_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
-        ogs_pfcp_session_modification_response_t *rsp, mongoc_collection_t *pcs_dbcollection);
+        ogs_pfcp_session_modification_response_t *rsp, pcs_fsm_struct_t pcs_fsmdata);
 void smf_5gc_n4_handle_session_deletion_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_deletion_response_t *rsp);

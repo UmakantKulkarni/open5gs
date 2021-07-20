@@ -25,7 +25,6 @@ extern "C" {
 #endif
 
 #include "context.h"
-#include "mongoc.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata);

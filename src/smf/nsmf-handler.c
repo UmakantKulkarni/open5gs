@@ -26,7 +26,7 @@
 #include "mongoc.h"
 
 bool smf_nsmf_handle_create_sm_context(
-    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection)
+    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata)
 {
     smf_ue_t *smf_ue = NULL;
 
@@ -208,8 +208,9 @@ bool smf_nsmf_handle_create_sm_context(
     ogs_assert(n1smbuf);
     nas_5gs_send_to_gsm(sess, stream, n1smbuf);
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (pcs_fsmdata.pcs_dbcommenabled)
     {
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
         char *pcs_docjson;
         int pcs_rv;
         char *pcs_imsistr = sess->smf_ue->supi;
@@ -258,7 +259,7 @@ bool smf_nsmf_handle_create_sm_context(
 }
 
 bool smf_nsmf_handle_update_sm_context(
-    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection)
+    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata)
 {
     int i;
     smf_ue_t *smf_ue = NULL;
@@ -620,8 +621,9 @@ bool smf_nsmf_handle_update_sm_context(
         return false;
     }
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
+    if (pcs_fsmdata.pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
     {
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
         NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
         NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
         NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
@@ -671,7 +673,7 @@ bool smf_nsmf_handle_update_sm_context(
             ogs_error("PCS ogs_asn_decode failed");
         }
     }
-    else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && SmContextUpdateData->n2_sm_info_type == 2)
+    else if (!pcs_fsmdata.pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
     }

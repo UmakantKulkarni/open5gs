@@ -27,7 +27,6 @@
 #include "ngap-handler.h"
 #include "pfcp-path.h"
 #include "ngap-path.h"
-#include "mongoc.h"
 
 void smf_gsm_state_initial(ogs_fsm_t *s, smf_event_t *e)
 {
@@ -42,7 +41,7 @@ void smf_gsm_state_final(ogs_fsm_t *s, smf_event_t *e)
 
 void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
 {
-    mongoc_collection_t *pcs_dbcollection = s->pcs_dbcollection;
+    pcs_fsm_struct_t pcs_fsmdata = s->pcs_fsmdata;
     int rv, ngap_state;
     char *strerror = NULL;
     smf_ue_t *smf_ue = NULL;
@@ -81,13 +80,13 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
         CASE(OGS_SBI_SERVICE_NAME_NSMF_PDUSESSION)
             SWITCH(sbi_message->h.resource.component[2])
             CASE(OGS_SBI_RESOURCE_NAME_MODIFY)
-                smf_nsmf_handle_update_sm_context(sess, stream, sbi_message, pcs_dbcollection);
+                smf_nsmf_handle_update_sm_context(sess, stream, sbi_message, pcs_fsmdata);
                 break;
             CASE(OGS_SBI_RESOURCE_NAME_RELEASE)
                 smf_nsmf_handle_release_sm_context(sess, stream, sbi_message);
                 break;
             DEFAULT
-                smf_nsmf_handle_create_sm_context(sess, stream, sbi_message, pcs_dbcollection);
+                smf_nsmf_handle_create_sm_context(sess, stream, sbi_message, pcs_fsmdata);
                 break;
             END
             break;
@@ -182,7 +181,7 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
                     }
 
                     smf_npcf_smpolicycontrol_handle_create(
-                            sess, stream, state, sbi_message, pcs_dbcollection);
+                            sess, stream, state, sbi_message, pcs_fsmdata);
                 } else {
                     SWITCH(sbi_message->h.resource.component[2])
                     CASE(OGS_SBI_RESOURCE_NAME_DELETE)

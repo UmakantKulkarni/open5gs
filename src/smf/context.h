@@ -35,7 +35,6 @@
 
 #include "timer.h"
 #include "smf-sm.h"
-#include "mongoc.h"
 
 #if HAVE_NET_IF_H
 #include <net/if.h>
@@ -355,11 +354,11 @@ void smf_ue_remove_all(void);
 smf_ue_t *smf_ue_find_by_supi(char *supi);
 smf_ue_t *smf_ue_find_by_imsi(uint8_t *imsi, int imsi_len);
 
-smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, mongoc_collection_t *pcs_dbcollection);
-smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, mongoc_collection_t *pcs_dbcollection);
+smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_struct_t pcs_fsmdata);
+smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, pcs_fsm_struct_t pcs_fsmdata);
 
-smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection);
-smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, mongoc_collection_t *pcs_dbcollection);
+smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata);
+smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, pcs_fsm_struct_t pcs_fsmdata);
 
 void smf_sess_select_upf(smf_sess_t *sess);
 void smf_sess_set_ue_ip(smf_sess_t *sess);

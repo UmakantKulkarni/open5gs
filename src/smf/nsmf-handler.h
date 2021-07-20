@@ -21,16 +21,15 @@
 #define SMF_NSMF_HANDLER_H
 
 #include "context.h"
-#include "mongoc.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 bool smf_nsmf_handle_create_sm_context(
-    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection);
+    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata);
 bool smf_nsmf_handle_update_sm_context(
-    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, mongoc_collection_t *pcs_dbcollection);
+    smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t pcs_fsmdata);
 bool smf_nsmf_handle_release_sm_context(
     smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message);
 
