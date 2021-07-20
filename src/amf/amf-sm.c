@@ -26,7 +26,6 @@
 #include "nsmf-handler.h"
 #include "nnssf-handler.h"
 #include "nas-security.h"
-#include "mongoc.h"
 
 void amf_state_initial(ogs_fsm_t *s, amf_event_t *e)
 {
@@ -46,7 +45,7 @@ void amf_state_final(ogs_fsm_t *s, amf_event_t *e)
 
 void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 {
-    mongoc_collection_t *pcs_dbcollection = s->pcs_dbcollection;
+    pcs_fsm_struct_t pcs_fsmdata = s->pcs_fsmdata;
     int rv;
     char buf[OGS_ADDRSTRLEN];
     const char *api_version = NULL;
@@ -162,7 +161,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
                     SWITCH(sbi_message.h.method)
                     CASE(OGS_SBI_HTTP_METHOD_POST)
                         rv = amf_namf_comm_handle_n1_n2_message_transfer(
-                                stream, &sbi_message, pcs_dbcollection);
+                                stream, &sbi_message, pcs_fsmdata);
                         if (rv != OGS_OK) {
                             ogs_assert(true ==
                                 ogs_sbi_server_send_error(stream,
@@ -448,7 +447,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 
             DEFAULT
                 rv = amf_nsmf_pdusession_handle_create_sm_context(
-                        sess, &sbi_message, pcs_dbcollection);
+                        sess, &sbi_message, pcs_fsmdata);
                 if (rv != OGS_OK) {
                     /*
                      * 1. First PDU session establishment request
@@ -610,7 +609,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 
         gnb = amf_gnb_find_by_addr(addr);
         if (!gnb) {
-            gnb = amf_gnb_add(sock, addr, pcs_dbcollection);
+            gnb = amf_gnb_add(sock, addr, pcs_fsmdata);
             ogs_assert(gnb);
         } else {
             ogs_warn("gNB context duplicated with IP-address [%s]!!!",
@@ -632,7 +631,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 
         gnb = amf_gnb_find_by_addr(addr);
         if (!gnb) {
-            gnb = amf_gnb_add(sock, addr, pcs_dbcollection);
+            gnb = amf_gnb_add(sock, addr, pcs_fsmdata);
             ogs_assert(gnb);
         } else {
             ogs_free(addr);

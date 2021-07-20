@@ -18,7 +18,6 @@
  */
 
 #include "ngap-path.h"
-#include "mongoc.h"
 
 static amf_context_t self;
 
@@ -823,7 +822,7 @@ int amf_context_parse_config(void)
     return OGS_OK;
 }
 
-amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, mongoc_collection_t *pcs_dbcollection)
+amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t pcs_fsmdata)
 {
     amf_gnb_t *gnb = NULL;
     amf_event_t e;
@@ -862,7 +861,7 @@ amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, mongoc_collection
 
     memset(&e, 0, sizeof(e));
     e.gnb = gnb;
-    gnb->sm.pcs_dbcollection = pcs_dbcollection;
+    gnb->sm.pcs_fsmdata = pcs_fsmdata;
     ogs_fsm_create(&gnb->sm, ngap_state_initial, ngap_state_final);
     ogs_fsm_init(&gnb->sm, &e);
 

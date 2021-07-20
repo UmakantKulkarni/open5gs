@@ -27,7 +27,7 @@
 #include "mongoc.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
-        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, mongoc_collection_t *pcs_dbcollection)
+        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t pcs_fsmdata)
 {
     int status;
 
@@ -379,8 +379,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (pcs_fsmdata.pcs_dbcommenabled)
     {
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
         int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
         ogs_nas_5gs_message_t pcs_nasmessage;
         pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);

@@ -41,11 +41,16 @@ typedef enum {
 
 typedef void (*ogs_fsm_handler_t)(void *sm, void *event);
 
+typedef struct _pcs_fsm_struct_t {
+    mongoc_collection_t *pcs_dbcollection;
+    uint8_t pcs_dbcommenabled;
+} pcs_fsm_struct_t;
+
 typedef struct _ogs_fsm_t {
     ogs_fsm_handler_t init;
     ogs_fsm_handler_t fini;
     ogs_fsm_handler_t state;
-    mongoc_collection_t *pcs_dbcollection;
+    pcs_fsm_struct_t pcs_fsmdata;
 } ogs_fsm_t;
 
 #define ogs_fsm_create(__s, __i, __f) \

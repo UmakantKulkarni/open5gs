@@ -20,7 +20,6 @@
 #include "ngap-build.h"
 #include "ngap-handler.h"
 #include "ngap-path.h"
-#include "mongoc.h"
 
 void ngap_state_initial(ogs_fsm_t *s, amf_event_t *e)
 {
@@ -40,7 +39,7 @@ void ngap_state_final(ogs_fsm_t *s, amf_event_t *e)
 
 void ngap_state_operational(ogs_fsm_t *s, amf_event_t *e)
 {
-    mongoc_collection_t *pcs_dbcollection = s->pcs_dbcollection;
+    pcs_fsm_struct_t pcs_fsmdata = s->pcs_fsmdata;
     amf_gnb_t *gnb = NULL;
     ogs_pkbuf_t *pkbuf = NULL;
 
@@ -136,7 +135,7 @@ void ngap_state_operational(ogs_fsm_t *s, amf_event_t *e)
                 ngap_handle_initial_context_setup_response(gnb, pdu);
                 break;
             case NGAP_ProcedureCode_id_PDUSessionResourceSetup:
-                ngap_handle_pdu_session_resource_setup_response(gnb, pdu, pcs_dbcollection);
+                ngap_handle_pdu_session_resource_setup_response(gnb, pdu, pcs_fsmdata);
                 break;
             case NGAP_ProcedureCode_id_PDUSessionResourceModify:
                 ngap_handle_pdu_session_resource_modify_response(gnb, pdu);
