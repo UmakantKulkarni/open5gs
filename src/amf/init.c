@@ -104,14 +104,14 @@ static void amf_main(void *data)
     ogs_fsm_t amf_sm;
     int rv;
 
+    mongoc_uri_t *uri;
+    mongoc_client_t *client;
+    mongoc_database_t *database;
+    mongoc_collection_t *collection;
     if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
     {
         amf_sm.pcs_fsmdata.pcs_dbcommenabled = 1;
         const char *uri_string = "mongodb://mongodb-svc:27017";
-        mongoc_uri_t *uri;
-        mongoc_client_t *client;
-        mongoc_database_t *database;
-        mongoc_collection_t *collection;
         bson_error_t error;
         bson_t *command, reply;
         char *str;
