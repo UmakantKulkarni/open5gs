@@ -64,7 +64,7 @@ void upf_state_operational(ogs_fsm_t *s, upf_event_t *e)
         recvbuf = e->pkbuf;
         ogs_assert(recvbuf);
         node = e->pfcp_node;
-        node->sm.pcs_dbcollection = s->pcs_dbcollection;
+        node->sm.pcs_fsmdata = s->pcs_fsmdata;
         ogs_assert(node);
 
         if (ogs_pfcp_parse_msg(&pfcp_message, recvbuf) != OGS_OK) {

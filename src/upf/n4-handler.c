@@ -28,7 +28,7 @@
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
-        ogs_pfcp_session_establishment_request_t *req, mongoc_collection_t *pcs_dbcollection)
+        ogs_pfcp_session_establishment_request_t *req, pcs_fsm_struct_t pcs_fsmdata)
 {
     ogs_pfcp_pdr_t *pdr = NULL;
     ogs_pfcp_far_t *far = NULL;
@@ -164,8 +164,9 @@ void upf_n4_handle_session_establishment_request(
         upf_pfcp_send_session_establishment_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (pcs_fsmdata.pcs_dbcommenabled)
     {
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
         char *pcs_upfnodeip, *pcs_smfnodeip, *pcs_docjson, *pcs_pfcpie, *pcs_pdrs, *pcs_fars, *pcs_qers, *pcs_var, *pcs_temp;
         char pcs_comma[] = ",";
         char pcs_curlybrace[] = "}";
@@ -349,7 +350,7 @@ cleanup:
 
 void upf_n4_handle_session_modification_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
-        ogs_pfcp_session_modification_request_t *req, mongoc_collection_t *pcs_dbcollection)
+        ogs_pfcp_session_modification_request_t *req, pcs_fsm_struct_t pcs_fsmdata)
 {
     ogs_pfcp_pdr_t *pdr = NULL;
     ogs_pfcp_far_t *far = NULL;
@@ -552,8 +553,9 @@ void upf_n4_handle_session_modification_request(
         upf_pfcp_send_session_modification_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0 && !req->update_far->bar_id.presence)
+    if (pcs_fsmdata.pcs_dbcommenabled && !req->update_far->bar_id.presence)
     {
+        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata.pcs_dbcollection;
         char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
         char pcs_comma[] = ",";
         char pcs_curlybrace[] = "}";
@@ -611,7 +613,7 @@ void upf_n4_handle_session_modification_request(
             ogs_info("PCS Successfully inserted N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
     }
-    else if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") != 0 && !req->update_far->bar_id.presence)
+    else if (!pcs_fsmdata.pcs_dbcommenabled && !req->update_far->bar_id.presence)
     {
         ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }

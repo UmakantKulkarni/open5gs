@@ -184,7 +184,7 @@ static void smf_main(void *data)
         * Get a handle on the database "db_name" and collection "coll_name"
         */
         database = mongoc_client_get_database(client, "pcs_db");
-        collection = mongoc_client_get_collection(client, "pcs_db", "amf");
+        collection = mongoc_client_get_collection(client, "pcs_db", "smf");
 
         /*
         * Do work. This example pings the database, prints the result as JSON and
