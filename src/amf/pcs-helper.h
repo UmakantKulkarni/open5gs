@@ -9,6 +9,7 @@ extern "C"
 #include "bson.h"
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
+    char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid);
     void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len);
     void pcs_get_substring(char *pcs_str, char *pcs_sub_str, int pcs_start_index, int pcs_end_index);
     int pcs_hex_to_int(char *pcs_hex_str, int pcs_start_index, int pcs_end_index);

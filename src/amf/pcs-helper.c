@@ -113,6 +113,27 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    return EXIT_SUCCESS;
 }
 
+char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
+{
+   mongoc_cursor_t *cursor;
+   const bson_t *doc;
+   bson_t *query = NULL;
+   char *pcs_dbrdata;
+
+   query = BCON_NEW("_id", pcs_docid);
+   cursor = mongoc_collection_find_with_opts (collection, query, NULL, NULL);
+
+   while (mongoc_cursor_next (cursor, &doc)) {
+      pcs_dbrdata = bson_as_relaxed_extended_json (doc, NULL);
+      ogs_debug("PCS Read Data from MongoDB for id %s is %s", pcs_docid, pcs_dbrdata);
+   }
+
+   bson_destroy (query);
+   mongoc_cursor_destroy (cursor);
+
+   return pcs_dbrdata;
+}
+
 void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len)
 {
    size_t n, m;

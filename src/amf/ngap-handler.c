@@ -1579,56 +1579,74 @@ void ngap_handle_pdu_session_resource_setup_response(
         if (pcs_fsmdata->pcs_dbcommenabled)
         {
             mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
-            NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
-            NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
-            NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
-            NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
-            NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
-            int pcs_rv, i, pcs_decode_status = 1;
-            uint32_t pcs_upfn3teid;
-            long pcs_qosflowid;
-            char *pcs_upfn3ip;
-            ogs_ip_t pcs_upfn3ipbitstr;
+            char *pcs_upfn3ip, *pcs_dbrdata;
+            int pcs_n1n2done = 0;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
-            pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), param.n2smbuf);
-            if (pcs_decode_status == 0)
+            pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
+            cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
+            if (cJSON_IsNumber(pcs_jsondbval)
             {
-                pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
-                pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
-                pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
-                ogs_assert(pcs_gtptunnel);
-                ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-                pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-                ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-                
-                pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
-                for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
-                    pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
-                    if (pcs_associatedqosflowitem) {
-                        pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
-                    }
-                }
-
-                bson_t *bson_doc = BCON_NEW("$set", "{", "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-                //ogs_free(pcs_upfn3ip);
-                //ogs_free(pcs_gtptunnel);
-                //ogs_free(ie);
-                if (pcs_rv != OGS_OK)
+                pcs_n1n2done = pcs_jsondbval->valueint;
+            }
+            if (pcs_n1n2done)
+            {
+                NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
+                NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
+                NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
+                NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
+                NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
+                NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
+                int pcs_rv, i, pcs_decode_status = 1;
+                uint32_t pcs_upfn3teid;
+                long pcs_qosflowid;
+                ogs_ip_t pcs_upfn3ipbitstr;
+                pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), param.n2smbuf);
+                if (pcs_decode_status == 0)
                 {
-                    ogs_error("PCS Error while updateing dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                    pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
+                    pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
+                    pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
+                    ogs_assert(pcs_gtptunnel);
+                    ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+                    pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+                    ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
+                    
+                    pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
+                    for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
+                        pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
+                        if (pcs_associatedqosflowitem) {
+                            pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
+                        }
+                    }
+
+                    bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_UTF8(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
+                    pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                    //ogs_free(pcs_upfn3ip);
+                    //ogs_free(pcs_gtptunnel);
+                    //ogs_free(ie);
+                    if (pcs_rv != OGS_OK)
+                    {
+                        ogs_error("PCS Error while updateing dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                    }
+                    else
+                    {
+                        ogs_info("PCS Successfully updated dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                    }
                 }
                 else
                 {
-                    ogs_info("PCS Successfully updated dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                    ogs_error("PCS ogs_asn_decode failed");
                 }
             }
             else
             {
-                ogs_error("PCS ogs_asn_decode failed");
+                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
             }
+            bson_free(pcs_dbrdata);
+            ogs_free(pcs_dbreadjson);
+            ogs_free(pcs_jsondbval);
         }
 
         ogs_pkbuf_free(param.n2smbuf);
