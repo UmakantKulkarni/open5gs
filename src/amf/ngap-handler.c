@@ -1630,7 +1630,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                     {
                         char *pcs_updatedoc;
                         asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
-                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc)
+                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
                     }
 
                     //ogs_free(pcs_upfn3ip);

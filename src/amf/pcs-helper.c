@@ -143,7 +143,7 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    {
       ogs_error("PCS mongoc_collection_delete_one failed during delete-create process %s\n", error.message);
    }
-   if (!mongoc_collection_insert_one(pcs_dbcollection, bson_doc, NULL, NULL, &error))
+   if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
    {
       ogs_error("PCS mongoc_collection_insert_one failed during delete-create process %s\n", error.message);
    }
