@@ -389,7 +389,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
         cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
         cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-create-done");
-        if (cJSON_IsNumber(pcs_jsondbval)
+        if (cJSON_IsNumber(pcs_jsondbval))
         {
             pcs_createdone = pcs_jsondbval->valueint;
         }
