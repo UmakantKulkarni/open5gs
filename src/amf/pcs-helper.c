@@ -132,7 +132,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
 int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", pcs_imsistr);
+   bson_t *query = BCON_NEW("_id", pcs_docid);
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
