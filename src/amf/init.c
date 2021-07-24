@@ -20,6 +20,7 @@
 #include "sbi-path.h"
 #include "ngap-path.h"
 #include "mongoc.h"
+#include "pcs-helper.h"
 
 static ogs_thread_t *thread;
 static void amf_main(void *data);
@@ -104,13 +105,17 @@ static void amf_main(void *data)
     ogs_fsm_t amf_sm;
     int rv;
 
+    amf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    amf_sm.pcs_fsmdata.pcs_updateapienabled = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED");
+    amf_sm.pcs_fsmdata.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
+    amf_sm.pcs_fsmdata.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
+
     mongoc_uri_t *uri;
     mongoc_client_t *client;
     mongoc_database_t *database;
     mongoc_collection_t *collection;
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (amf_sm.pcs_fsmdata.pcs_dbcommenabled)
     {
-        amf_sm.pcs_fsmdata.pcs_dbcommenabled = 1;
         const char *uri_string = "mongodb://mongodb-svc:27017";
         bson_error_t error;
         bson_t *command, reply;
@@ -174,7 +179,7 @@ static void amf_main(void *data)
     }
     else
     {
-        amf_sm.pcs_fsmdata.pcs_dbcommenabled = 0;
+        ogs_info("DB Communication is not enabled");
     }
     
 

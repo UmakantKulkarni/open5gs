@@ -6,6 +6,22 @@
 #include "pcs-helper.h"
 #include <arpa/inet.h>
 
+int pcs_set_int_from_env(const char *pcs_env_var)
+{
+   int pcs_enval = 0;
+
+   if (strcmp(getenv(pcs_env_var), "true") == 0)
+   {
+      pcs_enval = 1;
+   }
+   else
+   {
+      pcs_enval = 0;
+   }
+
+   return pcs_enval;
+}
+
 char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b)
 {
    size_t pcs_len_a = 0, pcs_len_b = 0;
@@ -113,6 +129,31 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    return EXIT_SUCCESS;
 }
 
+int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+{
+   bson_error_t error;
+   bson_t *query = BCON_NEW("_id", pcs_imsistr);
+
+   pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
+   pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
+   ogs_debug("Final Data after delete-create operation is %s", pcs_dbnewdata);
+   bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_dbnewdata, -1, &error);
+
+   if (!mongoc_collection_delete_one(collection, query, NULL, NULL, &error))
+   {
+      ogs_error("PCS mongoc_collection_delete_one failed during delete-create process %s\n", error.message);
+   }
+   if (!mongoc_collection_insert_one(pcs_dbcollection, bson_doc, NULL, NULL, &error))
+   {
+      ogs_error("PCS mongoc_collection_insert_one failed during delete-create process %s\n", error.message);
+   }
+
+   bson_destroy(query);
+   bson_destroy(bson_doc);
+
+   return EXIT_SUCCESS;
+}
+
 char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
 {
    mongoc_cursor_t *cursor;
@@ -121,15 +162,16 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    char *pcs_dbrdata;
 
    query = BCON_NEW("_id", pcs_docid);
-   cursor = mongoc_collection_find_with_opts (collection, query, NULL, NULL);
+   cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
 
-   while (mongoc_cursor_next (cursor, &doc)) {
-      pcs_dbrdata = bson_as_relaxed_extended_json (doc, NULL);
+   while (mongoc_cursor_next(cursor, &doc))
+   {
+      pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
       ogs_debug("PCS Read Data from MongoDB for id %s is %s", pcs_docid, pcs_dbrdata);
    }
 
-   bson_destroy (query);
-   mongoc_cursor_destroy (cursor);
+   bson_destroy(query);
+   mongoc_cursor_destroy(cursor);
 
    return pcs_dbrdata;
 }

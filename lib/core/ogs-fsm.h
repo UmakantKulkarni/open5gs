@@ -44,6 +44,9 @@ typedef void (*ogs_fsm_handler_t)(void *sm, void *event);
 typedef struct _pcs_fsm_struct_t {
     mongoc_collection_t *pcs_dbcollection;
     uint8_t pcs_dbcommenabled;
+    uint8_t pcs_updateapienabled;
+    uint8_t pcs_blockingapienabled;
+    uint8_t pcs_isfullystateless;
 } pcs_fsm_struct_t;
 
 typedef struct _ogs_fsm_t {
