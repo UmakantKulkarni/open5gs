@@ -23,8 +23,9 @@
 #include "pfcp-path.h"
 #include "gtp-path.h"
 #include "n4-handler.h"
-#include "pcs-helper.h"
 #include "mongoc.h"
+#include "pcs-helper.h"
+#include "../../lib/sbi/openapi/external/cJSON.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
@@ -168,7 +169,7 @@ void upf_n4_handle_session_establishment_request(
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
-        char *pcs_upfdbid;
+        char *pcs_upfdbid, *pcs_dbrdata;
         asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_upfdbid);
         if (strlen(pcs_dbrdata) <= 19)
@@ -568,7 +569,7 @@ void upf_n4_handle_session_modification_request(
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
-        char *pcs_upfdbid;
+        char *pcs_upfdbid, *pcs_dbrdata;
         int pcs_pfcpestdone = 0;
         asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_upfdbid);
