@@ -181,7 +181,7 @@ static void amf_main(void *data)
     }
     else
     {
-        ogs_info("DB Communication is not enabled");
+        ogs_info("PCS DB Communication is not enabled");
     }
     
 

@@ -23,6 +23,7 @@
 #include "pfcp-path.h"
 #include "sbi-path.h"
 #include "mongoc.h"
+#include "pcs-helper.h"
 
 static ogs_thread_t *thread;
 static void smf_main(void *data);
@@ -138,13 +139,19 @@ static void smf_main(void *data)
     ogs_fsm_t smf_sm;
     int rv;
 
+    smf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    smf_sm.pcs_fsmdata.pcs_updateapienabledcreate = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_CREATE");
+    smf_sm.pcs_fsmdata.pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+    smf_sm.pcs_fsmdata.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+    smf_sm.pcs_fsmdata.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
+    smf_sm.pcs_fsmdata.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
+
     mongoc_uri_t *uri;
     mongoc_client_t *client;
     mongoc_database_t *database;
     mongoc_collection_t *collection;
-    if (strcmp(getenv("PCS_DB_COMM_ENABLED"), "true") == 0)
+    if (smf_sm.pcs_fsmdata.pcs_dbcommenabled)
     {
-        smf_sm.pcs_fsmdata.pcs_dbcommenabled = 1;
         const char *uri_string = "mongodb://mongodb-svc:27017";
         bson_error_t error;
         bson_t *command, reply;
@@ -208,7 +215,7 @@ static void smf_main(void *data)
     }
     else
     {
-        smf_sm.pcs_fsmdata.pcs_dbcommenabled = 0;
+        ogs_info("PCS DB Communication is not enabled");
     }
 
     ogs_fsm_create(&smf_sm, smf_state_initial, smf_state_final);

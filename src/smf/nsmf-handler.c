@@ -211,43 +211,51 @@ bool smf_nsmf_handle_create_sm_context(
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        char *pcs_docjson;
+        char *pcs_docjson, *pcs_dbrdata;
         int pcs_rv;
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
-        char *pcs_supi = sess->smf_ue->supi;
-        char *pcs_pei = SmContextCreateData->pei;
-        char *pcs_dnn = SmContextCreateData->dnn;
-        char *pcs_smcontextref = sess->sm_context_ref;
-        int pcs_snssaisst = sess->s_nssai.sst;
-        char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
-        int pcs_pdusessionid = sess->psi;
-        char *pcs_mcc = SmContextCreateData->guami->plmn_id->mcc;
-        char *pcs_mnc = SmContextCreateData->guami->plmn_id->mnc;
-        char *pcs_amfid = SmContextCreateData->guami->amf_id;
-        int pcs_antype = SmContextCreateData->an_type;
-        char *pcs_rattype = OpenAPI_rat_type_ToString(SmContextCreateData->rat_type);
-        char *pcs_tac = SmContextCreateData->ue_location->nr_location->tai->tac;
-        char *pcs_cellid = SmContextCreateData->ue_location->nr_location->ncgi->nr_cell_id;
-        char *pcs_uelocts = SmContextCreateData->ue_location->nr_location->ue_location_timestamp;
-        char *pcs_uetimezone = SmContextCreateData->ue_time_zone;
-        char *pcs_smcntxsttsuri = SmContextCreateData->sm_context_status_uri;
-        char *pcs_pcfid = SmContextCreateData->pcf_id;
+        pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+        if (strlen(pcs_dbrdata) <= 29)
+        { 
+            char *pcs_supi = sess->smf_ue->supi;
+            char *pcs_pei = SmContextCreateData->pei;
+            char *pcs_dnn = SmContextCreateData->dnn;
+            char *pcs_smcontextref = sess->sm_context_ref;
+            int pcs_snssaisst = sess->s_nssai.sst;
+            char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
+            int pcs_pdusessionid = sess->psi;
+            char *pcs_mcc = SmContextCreateData->guami->plmn_id->mcc;
+            char *pcs_mnc = SmContextCreateData->guami->plmn_id->mnc;
+            char *pcs_amfid = SmContextCreateData->guami->amf_id;
+            int pcs_antype = SmContextCreateData->an_type;
+            char *pcs_rattype = OpenAPI_rat_type_ToString(SmContextCreateData->rat_type);
+            char *pcs_tac = SmContextCreateData->ue_location->nr_location->tai->tac;
+            char *pcs_cellid = SmContextCreateData->ue_location->nr_location->ncgi->nr_cell_id;
+            char *pcs_uelocts = SmContextCreateData->ue_location->nr_location->ue_location_timestamp;
+            char *pcs_uetimezone = SmContextCreateData->ue_time_zone;
+            char *pcs_smcntxsttsuri = SmContextCreateData->sm_context_status_uri;
+            char *pcs_pcfid = SmContextCreateData->pcf_id;
 
-        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_antype, pcs_pei, pcs_dnn, pcs_snssaisst, pcs_snssaisd, pcs_mcc, pcs_mnc, pcs_amfid, pcs_tac, pcs_cellid, pcs_uelocts, pcs_uetimezone, pcs_smcntxsttsuri, pcs_pcfid, pcs_rattype);
+            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_antype, pcs_pei, pcs_dnn, pcs_snssaisst, pcs_snssaisd, pcs_mcc, pcs_mnc, pcs_amfid, pcs_tac, pcs_cellid, pcs_uelocts, pcs_uetimezone, pcs_smcntxsttsuri, pcs_pcfid, pcs_rattype);
 
-        bson_error_t error;
-        bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
-        ogs_free(pcs_snssaisd);
-        free(pcs_docjson);
-        if (pcs_rv != OGS_OK)
-        {
-            ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            bson_error_t error;
+            bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+            pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+            ogs_free(pcs_snssaisd);
+            free(pcs_docjson);
+            if (pcs_rv != OGS_OK)
+            {
+                ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+            else
+            {
+                ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
         }
         else
         {
-            ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->smf_ue->supi);
         }
     }
     else
@@ -630,48 +638,74 @@ bool smf_nsmf_handle_update_sm_context(
         NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
         NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
         NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
-        int pcs_rv, i, pcs_decode_status = 1;
+        int pcs_rv, i, pcs_decode_status = 1, pcs_n1n2done = 0;
         uint32_t pcs_upfn3teid;
         long pcs_qosflowid;
-        char *pcs_upfn3ip;
+        char *pcs_upfn3ip, *pcs_dbrdata;
         ogs_ip_t pcs_upfn3ipbitstr;
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
-        pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2smbuf);
-        if (pcs_decode_status == 0)
+        pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+        cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
+        cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
+        if (cJSON_IsNumber(pcs_jsondbval))
         {
-            pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
-            pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
-            pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
-            ogs_assert(pcs_gtptunnel);
-            ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-            ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-            pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-            pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
-            for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
-                pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
-                if (pcs_associatedqosflowitem) {
-                    pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
-                }
-            }
-
-            bson_t *bson_doc = BCON_NEW("$set", "{", "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
-            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-            ogs_free(pcs_upfn3ip);
-            ogs_free(pcs_gtptunnel);
-            if (pcs_rv != OGS_OK)
+            pcs_n1n2done = pcs_jsondbval->valueint;
+        }
+        if (pcs_n1n2done)
+        {
+            pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2smbuf);
+            if (pcs_decode_status == 0)
             {
-                ogs_error("PCS Error while updating data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
+                pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
+                pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
+                ogs_assert(pcs_gtptunnel);
+                ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+                ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
+                pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+                pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
+                for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
+                    pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
+                    if (pcs_associatedqosflowitem) {
+                        pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
+                    }
+                }
+
+                if (pcs_fsmdata->pcs_updateapienabledmodify)
+                {
+                    bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
+                    pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                }
+                else
+                {
+                    char *pcs_updatedoc;
+                    asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
+                    pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                }
+                ogs_free(pcs_upfn3ip);
+                ogs_free(pcs_gtptunnel);
+                if (pcs_rv != OGS_OK)
+                {
+                    ogs_error("PCS Error while updating data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                }
+                else
+                {
+                    ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                }
             }
             else
             {
-                ogs_info("PCS Successfully updated data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                ogs_error("PCS ogs_asn_decode failed");
             }
         }
         else
         {
-            ogs_error("PCS ogs_asn_decode failed");
+            ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
         }
+        bson_free(pcs_dbrdata);
+        ogs_free(pcs_dbreadjson);
+        ogs_free(pcs_jsondbval);
     }
     else if (!pcs_fsmdata->pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2)
     {
