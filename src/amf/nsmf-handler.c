@@ -156,7 +156,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        char *pcs_docjson;
+        char *pcs_docjson, *pcs_dbrdata;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
