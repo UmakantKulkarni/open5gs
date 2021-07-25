@@ -196,82 +196,109 @@ void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_
    }
 }
 
-bson_t *decode_nas_qos_rule_hex_to_bson(char *pcs_hexipdata)
+char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata)
 {
    char pcs_temp[8];
    int pcs_num_qos_rules = 0;
-   char *pcs_docjson, *pcs_docjson2;
+   char *pcs_docjson, *pcs_keyval, *pcs_var;
    char pcs_hexipdatadup[strlen(pcs_hexipdata)];
    pcs_get_substring(pcs_hexipdata, pcs_hexipdatadup, 0, strlen(pcs_hexipdata));
+   asprintf(&pcs_docjson, "[");
    while (pcs_hexipdatadup[0] != '\0')
    {
       if (pcs_num_qos_rules > 0)
       {
-         strcat(pcs_docjson2, ",");
+         pcs_docjson = pcs_combine_strings(pcs_docjson, ",");
       }
       int pcs_qosruleid = pcs_hex_to_int(pcs_hexipdata, 0, 2);
-      char pcs_qosruleopcodedesc[20], pcs_qosrulepfdirdesc[34], pcs_qosrulepfcompdesc[34];
+      asprintf(&pcs_keyval, "{\"QOS-Rule-Identifier\": %d", pcs_qosruleid);
       int pcs_qosrulelen = pcs_hex_to_int(pcs_hexipdata, 2, 6);
-      char pcs_qosrulef1[9];
+      asprintf(&pcs_var, ", \"QOS-Rule-Length\": %d", pcs_qosrulelen);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
+      pcs_qosrulef1[9];
       pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef1, 6, 8);
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 0, 3);
       int pcs_qosruleopcode = pcs_binary_to_decimal(pcs_temp);
+      asprintf(&pcs_var, ", \"QOS-Rule-Operation-Code-Value\": %d", pcs_qosruleopcode);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
       if (pcs_qosruleopcode == 1)
       {
-         strcpy(pcs_qosruleopcodedesc, "CREATE_NEW_QOS_RULE");
+         asprintf(&pcs_var, ", \"QOS-Rule-Operation-Code-Description\": \"CREATE_NEW_QOS_RULE\"");
+         pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
       else
       {
-         strcpy(pcs_qosruleopcodedesc, "INCORRECT_QOS_RULE");
+         asprintf(&pcs_var, ", \"QOS-Rule-Operation-Code-Description\": \"INCORRECT_QOS_RULE\"");
+         pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
+   
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 3, 4);
       int pcs_qosruledqr = pcs_binary_to_decimal(pcs_temp);
+      asprintf(&pcs_var, ", \"QOS-Rule-DQR\": %d", pcs_qosruledqr);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 4, 8);
       int pcs_qosrulenumpf = pcs_binary_to_decimal(pcs_temp);
+      asprintf(&pcs_var, ", \"QOS-Rule-Num-Packet-Filters\": %d", pcs_qosrulenumpf);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
       pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef1, 8, 10);
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 2, 4);
       int pcs_qosrulepfdir = pcs_binary_to_decimal(pcs_temp);
       if (pcs_qosrulepfdir == 3)
       {
-         strcpy(pcs_qosrulepfdirdesc, "BIDIRECTIONAL_PACKET_FILTER");
+         asprintf(&pcs_var, ", \"Packet-Filter-1\": {\"QOS-Rule-Packet-Filters-Direction-Value\": %d, \"QOS-Rule-Packet-Filters-Direction-Description\": \"BIDIRECTIONAL_PACKET_FILTER\"", pcs_qosrulepfdir);
+         pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
       else
       {
-         strcpy(pcs_qosrulepfdirdesc, "INCORRECT_PACKET_FILTER_DIRECTION");
+         asprintf(&pcs_var, ", \"Packet-Filter-1\": {\"QOS-Rule-Packet-Filters-Direction-Value\": %d, \"QOS-Rule-Packet-Filters-Direction-Description\": \"INCORRECT_PACKET_FILTER_DIRECTION\"", pcs_qosrulepfdir);
+         pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
+
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 4, 8);
+
       int pcs_qosrulepfid = pcs_binary_to_decimal(pcs_temp);
+      asprintf(&pcs_var, ", \"QOS-Rule-Packet-Filters-Direction-ID\": %d", pcs_qosrulepfid);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
       int pcs_qosrulepflen = pcs_hex_to_int(pcs_hexipdata, 10, 12);
+      asprintf(&pcs_var, ", \"QOS-Rule-Packet-Filters-Length\": %d", pcs_qosrulepflen);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
       int pcs_qosrulepfcomp = pcs_hex_to_int(pcs_hexipdata, 12, 14);
       if (pcs_qosrulepfcomp == 1)
       {
-         strcpy(pcs_qosrulepfcompdesc, "MATCH_ALL_PACKET_FILTER");
+         asprintf(&pcs_var, ", \"QOS-Rule-Packet-Filters-Component-Value\": %d, \"QOS-Rule-Packet-Filters-Component-Description\": \"MATCH_ALL_PACKET_FILTER\"}", pcs_qosrulepfcomp);
+         pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
       else
       {
-         strcpy(pcs_qosrulepfcompdesc, "INCORRECT_PACKET_FILTER_COMPONENT");
+         asprintf(&pcs_var, ", \"QOS-Rule-Packet-Filters-Component-Value\": %d, \"QOS-Rule-Packet-Filters-Component-Description\": \"INCORRECT_PACKET_FILTER_COMPONENT\"}", pcs_qosrulepfcomp);
+         pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
+
       int pcs_qosrulepreced = pcs_hex_to_int(pcs_hexipdata, 14, 16);
+      asprintf(&pcs_var, ", \"QOS-Rule-Precedence\": %d", pcs_qosrulepreced);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+   
       pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef1, 16, 18);
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 2, 8);
       int pcs_qosruleqfid = pcs_binary_to_decimal(pcs_temp);
+      asprintf(&pcs_var, ", \"QOS-Rule-Flow-Identifier\": %d", pcs_qosruleqfid);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
 
-      asprintf(&pcs_docjson, "{\"%d\": {\"QOS-Rule-Identifier\": %d, \"QOS-Rule-Length\": %d, \"QOS-Rule-Operation-Code-Value\": %d, \"QOS-Rule-Operation-Code-Description\": \"%s\", \"QOS-Rule-DQR\": %d, \"QOS-Rule-Num-Packet-Filters\": %d, \"Packet-Filter-1\": { \"QOS-Rule-Packet-Filters-Direction-Value\": %d, \"QOS-Rule-Packet-Filters-Direction-Description\": \"%s\", \"QOS-Rule-Packet-Filters-Direction-ID\": %d, \"QOS-Rule-Packet-Filters-Length\": %d, \"QOS-Rule-Packet-Filters-Component-Value\": %d, \"QOS-Rule-Packet-Filters-Component-Description\": \"%s\" }, \"QOS-Rule-Precedence\": %d, \"QOS-Rule-Flow-Identifier\": %d } }", pcs_num_qos_rules, pcs_qosruleid, pcs_qosrulelen, pcs_qosruleopcode, pcs_qosruleopcodedesc, pcs_qosruledqr, pcs_qosrulenumpf, pcs_qosrulepfdir, pcs_qosrulepfdirdesc, pcs_qosrulepfid, pcs_qosrulepflen, pcs_qosrulepfcomp, pcs_qosrulepfcompdesc, pcs_qosrulepreced, pcs_qosruleqfid);
-      if (pcs_num_qos_rules > 0)
-      {
-         strcat(pcs_docjson2, pcs_docjson);
-      }
-      else
-      {
-         pcs_docjson2 = pcs_docjson;
-      }
+      pcs_keyval = pcs_combine_strings(pcs_keyval, "}");
+      pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_keyval);
+
       pcs_num_qos_rules = pcs_num_qos_rules + 1;
       pcs_get_substring(pcs_hexipdata, pcs_hexipdatadup, 2 * (3 + pcs_qosrulelen), strlen(pcs_hexipdata));
    }
-   bson_error_t error;
-   bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_docjson2, -1, &error);
-   free(pcs_docjson2);
-   return bson_doc_nas_qos_rule;
+   pcs_docjson = pcs_combine_strings(pcs_docjson, "]");
+
+   return pcs_docjson;
 }
 
 bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata)
