@@ -163,13 +163,19 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
 
    query = BCON_NEW("_id", pcs_docid);
    cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
+   int i = 0;
 
    while (mongoc_cursor_next(cursor, &doc))
    {
+      i = i + 1;
       pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
       ogs_debug("PCS Read Data from MongoDB for id %s is %s", pcs_docid, pcs_dbrdata);
    }
 
+   if (i == 0)
+   {
+      asprintf(&pcs_dbrdata, "{ \"_id\" : \"%s\" }", pcs_docid);
+   }
    bson_destroy(query);
    mongoc_cursor_destroy(cursor);
 
