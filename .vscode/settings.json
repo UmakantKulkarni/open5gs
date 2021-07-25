@@ -14,7 +14,8 @@
         "algorithm": "cpp",
         "complex": "cpp",
         "new": "cpp",
-        "iterator": "cpp"
+        "iterator": "cpp",
+        "cjson.h": "c"
     },
     "editor.parameterHints.enabled": false
 }

@@ -91,6 +91,7 @@ libupf = static_library('upf',
     sources : libupf_sources,
     dependencies : [
         libapp_dep,
+        libsbi_dep,
         libdiameter_gx_dep,
         libgtp_dep,
         libpfcp_dep,
@@ -104,6 +105,7 @@ libupf_dep = declare_dependency(
     link_with : libupf,
     dependencies : [
         libapp_dep,
+        libsbi_dep,
         libdiameter_gx_dep,
         libgtp_dep,
         libpfcp_dep,
