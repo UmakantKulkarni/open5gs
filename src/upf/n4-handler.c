@@ -342,7 +342,7 @@ void upf_n4_handle_session_establishment_request(
         }
         else
         {
-            ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->smf_ue->supi);
+            ogs_error("PCS UE Context for UE [%ld] is already present in DB", sess->smf_n4_seid);
         }
         bson_free(pcs_dbrdata);
     }
