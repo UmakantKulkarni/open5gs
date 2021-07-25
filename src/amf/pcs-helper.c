@@ -307,7 +307,6 @@ char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata)
 char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata)
 {
    char pcs_temp[8], pcs_qosflowf1[9];
-   char pcs_comma[] = ",";
    char pcs_curlybrace[] = "}";
    char pcs_squarebrace[] = "]";
    char *pcs_docjson, *pcs_keyval, *pcs_var;
@@ -363,8 +362,9 @@ char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata)
 char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
 {
    char pcs_temp[8];
+   char pcs_curlybrace[] = "}";
    char *pcs_docjson, *pcs_keyval, *pcs_var, *pcs_protcnt2ipv4;
-   char pcs_qosflowf1[9], pcs_protcnt1id[5], pcs_protcnt2id[5], ;
+   char pcs_qosflowf1[9], pcs_protcnt1id[5], pcs_protcnt2id[5];
    int pcs_procont1len, pcs_procont1ip, pcs_procont2len, pcs_procont2ip;
    struct in_addr pcs_addr;
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
