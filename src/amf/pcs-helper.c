@@ -407,7 +407,7 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
       pcs_procont2ip = pcs_hex_to_int(pcs_hexipdata, 22, 30);
       pcs_addr.s_addr = htonl(pcs_procont2ip);
       pcs_protcnt2ipv4 = inet_ntoa(pcs_addr);
-      asprintf(&pcs_var, ", {\"Container-ID\": \"%s\", \"Container-Description\": \"DNS_SERVER_IPV4_ADDRESS\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}", pcs_protcnt2id, pcs_procont2len, pcs_protcnt2ipv4);
+      asprintf(&pcs_var, ", {\"Container-ID\": \"%s\", \"Container-Description\": \"DNS_SERVER_IPV4_ADDRESS\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}]", pcs_protcnt2id, pcs_procont2len, pcs_protcnt2ipv4);
       pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
 

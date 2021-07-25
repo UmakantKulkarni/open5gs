@@ -481,7 +481,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
                         }
                     }
 
-                    if (pcs_fsmdata->pcs_updateapienabled)
+                    if (pcs_fsmdata->pcs_updateapienabledn1n2)
                     {
                         bson_error_t error;
                         bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_nasqosrulestr, -1, &error);

@@ -1621,7 +1621,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                         }
                     }
 
-                    if (pcs_fsmdata->pcs_updateapienabled)
+                    if (pcs_fsmdata->pcs_updateapienabledmodify)
                     {
                         bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
                         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
