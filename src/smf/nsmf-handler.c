@@ -257,7 +257,6 @@ bool smf_nsmf_handle_create_sm_context(
         {
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->smf_ue->supi);
         }
-        bson_free(pcs_dbrdata);
     }
     else
     {

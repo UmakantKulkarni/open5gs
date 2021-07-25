@@ -203,7 +203,6 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         {
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
-        bson_free(pcs_dbrdata);
     }
     else
     {
