@@ -367,10 +367,12 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
    char pcs_qosflowf1[9], pcs_protcnt1id[5], pcs_protcnt2id[5];
    int pcs_procont1len, pcs_procont1ip, pcs_procont2len, pcs_procont2ip;
    struct in_addr pcs_addr;
+   asprintf(&pcs_docjson, "{");
+
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 1);
    int pcs_epcoextension = pcs_binary_to_decimal(pcs_temp);
-   asprintf(&pcs_keyval, "{\"IS-Extension\": %d", pcs_epcoextension);
+   asprintf(&pcs_keyval, "\"IS-Extension\": %d", pcs_epcoextension);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 5, 8);
    int pcs_epcocp = pcs_binary_to_decimal(pcs_temp);
    if (pcs_epcocp == 0)
