@@ -488,6 +488,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
                         bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "sm-context-ref", BCON_UTF8(pcs_smcontextref), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_pduaddress), "dnn", BCON_UTF8(pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "s-nssai", "{", "sst", BCON_INT32(pcs_snssaisst), "sd", BCON_UTF8(pcs_snssaisd), "}", "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
                         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                        bson_destroy(bson_doc_nas_qos_rule);
                     }
                     else
                     {
@@ -497,7 +498,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
                     }
 
                     free(pcs_nasqosrulestr);
-                    bson_destroy(bson_doc_nas_qos_rule);
                     bson_destroy(bson_doc_nas_qos_flow);
                     bson_destroy(bson_doc_nas_epco);
                     /* ogs_free(pcs_upfn3ip);
