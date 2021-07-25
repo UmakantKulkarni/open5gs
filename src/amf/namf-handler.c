@@ -535,6 +535,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         {
             ogs_error("PCS n1-n2 request got triggered without processing Create-SM-Context request");
         }
+        bson_free(pcs_dbrdata);
+        ogs_free(pcs_dbreadjson);
+        ogs_free(pcs_jsondbval);
     }
     else
     {
