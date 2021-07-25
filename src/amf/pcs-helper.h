@@ -18,8 +18,8 @@ extern "C"
     int pcs_binary_to_decimal(char *pcs_bin_str);
     void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_index, int pcs_end_index);
     char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata);
-    bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata);
-    bson_t *decode_nas_epco_hex_to_bson(char *pcs_hexipdata);
+    char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
+    char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
 
 #ifdef __cplusplus
 }

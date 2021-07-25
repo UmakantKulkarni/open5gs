@@ -304,32 +304,45 @@ char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata)
    return pcs_docjson;
 }
 
-bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata)
+char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata)
 {
-   char pcs_temp[8];
-   char *pcs_docjson;
-   char pcs_qosflowf1[9], pcs_qosflowopcodedesc[20];
+   char pcs_temp[8], pcs_qosflowf1[9];
+   char pcs_comma[] = ",";
+   char pcs_curlybrace[] = "}";
+   char pcs_squarebrace[] = "]";
+   char *pcs_docjson, *pcs_keyval, *pcs_var;
+   asprintf(&pcs_docjson, "[");
+   
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 2, 8);
    int pcs_qosflowid = pcs_binary_to_decimal(pcs_temp);
+   asprintf(&pcs_keyval, "{\"QOS-Flow-Identifier\": %d", pcs_qosflowid);
 
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 2, 4);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 3);
    int pcs_qosflowopcode = pcs_binary_to_decimal(pcs_temp);
    if (pcs_qosflowopcode == 1)
    {
-      strcpy(pcs_qosflowopcodedesc, "CREATE_NEW_QOS_FLOW");
+      asprintf(&pcs_var, ", \"QOS-Flow-Operation-Code-Value\": %d, \"QOS-Flow-Operation-Code-Description\": \"CREATE_NEW_QOS_FLOW\"", pcs_qosflowopcode);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
    else
    {
-      strcpy(pcs_qosflowopcodedesc, "INCORRECT_QOS_FLOW");
+      asprintf(&pcs_var, ", \"QOS-Flow-Operation-Code-Value\": %d, \"QOS-Flow-Operation-Code-Description\": \"INCORRECT_QOS_FLOW\"", pcs_qosflowopcode);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
 
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 4, 6);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 2);
    int pcs_qosflowebit = pcs_binary_to_decimal(pcs_temp);
+   asprintf(&pcs_var, ", \"QOS-Flow-Ebit\": %d", pcs_qosflowebit);
+   pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 2, 8);
    int pcs_qosflownumparam = pcs_binary_to_decimal(pcs_temp);
+   asprintf(&pcs_var, ", \"QOS-Rule-Num-Parameters\": %d", pcs_qosflownumparam);
+   pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
+
    int c = 1;
    int pcs_qosflowparamid, pcs_qosflowparamlen, pcs_qosflowparam5qi;
    for (; c <= pcs_qosflownumparam; c++)
@@ -337,41 +350,43 @@ bson_t *decode_nas_qos_flow_hex_to_bson(char *pcs_hexipdata)
       pcs_qosflowparamid = pcs_hex_to_int(pcs_hexipdata, 6, 8);
       pcs_qosflowparamlen = pcs_hex_to_int(pcs_hexipdata, 8, 10);
       pcs_qosflowparam5qi = pcs_hex_to_int(pcs_hexipdata, 10, 12);
+      asprintf(&pcs_var, ", \"Parameter-1\": { \"QOS-Flow-Param-Identifier\": %d, \"QOS-Flow-Param-Length\": %d, \"QOS-Flow-Param-5QI\": %d }", pcs_qosflowparamid, pcs_qosflowparamlen, pcs_qosflowparam5qi);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
+   pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_curlybrace);
+   pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_keyval);
+   pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_squarebrace);
 
-   asprintf(&pcs_docjson, "{\"%d\": {\"QOS-Flow-Identifier\": %d, \"QOS-Flow-Operation-Code-Value\": %d, \"QOS-Flow-Operation-Code-Description\": \"%s\", \"QOS-Flow-Ebit\": %d, \"QOS-Rule-Num-Parameters\": %d, \"Parameter-1\": { \"QOS-Flow-Param-Identifier\": %d, \"QOS-Flow-Param-Length\": %d, \"QOS-Flow-Param-5QI\": %d } } }", 0, pcs_qosflowid, pcs_qosflowopcode, pcs_qosflowopcodedesc, pcs_qosflowebit, pcs_qosflownumparam, pcs_qosflowparamid, pcs_qosflowparamlen, pcs_qosflowparam5qi);
-
-   bson_error_t error;
-   bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-   free(pcs_docjson);
-   return bson_doc_nas_qos_flow;
+   return pcs_docjson;
 }
 
-bson_t *decode_nas_epco_hex_to_bson(char *pcs_hexipdata)
+char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
 {
    char pcs_temp[8];
-   char *pcs_docjson, *pcs_protcnt1ipv4, *pcs_protcnt2ipv4;
-   char pcs_qosflowf1[9], pcs_epcocpdesc[33], pcs_protcnt1id[5], pcs_protcnt1iddesc[24], pcs_protcnt2id[5], pcs_protcnt2iddesc[24];
+   char *pcs_docjson, *pcs_keyval, *pcs_var, *pcs_protcnt2ipv4;
+   char pcs_qosflowf1[9], pcs_protcnt1id[5], pcs_protcnt2id[5], ;
    int pcs_procont1len, pcs_procont1ip, pcs_procont2len, pcs_procont2ip;
    struct in_addr pcs_addr;
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 0, 1);
    int pcs_epcoextension = pcs_binary_to_decimal(pcs_temp);
+   asprintf(&pcs_keyval, "{\"IS-Extension\": %d", pcs_epcoextension);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 5, 8);
    int pcs_epcocp = pcs_binary_to_decimal(pcs_temp);
    if (pcs_epcocp == 0)
    {
-      strcpy(pcs_epcocpdesc, "CONFIGURATION_PROTOCOL_PPP");
+      asprintf(&pcs_var, ", \"Configuration-Protocol-Value\": %d, \"Configuration-Protocol-Description\": \"CONFIGURATION_PROTOCOL_PPP\"", pcs_epcocp);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
    else
    {
-      strcpy(pcs_epcocpdesc, "INCORRECT_CONFIGURATION_PROTOCOL");
+      asprintf(&pcs_var, ", \"Configuration-Protocol-Value\": %d, \"Configuration-Protocol-Description\": \"INCORRECT_CONFIGURATION_PROTOCOL\"", pcs_epcocp);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
 
    pcs_get_substring(pcs_hexipdata, pcs_protcnt1id, 2, 6);
    if (strcmp(pcs_protcnt1id, "000d") == 0)
    {
-      strcpy(pcs_protcnt1iddesc, "DNS_SERVER_IPV4_ADDRESS");
       pcs_procont1len = pcs_hex_to_int(pcs_hexipdata, 6, 8);
       pcs_procont1ip = pcs_hex_to_int(pcs_hexipdata, 8, 16);
       unsigned char bytes[4];
@@ -379,24 +394,23 @@ bson_t *decode_nas_epco_hex_to_bson(char *pcs_hexipdata)
       bytes[1] = (pcs_procont1ip >> 8) & 0xFF;
       bytes[2] = (pcs_procont1ip >> 16) & 0xFF;
       bytes[3] = (pcs_procont1ip >> 24) & 0xFF;
-      asprintf(&pcs_protcnt1ipv4, "%d.%d.%d.%d", bytes[3], bytes[2], bytes[1], bytes[0]);
+      asprintf(&pcs_var, ", \"Protocol-Containers\": [{\"Container-ID\": \"%s\", \"Container-Description\": \"DNS_SERVER_IPV4_ADDRESS\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%d.%d.%d.%d\"}", pcs_protcnt1id, pcs_procont1len, bytes[3], bytes[2], bytes[1], bytes[0]);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
 
    pcs_get_substring(pcs_hexipdata, pcs_protcnt2id, 16, 20);
    if (strcmp(pcs_protcnt2id, "000d") == 0)
    {
-      strcpy(pcs_protcnt2iddesc, "DNS_SERVER_IPV4_ADDRESS");
       pcs_procont2len = pcs_hex_to_int(pcs_hexipdata, 20, 22);
       pcs_procont2ip = pcs_hex_to_int(pcs_hexipdata, 22, 30);
       pcs_addr.s_addr = htonl(pcs_procont2ip);
       pcs_protcnt2ipv4 = inet_ntoa(pcs_addr);
+      asprintf(&pcs_var, ", {\"Container-ID\": \"%s\", \"Container-Description\": \"DNS_SERVER_IPV4_ADDRESS\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}", pcs_protcnt2id, pcs_procont2len, pcs_protcnt2ipv4);
+      pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
    }
 
-   asprintf(&pcs_docjson, "{\"IS-Extension\": %d, \"Configuration-Protocol-Value\": %d, \"Configuration-Protocol-Description\": \"%s\", \"Protocol-Containers\": [{\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}, {\"Container-ID\": \"%s\", \"Container-Description\": \"%s\", \"Container-Length\": \"%d\", \"IPv4-Address\": \"%s\"}] }", pcs_epcoextension, pcs_epcocp, pcs_epcocpdesc, pcs_protcnt1id, pcs_protcnt1iddesc, pcs_procont1len, pcs_protcnt1ipv4, pcs_protcnt2id, pcs_protcnt2iddesc, pcs_procont2len, pcs_protcnt2ipv4);
-
-   bson_error_t error;
-   bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-   free(pcs_protcnt1ipv4);
-   free(pcs_docjson);
-   return bson_doc_nas_epco;
+   pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_curlybrace);
+   pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_keyval);
+   
+   return pcs_docjson;
 }
