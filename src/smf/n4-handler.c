@@ -216,7 +216,7 @@ void smf_5gc_n4_handle_session_establishment_response(
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_dbrdata;
         int pcs_createdone = 0;
-        char *pcs_imsistr = sess->amf_ue->supi;
+        char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
         cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
@@ -461,7 +461,10 @@ void smf_5gc_n4_handle_session_establishment_response(
                         bson_t *bson_far_ary = bson_new_from_json((const uint8_t *)pcs_fars, -1, &error);
                         bson_t *bson_qer_ary = bson_new_from_json((const uint8_t *)pcs_qers, -1, &error);
                         bson_t *bson_bar_doc = bson_new_from_json((const uint8_t *)pcs_pfcpie, -1, &error);
-                        
+                        bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_nasqosrulestr, -1, &error);
+                        bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_nasqosflowstr, -1, &error);
+                        bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_nasepcostr, -1, &error);
+
                         bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-address", BCON_UTF8(pcs_pduaddress), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_sambrulv), "ul-unit", BCON_INT32(pcs_sambrulu), "downlink", BCON_INT32(pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "UPF-Node-IP", BCON_UTF8(pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_smfn4seid), "Cause", BCON_INT32(pfcp_cause_value), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_DOCUMENT(bson_bar_doc), "}");
 
                         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
@@ -631,7 +634,6 @@ void smf_5gc_n4_handle_session_modification_response(
             char pcs_squarebrace[] = "]";
             int pcs_rv, pcs_numfar = 0, pcs_n1n2done = 0;
             ogs_pfcp_far_t *far = NULL;
-            uint64_t pcs_smfn4seid = sess->smf_n4_seid;
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
 
