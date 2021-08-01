@@ -1642,6 +1642,12 @@ void ngap_handle_pdu_session_resource_setup_response(
                         asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
                         pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
                     }
+                    if (!pcs_fsmdata->pcs_isproceduralstateless)
+                    {
+                        bson_free(pcs_dbrdata);
+                        ogs_free(pcs_dbreadjson);
+                        ogs_free(pcs_jsondbval);
+                    }
 
                     //ogs_free(pcs_upfn3ip);
                     //ogs_free(pcs_gtptunnel);
@@ -1664,11 +1670,8 @@ void ngap_handle_pdu_session_resource_setup_response(
             {
                 ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
             }
-            bson_free(pcs_dbrdata);
-            ogs_free(pcs_dbreadjson);
-            ogs_free(pcs_jsondbval);
+            
         }
-
         ogs_pkbuf_free(param.n2smbuf);
     }
 }
