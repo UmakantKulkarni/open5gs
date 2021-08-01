@@ -379,7 +379,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
-    if (pcs_fsmdata->pcs_dbcommenabled)
+    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_dbrdata;
@@ -538,6 +538,12 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         bson_free(pcs_dbrdata);
         ogs_free(pcs_dbreadjson);
         ogs_free(pcs_jsondbval);
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_createdone)
+    {
+        pcs_fsmdata->pcs_n1smbuf = n1buf;
+        pcs_fsmdata->pcs_n2smbuf = n2buf;
+        pcs_fsmdata->pcs_n1n2done = 1;
     }
     else
     {

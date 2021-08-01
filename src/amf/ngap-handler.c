@@ -1576,19 +1576,24 @@ void ngap_handle_pdu_session_resource_setup_response(
                 sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
                 amf_nsmf_pdusession_build_update_sm_context));
 
-        if (pcs_fsmdata->pcs_dbcommenabled)
+        if (pcs_fsmdata->pcs_dbcommenabled) 
         {
             mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             char *pcs_upfn3ip, *pcs_dbrdata;
             int pcs_n1n2done = 0;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
-            pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-            cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-            cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
-            if (cJSON_IsNumber(pcs_jsondbval))
+            if (!pcs_fsmdata->pcs_isproceduralstateless)
+                pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+                cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
+                cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
+                if (cJSON_IsNumber(pcs_jsondbval))
+                {
+                    pcs_n1n2done = pcs_jsondbval->valueint;
+                }
+            else if (pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_createdone)
             {
-                pcs_n1n2done = pcs_jsondbval->valueint;
+                pcs_n1n2done = pcs_fsmdata->pcs_n1n2done;
             }
             if (pcs_n1n2done)
             {
@@ -1598,7 +1603,10 @@ void ngap_handle_pdu_session_resource_setup_response(
                 NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
                 NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
                 NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
-                int pcs_rv, i, pcs_decode_status = 1;
+                int pcs_rv, i, pcs_decode_status = 1, pcs_ngap_decode_status = 1;
+                pcs_ngap_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), pcs_fsmdata->pcs_n2smbuf);
+                if (pcs_ngap_decode_status == 0)
+                    ogs_info("PCSSSSSSSSSSSSSSSSSSS");
                 uint32_t pcs_upfn3teid;
                 long pcs_qosflowid;
                 ogs_ip_t pcs_upfn3ipbitstr;

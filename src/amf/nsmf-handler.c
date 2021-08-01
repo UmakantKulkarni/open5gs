@@ -160,7 +160,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-        if (strlen(pcs_dbrdata) <= 29)
+        if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
         {    
             char *pcs_supi = sess->amf_ue->supi;
             char *pcs_smcontextref = sess->sm_context_ref;
@@ -198,6 +198,10 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             {
                 ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->amf_ue->supi);
             }
+        }
+        else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless)
+        {
+            pcs_fsmdata->pcs_createdone = 1;
         }
         else
         {
