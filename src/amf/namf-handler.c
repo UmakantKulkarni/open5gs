@@ -539,11 +539,11 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_free(pcs_dbreadjson);
         ogs_free(pcs_jsondbval);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_createdone)
+    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
     {
         sess->pcs.pcs_n1smbuf = ogs_pkbuf_copy(n1buf);
         sess->pcs.pcs_n2smbuf = ogs_pkbuf_copy(n2buf);
-        pcs_fsmdata->pcs_n1n2done = 1;
+        sess->pcs.pcs_n1n2done = 1;
     }
     else
     {

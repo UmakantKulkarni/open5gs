@@ -201,7 +201,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         }
         else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless)
         {
-            pcs_fsmdata->pcs_createdone = 1;
+            sess->pcs.pcs_createdone = 1;
         }
         else
         {

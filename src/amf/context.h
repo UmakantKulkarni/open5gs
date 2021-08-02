@@ -459,6 +459,9 @@ typedef struct amf_sess_s {
     bool n2_released;
 
     struct {
+        uint8_t pcs_createdone;
+        uint8_t pcs_n1n2done;
+        uint8_t pcs_updatedone;
         ogs_pkbuf_t *pcs_n1smbuf;
         ogs_pkbuf_t *pcs_n2smbuf;
     } pcs;
