@@ -212,37 +212,20 @@ bool smf_nsmf_handle_create_sm_context(
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_docjson, *pcs_dbrdata;
-        int pcs_rv;
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-        if (strlen(pcs_dbrdata) <= 29)
+        struct pcs_smf_create pcs_createdata;
+        if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
         { 
-            char *pcs_supi = sess->smf_ue->supi;
-            char *pcs_pei = SmContextCreateData->pei;
-            char *pcs_dnn = SmContextCreateData->dnn;
-            char *pcs_smcontextref = sess->sm_context_ref;
-            int pcs_snssaisst = sess->s_nssai.sst;
-            char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
-            int pcs_pdusessionid = sess->psi;
-            char *pcs_mcc = SmContextCreateData->guami->plmn_id->mcc;
-            char *pcs_mnc = SmContextCreateData->guami->plmn_id->mnc;
-            char *pcs_amfid = SmContextCreateData->guami->amf_id;
-            int pcs_antype = SmContextCreateData->an_type;
-            char *pcs_rattype = OpenAPI_rat_type_ToString(SmContextCreateData->rat_type);
-            char *pcs_tac = SmContextCreateData->ue_location->nr_location->tai->tac;
-            char *pcs_cellid = SmContextCreateData->ue_location->nr_location->ncgi->nr_cell_id;
-            char *pcs_uelocts = SmContextCreateData->ue_location->nr_location->ue_location_timestamp;
-            char *pcs_uetimezone = SmContextCreateData->ue_time_zone;
-            char *pcs_smcntxsttsuri = SmContextCreateData->sm_context_status_uri;
-            char *pcs_pcfid = SmContextCreateData->pcf_id;
-
-            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_antype, pcs_pei, pcs_dnn, pcs_snssaisst, pcs_snssaisd, pcs_mcc, pcs_mnc, pcs_amfid, pcs_tac, pcs_cellid, pcs_uelocts, pcs_uetimezone, pcs_smcntxsttsuri, pcs_pcfid, pcs_rattype);
+            pcs_createdata = pcs_get_smf_create_data(sess, SmContextCreateData);
+            int pcs_rv;
+            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_antype, pcs_createdata.pcs_pei, pcs_createdata.pcs_dnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_mcc, pcs_createdata.pcs_mnc, pcs_createdata.pcs_amfid, pcs_createdata.pcs_tac, pcs_createdata.pcs_cellid, pcs_createdata.pcs_uelocts, pcs_createdata.pcs_uetimezone, pcs_createdata.pcs_smcntxsttsuri, pcs_createdata.pcs_pcfid, pcs_createdata.pcs_rattype);
 
             bson_error_t error;
             bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
             pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
-            ogs_free(pcs_snssaisd);
+            ogs_free(pcs_createdata.pcs_snssaisd);
             free(pcs_docjson);
             if (pcs_rv != OGS_OK)
             {
@@ -252,6 +235,12 @@ bool smf_nsmf_handle_create_sm_context(
             {
                 ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
+        }
+        else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless)
+        {
+            pcs_createdata = pcs_get_smf_create_data(sess, SmContextCreateData);
+            sess->pcs.pcs_createdone = 1;
+            sess->pcs.pcs_createdata = pcs_createdata;
         }
         else
         {

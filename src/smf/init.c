@@ -145,6 +145,7 @@ static void smf_main(void *data)
     smf_sm.pcs_fsmdata.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
     smf_sm.pcs_fsmdata.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
     smf_sm.pcs_fsmdata.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
+    smf_sm.pcs_fsmdata.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;

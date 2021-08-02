@@ -50,6 +50,63 @@ extern int __gsm_log_domain;
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __smf_log_domain
 
+struct pcs_smf_create 
+{
+    char *pcs_supi;
+    char *pcs_pei;
+    char *pcs_dnn;
+    char *pcs_smcontextref;
+    int pcs_snssaisst;
+    char *pcs_snssaisd;
+    int pcs_pdusessionid;
+    char *pcs_mcc;
+    char *pcs_mnc;
+    char *pcs_amfid;
+    int pcs_antype;
+    char *pcs_rattype;
+    char *pcs_tac;
+    char *pcs_cellid;
+    char *pcs_uelocts;
+    char *pcs_uetimezone;
+    char *pcs_smcntxsttsuri;
+    char *pcs_pcfid;
+};
+
+struct pcs_smf_n1n2 
+{
+    char *pcs_pduaddress;
+    char *pcs_dnn; 
+    int pcs_sambrulv;
+    int pcs_sambrulu;
+    int pcs_sambrdlv;
+    int pcs_sambrdlu;
+    int pcs_pdusesstype;
+    long pcs_pdusessionaggregatemaximumbitrateul;
+    long pcs_pdusessionaggregatemaximumbitratedl;
+    long pcs_qosflowidentifier;
+    long pcs_fiveqi;
+    long pcs_plarp;
+    long pcs_preemptioncapability;
+    long pcs_preemptionvulnerability;
+    char *pcs_upfn3ip;
+    int pcs_upfn3teid; 
+    char *pcs_nasqosrulestr;
+    char *pcs_nasqosflowstr;
+    char *pcs_nasepcostr;
+};
+
+struct pcs_smf_n4_create
+{
+    char *pcs_smfnodeip;
+    char *pcs_upfnodeip;
+    uint64_t pcs_upfn4seid;
+    uint64_t pcs_smfn4seid;
+    char *pcs_pdrs;
+    char *pcs_fars;
+    char *pcs_qers;
+    char *pcs_bars;
+};
+
 typedef struct smf_context_s {
     const char*         diam_conf_path;   /* SMF Diameter conf path */
     ogs_diam_config_t   *diam_config;     /* SMF Diameter config */
@@ -188,6 +245,17 @@ typedef struct smf_bearer_s {
 
 #define SMF_SESS(pfcp_sess) ogs_container_of(pfcp_sess, smf_sess_t, pfcp)
 typedef struct smf_sess_s {
+
+    struct {
+        uint8_t pcs_createdone;
+        uint8_t pcs_n1n2done;
+        uint8_t pcs_n4createdone;
+        uint8_t pcs_updatedone;
+        struct pcs_smf_create pcs_createdata;
+        struct pcs_smf_n1n2 pcs_n1n2data;
+        struct pcs_smf_n4_create pcs_n4createdata;
+    } pcs;
+
     ogs_sbi_object_t sbi;
     uint32_t        index;          /**< An index of this node */
     ogs_fsm_t       sm;             /* A state machine */

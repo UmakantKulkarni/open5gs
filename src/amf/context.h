@@ -29,7 +29,6 @@
 #include "amf-sm.h"
 #include "timer.h"
 #include "mongoc.h"
-#include "pcs-helper.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,6 +41,50 @@ extern int __gmm_log_domain;
 
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __amf_log_domain
+
+struct pcs_amf_create 
+{
+    char *pcs_supi;
+    char *pcs_smcontextref;
+    int pcs_pdusessionid;
+    int pcs_amfueaccesstype;
+    int pcs_amfueallowedpdusessionstatus;
+    char *pcs_amfuepei;
+    char *pcs_amfsessdnn;
+    int pcs_snssaisst;
+    char *pcs_snssaisd;
+    char *pcs_amfueplmnid;
+    char *pcs_amfueamfid;
+    char *pcs_amfuetac;
+    int64_t pcs_amfuelocts;
+    int pcs_ranuengapid;
+    int pcs_amfuengapid;
+    int pcs_ranuegnbid;
+    char *pcs_ranuerattype;
+};
+
+struct pcs_amf_n1n2 
+{
+    char *pcs_pduaddress;
+    char *pcs_dnn; 
+    int pcs_sambrulv;
+    int pcs_sambrulu;
+    int pcs_sambrdlv;
+    int pcs_sambrdlu;
+    int pcs_pdusesstype;
+    long pcs_pdusessionaggregatemaximumbitrateul;
+    long pcs_pdusessionaggregatemaximumbitratedl;
+    long pcs_qosflowidentifier;
+    long pcs_fiveqi;
+    long pcs_plarp;
+    long pcs_preemptioncapability;
+    long pcs_preemptionvulnerability;
+    char *pcs_upfn3ip;
+    int pcs_upfn3teid; 
+    char *pcs_nasqosrulestr;
+    char *pcs_nasqosflowstr;
+    char *pcs_nasepcostr;
+};
 
 typedef struct ran_ue_s ran_ue_t;
 typedef struct amf_ue_s amf_ue_t;
