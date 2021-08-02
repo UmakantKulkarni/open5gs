@@ -541,8 +541,8 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_createdone)
     {
-        pcs_fsmdata->pcs_n1smbuf = n1buf;
-        pcs_fsmdata->pcs_n2smbuf = n2buf;
+        sess->pcs.pcs_n1smbuf = ogs_pkbuf_copy(n1buf);
+        sess->pcs.pcs_n2smbuf = ogs_pkbuf_copy(n2buf);
         pcs_fsmdata->pcs_n1n2done = 1;
     }
     else

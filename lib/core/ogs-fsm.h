@@ -53,8 +53,6 @@ typedef struct _pcs_fsm_struct_t {
     uint8_t pcs_createdone;
     uint8_t pcs_n1n2done;
     uint8_t pcs_updatedone;
-    ogs_pkbuf_t *pcs_n1smbuf;
-    ogs_pkbuf_t *pcs_n2smbuf;
 } pcs_fsm_struct_t;
 
 typedef struct _ogs_fsm_t {

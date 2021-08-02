@@ -1601,13 +1601,14 @@ void ngap_handle_pdu_session_resource_setup_response(
             if (pcs_n1n2done)
             {
                 NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
+                NGAP_PDUSessionResourceSetupRequestTransfer_t pcs_n2smmessage_ck;
                 NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
                 NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
                 NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
                 NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
                 NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
                 int pcs_rv, i, pcs_decode_status = 1, pcs_ngap_decode_status = 1;
-                pcs_ngap_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), pcs_fsmdata->pcs_n2smbuf);
+                pcs_ngap_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage_ck, sizeof(pcs_n2smmessage_ck), sess->pcs.pcs_n2smbuf);
                 if (pcs_ngap_decode_status == 0)
                     ogs_info("PCSSSSSSSSSSSSSSSSSSS");
                 uint32_t pcs_upfn3teid;
