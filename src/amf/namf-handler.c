@@ -418,7 +418,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
             if (pcs_fsmdata->pcs_updateapienabledn1n2)
             {
-                bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pcs-n1n2-data", BCON_DOCUMENT(pcs_n1n2data) "}");
+                bson_error_t error;
+                bson_t *bson_doc_n1n2 = bson_new_from_json((const uint8_t *)pcs_n1n2data, -1, &error);
+                bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pcs-n1n2-data", BCON_DOCUMENT(bson_doc_n1n2), "}");
                 pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
                 
             }
