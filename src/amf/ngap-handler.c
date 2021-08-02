@@ -1604,35 +1604,12 @@ void ngap_handle_pdu_session_resource_setup_response(
             if (pcs_n1n2done)
             {
                 NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
-                NGAP_PDUSessionResourceSetupRequestTransfer_t pcs_n2smmessage_ck;
                 NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
                 NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
                 NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
                 NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
                 NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
-                int pcs_rv, i, pcs_decode_status = 1, pcs_ngap_decode_status = 1;
-                pcs_ngap_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage_ck, sizeof(pcs_n2smmessage_ck), sess->pcs.pcs_n2smbuf);
-                if (pcs_ngap_decode_status == 0)
-                {
-                    ogs_info("PCSSSSSSSSSSSSSSSSSSS");
-                    NGAP_PDUSessionResourceSetupRequestTransferIEs_t *pcs_ie = NULL;
-                    int pcs_k;
-                    for (pcs_k = 0; pcs_k < pcs_n2smmessage_ck.protocolIEs.list.count; pcs_k++)
-                    {
-                        pcs_ie = pcs_n2smmessage_ck.protocolIEs.list.array[pcs_k];
-                        switch (pcs_ie->id)
-                        {
-                            case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
-                            pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
-                            pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
-                            ogs_assert(pcs_gtptunnel);
-                            ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-                            ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-                            pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-                            ogs_info("PCSSSSSS CK pcs_upfn3ip & pcs_upfn3teid is %s %d", pcs_upfn3ip, pcs_upfn3teid);
-                            break;
-                        }
-                }
+                int pcs_rv, i, pcs_decode_status = 1;
                 
                 pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), param.n2smbuf);
                 if (pcs_decode_status == 0)

@@ -156,33 +156,15 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        char *pcs_docjson, *pcs_dbrdata;
+        char *pcs_docjson, *pcs_dbrdata, *pcs_createdata;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
         if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
-        {    
-            char *pcs_supi = sess->amf_ue->supi;
-            char *pcs_smcontextref = sess->sm_context_ref;
-            int pcs_pdusessionid = sess->psi;
-            int pcs_amfueaccesstype = sess->amf_ue->nas.access_type;
-            int pcs_amfueallowedpdusessionstatus = sess->amf_ue->nas.present.allowed_pdu_session_status;
-            char *pcs_amfuepei = sess->amf_ue->pei;
-            char *pcs_amfsessdnn = sess->dnn;
-            int pcs_snssaisst = sess->s_nssai.sst;
-            char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
-            char pcs_amfueplmnid[OGS_PLMNIDSTRLEN];
-            ogs_plmn_id_to_string(&sess->amf_ue->guami->plmn_id, pcs_amfueplmnid);
-            char *pcs_amfueamfid = ogs_amf_id_to_string(&sess->amf_ue->guami->amf_id);
-            char *pcs_amfuetac = ogs_s_nssai_sd_to_string(sess->amf_ue->nr_tai.tac);
-            int64_t pcs_amfuelocts = sess->amf_ue->ue_location_timestamp;
-            int pcs_ranuengapid = sess->amf_ue->ran_ue->ran_ue_ngap_id;
-            int pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;
-            int pcs_ranuegnbid = sess->amf_ue->ran_ue->gnb->gnb_id;
-            char *pcs_ranuerattype = OpenAPI_rat_type_ToString(sess->amf_ue->ran_ue->gnb->rat_type);
-
+        {
+            pcs_createdata = pcs_get_amf_create_data(sess);
             int pcs_rv;
-            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_amfueaccesstype, pcs_amfueallowedpdusessionstatus, pcs_amfuepei, pcs_amfsessdnn, pcs_snssaisst, pcs_snssaisd, pcs_amfueplmnid, pcs_amfueamfid, pcs_amfuetac, (long)pcs_amfuelocts, pcs_ranuengapid, pcs_amfuengapid, pcs_ranuegnbid, pcs_ranuerattype);
+            asprintf(&pcs_docjson, "{%s}", pcs_createdata);
             bson_error_t error;
             bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
             pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);

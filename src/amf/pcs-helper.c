@@ -422,3 +422,32 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
    
    return pcs_docjson;
 }
+
+char *pcs_get_amf_create_data(amf_sess_t *sess)
+{
+   char pcs_emptystr[] = " ";
+   char *pcs_supi = sess->amf_ue->supi;
+   char *pcs_smcontextref = sess->sm_context_ref;
+   int pcs_pdusessionid = sess->psi;
+   int pcs_amfueaccesstype = sess->amf_ue->nas.access_type;
+   int pcs_amfueallowedpdusessionstatus = sess->amf_ue->nas.present.allowed_pdu_session_status;
+   char *pcs_amfuepei = sess->amf_ue->pei;
+   char *pcs_amfsessdnn = sess->dnn;
+   int pcs_snssaisst = sess->s_nssai.sst;
+   char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
+   char pcs_amfueplmnid[OGS_PLMNIDSTRLEN];
+   ogs_plmn_id_to_string(&sess->amf_ue->guami->plmn_id, pcs_amfueplmnid);
+   char *pcs_amfueamfid = ogs_amf_id_to_string(&sess->amf_ue->guami->amf_id);
+   char *pcs_amfuetac = ogs_s_nssai_sd_to_string(sess->amf_ue->nr_tai.tac);
+   int64_t pcs_amfuelocts = sess->amf_ue->ue_location_timestamp;
+   int pcs_ranuengapid = sess->amf_ue->ran_ue->ran_ue_ngap_id;
+   int pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;
+   int pcs_ranuegnbid = sess->amf_ue->ran_ue->gnb->gnb_id;
+   char *pcs_ranuerattype = OpenAPI_rat_type_ToString(sess->amf_ue->ran_ue->gnb->rat_type);
+
+   asprintf(&pcs_docjson, "\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"", pcs_imsistr, pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_amfueaccesstype, pcs_amfueallowedpdusessionstatus, pcs_amfuepei, pcs_amfsessdnn, pcs_snssaisst, pcs_snssaisd, pcs_amfueplmnid, pcs_amfueamfid, pcs_amfuetac, (long)pcs_amfuelocts, pcs_ranuengapid, pcs_amfuengapid, pcs_ranuegnbid, pcs_ranuerattype);
+
+   pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_emptystr);
+
+   return pcs_docjson;
+}
