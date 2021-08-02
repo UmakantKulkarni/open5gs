@@ -6,6 +6,7 @@ extern "C"
 {
 #endif
 
+#include "context.h"
 #include "bson.h"
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
@@ -20,6 +21,7 @@ extern "C"
     char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
+    char *pcs_get_amf_create_data(amf_sess_t *sess);
 
 #ifdef __cplusplus
 }

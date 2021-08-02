@@ -425,7 +425,10 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
 
 char *pcs_get_amf_create_data(amf_sess_t *sess)
 {
+   char *pcs_docjson;
    char pcs_emptystr[] = " ";
+   char *pcs_imsistr = sess->amf_ue->supi;
+   pcs_imsistr += 5;
    char *pcs_supi = sess->amf_ue->supi;
    char *pcs_smcontextref = sess->sm_context_ref;
    int pcs_pdusessionid = sess->psi;
