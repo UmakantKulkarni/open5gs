@@ -9,27 +9,6 @@ extern "C"
 #include "context.h"
 #include "bson.h"
 
-    struct pcs_amf_create 
-    {
-        char *pcs_supi
-        char *pcs_smcontextref;
-        int pcs_pdusessionid;
-        int pcs_amfueaccesstype;
-        int pcs_amfueallowedpdusessionstatus;
-        char *pcs_amfuepei;
-        char *pcs_amfsessdnn;
-        int pcs_snssaisst;
-        char *pcs_snssaisd;
-        char pcs_amfueplmnid[OGS_PLMNIDSTRLEN];
-        char *pcs_amfueamfid;
-        char *pcs_amfuetac;
-        int64_t pcs_amfuelocts;
-        int pcs_ranuengapid;
-        int pcs_amfuengapid;
-        int pcs_ranuegnbid;
-        char *pcs_ranuerattype;
-    };
-
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
@@ -43,8 +22,6 @@ extern "C"
     char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
-    struct pcs_amf_create pcs_get_amf_create_data(amf_sess_t *sess);
-    char *pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
 
 #ifdef __cplusplus
 }

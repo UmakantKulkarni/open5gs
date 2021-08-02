@@ -160,9 +160,10 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+        struct pcs_amf_create pcs_createdata;
         if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
         {
-            struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
+            pcs_createdata = pcs_get_amf_create_data(sess);
             int pcs_rv;
             asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
 
@@ -172,6 +173,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_free(pcs_createdata.pcs_snssaisd);
             ogs_free(pcs_createdata.pcs_amfueamfid);
             ogs_free(pcs_createdata.pcs_amfuetac);
+            free(pcs_createdata.pcs_amfueplmnid);
             free(pcs_docjson);
             if (pcs_rv != OGS_OK)
             {

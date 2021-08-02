@@ -11,7 +11,7 @@ extern "C"
 
     struct pcs_amf_create 
     {
-        char *pcs_supi
+        char *pcs_supi;
         char *pcs_smcontextref;
         int pcs_pdusessionid;
         int pcs_amfueaccesstype;
@@ -30,6 +30,29 @@ extern "C"
         char *pcs_ranuerattype;
     };
 
+    struct pcs_amf_n1n2 
+    {
+        char *pcs_pduaddress;
+        char *pcs_dnn; 
+        int pcs_sambrulv;
+        int pcs_sambrulu;
+        int pcs_sambrdlv;
+        int pcs_sambrdlu;
+        int pcs_pdusesstype;
+        long pcs_pdusessionaggregatemaximumbitrateul;
+        long pcs_pdusessionaggregatemaximumbitratedl;
+        long pcs_qosflowidentifier;
+        long pcs_fiveqi;
+        long pcs_plarp;
+        long pcs_preemptioncapability;
+        long pcs_preemptionvulnerability;
+        char *pcs_upfn3ip;
+        int pcs_upfn3teid; 
+        char *pcs_nasqosrulestr;
+        char *pcs_nasqosflowstr;
+        char *pcs_nasepcostr;
+    };
+
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
@@ -44,7 +67,7 @@ extern "C"
     char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
     struct pcs_amf_create pcs_get_amf_create_data(amf_sess_t *sess);
-    char *pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
+    struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
 
 #ifdef __cplusplus
 }
