@@ -1579,7 +1579,7 @@ void ngap_handle_pdu_session_resource_setup_response(
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
             mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            char *pcs_upfn3ip, *pcs_dbrdata, *pcs_createdata, *pcs_n1n2data;
+            char *pcs_upfn3ip, *pcs_dbrdata, *pcs_n1n2data;
             uint32_t pcs_upfn3teid;
             long pcs_qosflowid;
             ogs_ip_t pcs_upfn3ipbitstr;
@@ -1602,7 +1602,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
                 if (pcs_n1n2done)
                 {
-                    pcs_createdata = pcs_get_amf_create_data(sess);
+                    struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
                     pcs_n1n2data = pcs_get_amf_n1n2_data(sess, sess->pcs.pcs_n1smbuf, sess->pcs.pcs_n2smbuf);
                 }
                 else
@@ -1642,7 +1642,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                     if (pcs_fsmdata->pcs_isproceduralstateless)
                     {
                         char *pcs_docjson;
-                        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"pcs-create-data\": %s, \"pcs-n1n2-done\": 1, \"pcs-n1n2-data\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata, pcs_n1n2data, pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
+                        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\", \"pcs-n1n2-done\": 1, \"pcs-n1n2-data\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype, pcs_n1n2data, pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
                         bson_error_t error;
                         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
                         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
@@ -1686,7 +1686,9 @@ void ngap_handle_pdu_session_resource_setup_response(
                     else
                     {
                         sess->pcs.pcs_updatedone = 1;
-                        free(pcs_createdata);
+                        ogs_free(pcs_createdata.pcs_snssaisd);
+                        ogs_free(pcs_createdata.pcs_amfueamfid);
+                        ogs_free(pcs_createdata.pcs_amfuetac);
                         free(pcs_n1n2data);
                     }
                 }

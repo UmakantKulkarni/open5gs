@@ -156,19 +156,22 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        char *pcs_docjson, *pcs_dbrdata, *pcs_createdata;
+        char *pcs_docjson, *pcs_dbrdata;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
         if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
         {
-            pcs_createdata = pcs_get_amf_create_data(sess);
+            struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
             int pcs_rv;
-            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"pcs-create-data\": %s }", pcs_imsistr, pcs_createdata);
+            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
+
             bson_error_t error;
             bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
             pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
-            free(pcs_createdata);
+            ogs_free(pcs_createdata.pcs_snssaisd);
+            ogs_free(pcs_createdata.pcs_amfueamfid);
+            ogs_free(pcs_createdata.pcs_amfuetac);
             free(pcs_docjson);
             if (pcs_rv != OGS_OK)
             {

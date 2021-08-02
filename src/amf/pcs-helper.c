@@ -423,10 +423,8 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
    return pcs_docjson;
 }
 
-char *pcs_get_amf_create_data(amf_sess_t *sess)
+struct pcs_amf_create pcs_get_amf_create_data(amf_sess_t *sess)
 {
-   char *pcs_docjson;
-   char pcs_curlybrace[] = "}";
    char *pcs_supi = sess->amf_ue->supi;
    char *pcs_smcontextref = sess->sm_context_ref;
    int pcs_pdusessionid = sess->psi;
@@ -446,15 +444,9 @@ char *pcs_get_amf_create_data(amf_sess_t *sess)
    int pcs_ranuegnbid = sess->amf_ue->ran_ue->gnb->gnb_id;
    char *pcs_ranuerattype = OpenAPI_rat_type_ToString(sess->amf_ue->ran_ue->gnb->rat_type);
 
-   asprintf(&pcs_docjson, "{\"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"", pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_amfueaccesstype, pcs_amfueallowedpdusessionstatus, pcs_amfuepei, pcs_amfsessdnn, pcs_snssaisst, pcs_snssaisd, pcs_amfueplmnid, pcs_amfueamfid, pcs_amfuetac, (long)pcs_amfuelocts, pcs_ranuengapid, pcs_amfuengapid, pcs_ranuegnbid, pcs_ranuerattype);
-
-   pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_curlybrace);
-
-   ogs_free(pcs_snssaisd);
-   ogs_free(pcs_amfueamfid);
-   ogs_free(pcs_amfuetac);
-
-   return pcs_docjson;
+   struct pcs_amf_create pcs_createdata = {pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_amfueaccesstype, pcs_amfueallowedpdusessionstatus, pcs_amfuepei, pcs_amfsessdnn, pcs_snssaisst, pcs_snssaisd, pcs_amfueplmnid, pcs_amfueamfid, pcs_amfuetac, pcs_amfuelocts, pcs_ranuengapid, pcs_amfuengapid, pcs_ranuegnbid, pcs_ranuerattype};
+   
+   return (pcs_createdata);
 }
 
 char *pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf)
