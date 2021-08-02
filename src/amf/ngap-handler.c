@@ -1642,7 +1642,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                     if (pcs_fsmdata->pcs_isproceduralstateless)
                     {
                         char *pcs_docjson;
-                        asprintf(&pcs_docjson, ", \"pcs-create-done\": 1, \"pcs-create-data\": %s, \"pcs-n1n2-done\": 1, \"pcs-n1n2-data\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_createdata, pcs_n1n2data, pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
+                        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"pcs-create-data\": %s, \"pcs-n1n2-done\": 1, \"pcs-n1n2-data\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata, pcs_n1n2data, pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
                         bson_error_t error;
                         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
                         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
