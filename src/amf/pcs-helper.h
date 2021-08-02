@@ -22,6 +22,7 @@ extern "C"
     char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
     char *pcs_get_amf_create_data(amf_sess_t *sess);
+    char *pcs_get_amf_n1n2_data(ogs_pkbuf_t n1buf, ogs_pkbuf_t n2buf);
 
 #ifdef __cplusplus
 }

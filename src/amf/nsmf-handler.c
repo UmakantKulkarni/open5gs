@@ -164,7 +164,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         {
             pcs_createdata = pcs_get_amf_create_data(sess);
             int pcs_rv;
-            asprintf(&pcs_docjson, "{%s}", pcs_createdata);
+            asprintf(&pcs_docjson, "{ \"pcs-create-data\": %s }", pcs_createdata);
             bson_error_t error;
             bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
             pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);

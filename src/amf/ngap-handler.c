@@ -1579,7 +1579,7 @@ void ngap_handle_pdu_session_resource_setup_response(
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
             mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            char *pcs_upfn3ip, *pcs_dbrdata;
+            char *pcs_upfn3ip, *pcs_dbrdata, *pcs_createdata, *pcs_n1n2data;
             uint32_t pcs_upfn3teid;
             long pcs_qosflowid;
             ogs_ip_t pcs_upfn3ipbitstr;
@@ -1600,6 +1600,15 @@ void ngap_handle_pdu_session_resource_setup_response(
             else if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
+                if (pcs_n1n2done)
+                {
+                    pcs_createdata = pcs_get_amf_create_data(sess);
+                    pcs_n1n2data = pcs_get_amf_n1n2_data(sess->pcs.pcs_n1smbuf, sess->pcs.pcs_n2smbuf);
+                }
+                else
+                {
+                    ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request - 1");
+                }
             }
             if (pcs_n1n2done)
             {
@@ -1630,16 +1639,30 @@ void ngap_handle_pdu_session_resource_setup_response(
                         }
                     }
 
-                    if (pcs_fsmdata->pcs_updateapienabledmodify)
+                    if (pcs_fsmdata->pcs_isproceduralstateless)
                     {
-                        bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
-                        pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                        char *pcs_docjson;
+                        asprintf(&pcs_docjson, ", \"pcs-create-done\": 1, \"pcs-create-data\": %s, \"pcs-n1n2-done\": 1, \"pcs-n1n2-data\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_createdata, pcs_n1n2data, pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
+                        bson_error_t error;
+                        bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+                        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
                     }
                     else
                     {
-                        char *pcs_updatedoc;
-                        asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
-                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                        if (pcs_fsmdata->pcs_updateapienabledmodify)
+                        {
+                            
+                            bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
+                            
+                            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                        }
+                        else
+                        {
+                            char *pcs_updatedoc;
+                            asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
+                            
+                            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                        }
                     }
 
                     if (pcs_rv != OGS_OK)
@@ -1663,6 +1686,8 @@ void ngap_handle_pdu_session_resource_setup_response(
                     else
                     {
                         sess->pcs.pcs_updatedone = 1;
+                        free(pcs_createdata);
+                        free(pcs_n1n2data);
                     }
                 }
                 else
@@ -1672,7 +1697,7 @@ void ngap_handle_pdu_session_resource_setup_response(
             }
             else
             {
-                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request - 2");
             }
             
         }
