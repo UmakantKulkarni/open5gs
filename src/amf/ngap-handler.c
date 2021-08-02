@@ -1603,7 +1603,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 if (pcs_n1n2done)
                 {
                     pcs_createdata = pcs_get_amf_create_data(sess);
-                    pcs_n1n2data = pcs_get_amf_n1n2_data(sess->pcs.pcs_n1smbuf, sess->pcs.pcs_n2smbuf);
+                    pcs_n1n2data = pcs_get_amf_n1n2_data(sess, sess->pcs.pcs_n1smbuf, sess->pcs.pcs_n2smbuf);
                 }
                 else
                 {

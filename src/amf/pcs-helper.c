@@ -459,17 +459,16 @@ char *pcs_get_amf_create_data(amf_sess_t *sess)
    return pcs_docjson;
 }
 
-char *pcs_get_amf_n1n2_data(ogs_pkbuf_t n1buf, ogs_pkbuf_t n2buf)
+char *pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf)
 {
    char pcs_curlybrace[] = "}";
-   char *pcs_docjson;
+   char *pcs_docjson, *pcs_nasqosrulestr, *pcs_nasqosflowstr, *pcs_nasepcostr;
    int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
    ogs_nas_5gs_message_t pcs_nasmessage;
    pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
    if (pcs_nas_decode_status == 0 && pcs_nasmessage.gsm.h.message_type == 194)
    {
       ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
-      char *pcs_smcontextref = sess->sm_context_ref;
       char *pcs_pduaddress = ogs_ipv4_to_string(pcs_pdusessionestablishmentaccept->pdu_address.addr);
       char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
       int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
@@ -477,21 +476,18 @@ char *pcs_get_amf_n1n2_data(ogs_pkbuf_t n1buf, ogs_pkbuf_t n2buf)
       int pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
       int pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
       int pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
-      int pcs_snssaisst = sess->s_nssai.sst;
-      char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
-      int pcs_rv;
 
       char pcs_hexauthqosrule[OGS_HUGE_LEN];
       decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
-      char *pcs_nasqosrulestr = decode_nas_qos_rule_hex_to_str(pcs_hexauthqosrule);
+      pcs_nasqosrulestr = decode_nas_qos_rule_hex_to_str(pcs_hexauthqosrule);
 
       char pcs_hexqosflowdesc[OGS_HUGE_LEN];
       decode_buffer_to_hex(pcs_hexqosflowdesc, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.length);
-      char *pcs_nasqosflowstr = decode_nas_qos_flow_hex_to_str(pcs_hexqosflowdesc);
+      pcs_nasqosflowstr = decode_nas_qos_flow_hex_to_str(pcs_hexqosflowdesc);
 
       char pcs_hexepco[OGS_HUGE_LEN];
       decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
-      char *pcs_nasepcostr = decode_nas_epco_hex_to_str(pcs_hexepco);
+      pcs_nasepcostr = decode_nas_epco_hex_to_str(pcs_hexepco);
 
       int pcs_k, pcs_l;
       char *pcs_upfn3ip;
@@ -547,7 +543,7 @@ char *pcs_get_amf_n1n2_data(ogs_pkbuf_t n1buf, ogs_pkbuf_t n2buf)
                   break;
             }
          }
-         asprintf(&pcs_docjson, "{\"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s", pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_pdusesstype, pcs_snssaisst, pcs_snssaisd, pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl, pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability, pcs_upfn3ip, pcs_upfn3teid, pcs_nasqosrulestr, pcs_nasqosflowstr, pcs_nasepcostr);
+         asprintf(&pcs_docjson, "{\"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s", pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_pdusesstype, pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl, pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability, pcs_upfn3ip, pcs_upfn3teid, pcs_nasqosrulestr, pcs_nasqosflowstr, pcs_nasepcostr);
       }
       else
       {
@@ -561,9 +557,12 @@ char *pcs_get_amf_n1n2_data(ogs_pkbuf_t n1buf, ogs_pkbuf_t n2buf)
 
    pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_curlybrace);
 
-   free(pcs_nasqosrulestr);
-   free(pcs_nasqosflowstr);
-   free(pcs_nasepcostr);
+   if (pcs_nas_decode_status == 0 && pcs_nasmessage.gsm.h.message_type == 194)
+   {
+      free(pcs_nasqosrulestr);
+      free(pcs_nasqosflowstr);
+      free(pcs_nasepcostr);
+   }
 
    /* ogs_free(pcs_upfn3ip);
    ogs_free(pcs_pduaddress);

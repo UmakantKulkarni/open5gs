@@ -383,7 +383,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_dbrdata, *pcs_n1n2data;
-        int pcs_createdone = 0;
+        int pcs_createdone = 0, pcs_rv;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
@@ -395,7 +395,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
         if (pcs_createdone)
         {
-            pcs_n1n2data = pcs_get_amf_n1n2_data(n1buf, n2buf);
+            pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
             /*if (pcs_fsmdata->pcs_updateapienabledn1n2)
             {
                 bson_error_t error;
