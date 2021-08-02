@@ -1604,8 +1604,8 @@ void ngap_handle_pdu_session_resource_setup_response(
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
                 if (pcs_n1n2done)
                 {
-                    pcs_createdata = pcs_get_amf_create_data(sess);
-                    pcs_n1n2data = pcs_get_amf_n1n2_data(sess, sess->pcs.pcs_n1smbuf, sess->pcs.pcs_n2smbuf);
+                    pcs_createdata = sess->pcs.pcs_createdata;
+                    pcs_n1n2data = sess->pcs.pcs_n1n2data;
                 }
                 else
                 {

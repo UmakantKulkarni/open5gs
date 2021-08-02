@@ -150,6 +150,7 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
 
    bson_destroy(query);
    bson_destroy(bson_doc);
+   free(pcs_dbnewdata);
 
    return EXIT_SUCCESS;
 }
@@ -421,4 +422,127 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
    pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_keyval);
    
    return pcs_docjson;
+}
+
+struct pcs_smf_create pcs_get_smf_create_data(smf_sess_t *sess)
+{
+   struct pcs_smf_create pcs_createdata;
+   pcs_createdata.pcs_supi = sess->amf_ue->supi;
+   pcs_createdata.pcs_smcontextref = sess->sm_context_ref;
+   pcs_createdata.pcs_pdusessionid = sess->psi;
+   pcs_createdata.pcs_amfueaccesstype = sess->amf_ue->nas.access_type;
+   pcs_createdata.pcs_amfueallowedpdusessionstatus = sess->amf_ue->nas.present.allowed_pdu_session_status;
+   pcs_createdata.pcs_amfuepei = sess->amf_ue->pei;
+   pcs_createdata.pcs_amfsessdnn = sess->dnn;
+   pcs_createdata.pcs_snssaisst = sess->s_nssai.sst;
+   pcs_createdata.pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
+   char pcs_plmnid[OGS_PLMNIDSTRLEN];
+   ogs_plmn_id_to_string(&sess->amf_ue->guami->plmn_id, pcs_plmnid);
+   char *pcs_amfueplmnid;
+   asprintf(&pcs_amfueplmnid, "%s", pcs_plmnid);
+   pcs_createdata.pcs_amfueplmnid = pcs_amfueplmnid;
+   pcs_createdata.pcs_amfueamfid = ogs_amf_id_to_string(&sess->amf_ue->guami->amf_id);
+   pcs_createdata.pcs_amfuetac = ogs_s_nssai_sd_to_string(sess->amf_ue->nr_tai.tac);
+   pcs_createdata.pcs_amfuelocts = sess->amf_ue->ue_location_timestamp;
+   pcs_createdata.pcs_ranuengapid = sess->amf_ue->ran_ue->ran_ue_ngap_id;
+   pcs_createdata.pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;
+   pcs_createdata.pcs_ranuegnbid = sess->amf_ue->ran_ue->gnb->gnb_id;
+   pcs_createdata.pcs_ranuerattype = OpenAPI_rat_type_ToString(sess->amf_ue->ran_ue->gnb->rat_type);
+
+   return (pcs_createdata);
+}
+
+struct pcs_smf_n1n2 pcs_get_smf_n1n2_data(smf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf)
+{
+   struct pcs_smf_n1n2 pcs_n1n2data;
+   int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
+   ogs_nas_5gs_message_t pcs_nasmessage;
+   pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
+   if (pcs_nas_decode_status == 0 && pcs_nasmessage.gsm.h.message_type == 194)
+   {
+      ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
+      pcs_n1n2data.pcs_pduaddress = ogs_ipv4_to_string(pcs_pdusessionestablishmentaccept->pdu_address.addr);
+      pcs_n1n2data.pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
+      pcs_n1n2data.pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
+      pcs_n1n2data.pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
+      pcs_n1n2data.pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
+      pcs_n1n2data.pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
+      pcs_n1n2data.pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
+
+      char pcs_hexauthqosrule[OGS_HUGE_LEN];
+      decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
+      pcs_n1n2data.pcs_nasqosrulestr = decode_nas_qos_rule_hex_to_str(pcs_hexauthqosrule);
+
+      char pcs_hexqosflowdesc[OGS_HUGE_LEN];
+      decode_buffer_to_hex(pcs_hexqosflowdesc, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.length);
+      pcs_n1n2data.pcs_nasqosflowstr = decode_nas_qos_flow_hex_to_str(pcs_hexqosflowdesc);
+
+      char pcs_hexepco[OGS_HUGE_LEN];
+      decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
+      pcs_n1n2data.pcs_nasepcostr = decode_nas_epco_hex_to_str(pcs_hexepco);
+
+      int pcs_k, pcs_l;
+      uint32_t pcs_upfn3teid;
+      ogs_ip_t pcs_upfn3ipbitstr;
+      NGAP_PDUSessionResourceSetupRequestTransfer_t pcs_n2smmessage;
+      NGAP_PDUSessionResourceSetupRequestTransferIEs_t *pcs_ie = NULL;
+      NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
+      NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
+      NGAP_QosFlowSetupRequestList_t *pcs_qosflowsetuprequestlist = NULL;
+      NGAP_QosFlowSetupRequestItem_t *pcs_qosflowsetuprequestitem = NULL;
+      NGAP_QosFlowLevelQosParameters_t *pcs_qosflowlevelqosparameters = NULL;
+      NGAP_QosCharacteristics_t *pcs_qoscharacteristics = NULL;
+      NGAP_AllocationAndRetentionPriority_t *pcs_allocationandretentionpriority;
+      pcs_ngap_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupRequestTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
+      if (pcs_ngap_decode_status == 0)
+      {
+         for (pcs_k = 0; pcs_k < pcs_n2smmessage.protocolIEs.list.count; pcs_k++)
+         {
+            pcs_ie = pcs_n2smmessage.protocolIEs.list.array[pcs_k];
+            switch (pcs_ie->id)
+            {
+            case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
+                  pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul = sess->session.ambr.uplink;
+                  pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl = sess->session.ambr.downlink;
+                  break;
+            case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
+                  pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
+                  ogs_assert(pcs_qosflowsetuprequestlist);
+                  for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
+                  {
+                     pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[pcs_l];
+                     ogs_assert(pcs_qosflowsetuprequestitem);
+                     pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
+                     pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
+                     pcs_allocationandretentionpriority = &pcs_qosflowlevelqosparameters->allocationAndRetentionPriority;
+                     pcs_n1n2data.pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
+                     pcs_n1n2data.pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
+                     pcs_n1n2data.pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
+                     pcs_n1n2data.pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
+                     pcs_n1n2data.pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
+                  }
+                  break;
+            case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
+                  pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
+                  pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
+                  ogs_assert(pcs_gtptunnel);
+                  ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+                  ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
+                  pcs_n1n2data.pcs_upfn3teid = pcs_upfn3teid;
+                  pcs_n1n2data.pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+                  break;
+            }
+         }
+      }
+      else
+      {
+         ogs_error("PCS ogs_asn_decode failed");
+      }
+   }
+   else
+   {
+         ogs_error("PCS ogs_nas_5gsm_decode failed");
+   }
+
+   return (pcs_n1n2data);
 }

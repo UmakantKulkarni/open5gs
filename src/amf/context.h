@@ -29,6 +29,7 @@
 #include "amf-sm.h"
 #include "timer.h"
 #include "mongoc.h"
+#include "pcs-helper.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -462,8 +463,8 @@ typedef struct amf_sess_s {
         uint8_t pcs_createdone;
         uint8_t pcs_n1n2done;
         uint8_t pcs_updatedone;
-        ogs_pkbuf_t *pcs_n1smbuf;
-        ogs_pkbuf_t *pcs_n2smbuf;
+        struct pcs_amf_create pcs_createdata;
+        struct pcs_amf_n1n2 pcs_n1n2data;
     } pcs;
 
     struct {
