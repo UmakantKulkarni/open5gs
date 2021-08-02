@@ -24,7 +24,7 @@ extern "C"
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
     struct pcs_smf_create pcs_get_smf_create_data(smf_sess_t *sess, OpenAPI_sm_context_create_data_t *SmContextCreateData);
     struct pcs_smf_n1n2 pcs_get_smf_n1n2_data(smf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
-    struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess, ogs_pfcp_xact_t *xact);
+    struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess);
 
 #ifdef __cplusplus
 }

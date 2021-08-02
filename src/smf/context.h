@@ -105,6 +105,7 @@ struct pcs_smf_n4_create
     char *pcs_fars;
     char *pcs_qers;
     char *pcs_bars;
+    uint8_t pfcp_cause_value;
 };
 
 typedef struct smf_context_s {

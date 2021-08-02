@@ -544,7 +544,7 @@ struct pcs_smf_n1n2 pcs_get_smf_n1n2_data(smf_sess_t *sess, ogs_pkbuf_t *n1buf, 
    return (pcs_n1n2data);
 }
 
-struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess, ogs_pfcp_xact_t *xact)
+struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess)
 {
    struct pcs_smf_n4_create pcs_n4createdata;
    
@@ -557,7 +557,6 @@ struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess, ogs_pfcp_x
    ogs_pfcp_far_t *far = NULL;
    ogs_pfcp_qer_t *qer = NULL;
    pcs_n4createdata.pcs_smfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
-   pcs_n4createdata.pcs_upfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
    pcs_n4createdata.pcs_upfn4seid = sess->upf_n4_seid;
    pcs_n4createdata.pcs_smfn4seid = sess->smf_n4_seid;
 
