@@ -427,68 +427,63 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
 struct pcs_amf_create pcs_get_amf_create_data(amf_sess_t *sess)
 {
    struct pcs_amf_create pcs_createdata;
-   char *pcs_supi = sess->amf_ue->supi;
-   char *pcs_smcontextref = sess->sm_context_ref;
-   int pcs_pdusessionid = sess->psi;
-   int pcs_amfueaccesstype = sess->amf_ue->nas.access_type;
-   int pcs_amfueallowedpdusessionstatus = sess->amf_ue->nas.present.allowed_pdu_session_status;
-   char *pcs_amfuepei = sess->amf_ue->pei;
-   char *pcs_amfsessdnn = sess->dnn;
-   int pcs_snssaisst = sess->s_nssai.sst;
-   char *pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
+   pcs_createdata.pcs_supi = sess->amf_ue->supi;
+   pcs_createdata.pcs_smcontextref = sess->sm_context_ref;
+   pcs_createdata.pcs_pdusessionid = sess->psi;
+   pcs_createdata.pcs_amfueaccesstype = sess->amf_ue->nas.access_type;
+   pcs_createdata.pcs_amfueallowedpdusessionstatus = sess->amf_ue->nas.present.allowed_pdu_session_status;
+   pcs_createdata.pcs_amfuepei = sess->amf_ue->pei;
+   pcs_createdata.pcs_amfsessdnn = sess->dnn;
+   pcs_createdata.pcs_snssaisst = sess->s_nssai.sst;
+   pcs_createdata.pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
    char pcs_plmnid[OGS_PLMNIDSTRLEN];
    ogs_plmn_id_to_string(&sess->amf_ue->guami->plmn_id, pcs_plmnid);
    char *pcs_amfueplmnid;
    asprintf(&pcs_amfueplmnid, "%s", pcs_plmnid);
-   char *pcs_amfueamfid = ogs_amf_id_to_string(&sess->amf_ue->guami->amf_id);
-   char *pcs_amfuetac = ogs_s_nssai_sd_to_string(sess->amf_ue->nr_tai.tac);
-   int64_t pcs_amfuelocts = sess->amf_ue->ue_location_timestamp;
-   int pcs_ranuengapid = sess->amf_ue->ran_ue->ran_ue_ngap_id;
-   int pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;
-   int pcs_ranuegnbid = sess->amf_ue->ran_ue->gnb->gnb_id;
-   char *pcs_ranuerattype = OpenAPI_rat_type_ToString(sess->amf_ue->ran_ue->gnb->rat_type);
+   pcs_createdata.pcs_amfueplmnid = pcs_amfueplmnid;
+   pcs_createdata.pcs_amfueamfid = ogs_amf_id_to_string(&sess->amf_ue->guami->amf_id);
+   pcs_createdata.pcs_amfuetac = ogs_s_nssai_sd_to_string(sess->amf_ue->nr_tai.tac);
+   pcs_createdata.pcs_amfuelocts = sess->amf_ue->ue_location_timestamp;
+   pcs_createdata.pcs_ranuengapid = sess->amf_ue->ran_ue->ran_ue_ngap_id;
+   pcs_createdata.pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;
+   pcs_createdata.pcs_ranuegnbid = sess->amf_ue->ran_ue->gnb->gnb_id;
+   pcs_createdata.pcs_ranuerattype = OpenAPI_rat_type_ToString(sess->amf_ue->ran_ue->gnb->rat_type);
 
-   pcs_createdata = {pcs_supi, pcs_smcontextref, pcs_pdusessionid, pcs_amfueaccesstype, pcs_amfueallowedpdusessionstatus, pcs_amfuepei, pcs_amfsessdnn, pcs_snssaisst, pcs_snssaisd, pcs_amfueplmnid, pcs_amfueamfid, pcs_amfuetac, pcs_amfuelocts, pcs_ranuengapid, pcs_amfuengapid, pcs_ranuegnbid, pcs_ranuerattype};
-   
    return (pcs_createdata);
 }
 
 struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf)
 {
    struct pcs_amf_n1n2 pcs_n1n2data;
-   char *pcs_nasqosrulestr, *pcs_nasqosflowstr, *pcs_nasepcostr;
    int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
    ogs_nas_5gs_message_t pcs_nasmessage;
    pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
    if (pcs_nas_decode_status == 0 && pcs_nasmessage.gsm.h.message_type == 194)
    {
       ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
-      char *pcs_pduaddress = ogs_ipv4_to_string(pcs_pdusessionestablishmentaccept->pdu_address.addr);
-      char *pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
-      int pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
-      int pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
-      int pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
-      int pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
-      int pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
+      pcs_n1n2data.pcs_pduaddress = ogs_ipv4_to_string(pcs_pdusessionestablishmentaccept->pdu_address.addr);
+      pcs_n1n2data.pcs_dnn = pcs_pdusessionestablishmentaccept->dnn.value;
+      pcs_n1n2data.pcs_sambrulv = pcs_pdusessionestablishmentaccept->session_ambr.uplink.value;
+      pcs_n1n2data.pcs_sambrulu = pcs_pdusessionestablishmentaccept->session_ambr.uplink.unit;
+      pcs_n1n2data.pcs_sambrdlv = pcs_pdusessionestablishmentaccept->session_ambr.downlink.value;
+      pcs_n1n2data.pcs_sambrdlu = pcs_pdusessionestablishmentaccept->session_ambr.downlink.unit;
+      pcs_n1n2data.pcs_pdusesstype = pcs_pdusessionestablishmentaccept->selected_pdu_session_type.value;
 
       char pcs_hexauthqosrule[OGS_HUGE_LEN];
       decode_buffer_to_hex(pcs_hexauthqosrule, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_rules.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_rules.length);
-      pcs_nasqosrulestr = decode_nas_qos_rule_hex_to_str(pcs_hexauthqosrule);
+      pcs_n1n2data.pcs_nasqosrulestr = decode_nas_qos_rule_hex_to_str(pcs_hexauthqosrule);
 
       char pcs_hexqosflowdesc[OGS_HUGE_LEN];
       decode_buffer_to_hex(pcs_hexqosflowdesc, (void *)pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.buffer, pcs_pdusessionestablishmentaccept->authorized_qos_flow_descriptions.length);
-      pcs_nasqosflowstr = decode_nas_qos_flow_hex_to_str(pcs_hexqosflowdesc);
+      pcs_n1n2data.pcs_nasqosflowstr = decode_nas_qos_flow_hex_to_str(pcs_hexqosflowdesc);
 
       char pcs_hexepco[OGS_HUGE_LEN];
       decode_buffer_to_hex(pcs_hexepco, (void *)pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.buffer, pcs_pdusessionestablishmentaccept->extended_protocol_configuration_options.length);
-      pcs_nasepcostr = decode_nas_epco_hex_to_str(pcs_hexepco);
+      pcs_n1n2data.pcs_nasepcostr = decode_nas_epco_hex_to_str(pcs_hexepco);
 
       int pcs_k, pcs_l;
-      char *pcs_upfn3ip;
-      uint64_t pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl;
       uint32_t pcs_upfn3teid;
       ogs_ip_t pcs_upfn3ipbitstr;
-      long pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability;
       NGAP_PDUSessionResourceSetupRequestTransfer_t pcs_n2smmessage;
       NGAP_PDUSessionResourceSetupRequestTransferIEs_t *pcs_ie = NULL;
       NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
@@ -507,8 +502,8 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
             switch (pcs_ie->id)
             {
             case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
-                  pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
-                  pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
+                  pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
+                  pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
                   break;
             case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
                   pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
@@ -520,11 +515,11 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
                      pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
                      pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
                      pcs_allocationandretentionpriority = &pcs_qosflowlevelqosparameters->allocationAndRetentionPriority;
-                     pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
-                     pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
-                     pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
-                     pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
-                     pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
+                     pcs_n1n2data.pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
+                     pcs_n1n2data.pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
+                     pcs_n1n2data.pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
+                     pcs_n1n2data.pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
+                     pcs_n1n2data.pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
                   }
                   break;
             case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
@@ -533,12 +528,11 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
                   ogs_assert(pcs_gtptunnel);
                   ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
                   ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-                  pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+                  pcs_n1n2data.pcs_upfn3teid = pcs_upfn3teid;
+                  pcs_n1n2data.pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
                   break;
             }
          }
-
-         pcs_n1n2data = {pcs_pduaddress, pcs_dnn, pcs_sambrulv, pcs_sambrulu, pcs_sambrdlv, pcs_sambrdlu, pcs_pdusesstype, pcs_pdusessionaggregatemaximumbitrateul, pcs_pdusessionaggregatemaximumbitratedl, pcs_qosflowidentifier, pcs_fiveqi, pcs_plarp, pcs_preemptioncapability, pcs_preemptionvulnerability, pcs_upfn3ip, pcs_upfn3teid, pcs_nasqosrulestr, pcs_nasqosflowstr, pcs_nasepcostr};
       }
       else
       {

@@ -20,7 +20,7 @@ extern "C"
         char *pcs_amfsessdnn;
         int pcs_snssaisst;
         char *pcs_snssaisd;
-        char pcs_amfueplmnid[OGS_PLMNIDSTRLEN];
+        char *pcs_amfueplmnid;
         char *pcs_amfueamfid;
         char *pcs_amfuetac;
         int64_t pcs_amfuelocts;
