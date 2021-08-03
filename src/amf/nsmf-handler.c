@@ -156,15 +156,15 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        char *pcs_docjson, *pcs_dbrdata;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
-        pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+        char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
         struct pcs_amf_create pcs_createdata;
         if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_createdata = pcs_get_amf_create_data(sess);
             int pcs_rv;
+            char *pcs_docjson;
             asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
 
             bson_error_t error;
@@ -189,6 +189,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             pcs_createdata = pcs_get_amf_create_data(sess);
             sess->pcs.pcs_createdone = 1;
             sess->pcs.pcs_createdata = pcs_createdata;
+            ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
         }
         else
         {

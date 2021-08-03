@@ -1578,29 +1578,31 @@ void ngap_handle_pdu_session_resource_setup_response(
 
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            char *pcs_dbrdata;
-            cJSON *pcs_dbreadjson, *pcs_jsondbval;
-            int pcs_n1n2done = 0;
-            char *pcs_imsistr = sess->amf_ue->supi;
-            pcs_imsistr += 5;
-            if (!pcs_fsmdata->pcs_isproceduralstateless)
-            {
-                pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-                sess->pcs.pcs_dbrdata = pcs_dbrdata;
-                pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-                pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
-                if (cJSON_IsNumber(pcs_jsondbval))
-                {
-                    pcs_n1n2done = pcs_jsondbval->valueint;
-                }
-                ogs_free(pcs_dbreadjson);
-                ogs_free(pcs_jsondbval);
-            }
-            else if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
+            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
             }
+            else if (!pcs_fsmdata->pcs_isproceduralstateless)
+            {
+                mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                int pcs_n1n2done = 0;
+                char *pcs_imsistr = sess->amf_ue->supi;
+                pcs_imsistr += 5;
+                if (!pcs_fsmdata->pcs_isproceduralstateless)
+                {
+                    char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+                    sess->pcs.pcs_dbrdata = pcs_dbrdata;
+                    cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
+                    cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
+                    if (cJSON_IsNumber(pcs_jsondbval))
+                    {
+                        pcs_n1n2done = pcs_jsondbval->valueint;
+                    }
+                    ogs_free(pcs_dbreadjson);
+                    ogs_free(pcs_jsondbval);
+                }
+            }
+            
             if (pcs_n1n2done)
             {
                 struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);

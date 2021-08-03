@@ -698,3 +698,42 @@ struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess)
 
    return (pcs_n4createdata);
 }
+
+struct pcs_smf_update pcs_get_smf_update_data(ogs_pkbuf_t *n2buf)
+{
+   struct pcs_smf_update pcs_updatedata;
+   int i, pcs_decode_status = 1;
+   uint32_t pcs_upfn3teid;
+   ogs_ip_t pcs_upfn3ipbitstr;
+   NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
+   NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
+   NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
+   NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
+   NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
+   NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
+   pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
+   if (pcs_decode_status == 0)
+   {
+      pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
+      pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
+      pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
+      ogs_assert(pcs_gtptunnel);
+      ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+      ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
+      pcs_updatedata.pcs_upfn3teid = pcs_upfn3teid;
+      pcs_updatedata.pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+      pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
+      for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
+         pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
+         if (pcs_associatedqosflowitem) {
+            pcs_updatedata.pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
+         }
+      }
+   }
+   else
+   {
+         ogs_error("PCS ogs_asn_decode failed");
+   }
+
+   return (pcs_updatedata);
+}

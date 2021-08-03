@@ -25,6 +25,7 @@ extern "C"
     struct pcs_smf_create pcs_get_smf_create_data(smf_sess_t *sess, OpenAPI_sm_context_create_data_t *SmContextCreateData);
     struct pcs_smf_n1n2 pcs_get_smf_n1n2_data(smf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
     struct pcs_smf_n4_create pcs_get_smf_n4_create_data(smf_sess_t *sess);
+    struct pcs_smf_update pcs_get_smf_update_data(ogs_pkbuf_t *n2buf);
 
 #ifdef __cplusplus
 }

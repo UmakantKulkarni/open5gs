@@ -133,7 +133,7 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
                 }
 
                 if (smf_nudm_sdm_handle_get(
-                            sess, stream, sbi_message) != true) {
+                            sess, stream, sbi_message, pcs_fsmdata) != true) {
                     OGS_FSM_TRAN(s, smf_gsm_state_session_will_release);
                 }
                 break;

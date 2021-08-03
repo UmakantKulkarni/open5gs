@@ -89,7 +89,7 @@ struct pcs_amf_n1n2
 struct pcs_amf_update 
 {
     char *pcs_upfn3ip;
-    int pcs_upfn3teid;
+    uint32_t pcs_upfn3teid;
     long pcs_qosflowid;
 };
 

@@ -155,6 +155,85 @@ bool smf_namf_comm_handler_n1_n2_message_transfer(
         ogs_assert_if_reached();
     }
 
+    if (pcs_fsmdata->pcs_dbcommenabled)
+    {
+        if (pcs_fsmdata->pcs_isproceduralstateless)
+        {
+            sess->pcs.pcs_n1n2done = 1;
+            sess->pcs.pcs_n4createdone = 1;
+            ogs_info("PCS Successfully completed Procedural Stateless n1-n2 transfer transaction for supi [%s]", sess->smf_ue->supi);
+        }
+        else
+        {
+            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            int pcs_rv;
+            char *pcs_imsistr = sess->smf_ue->supi;
+            pcs_imsistr += 5;
+            struct pcs_smf_n1n2 pcs_n1n2data = sess->pcs.pcs_n1n2data;
+            struct pcs_smf_n4_create pcs_n4createdata = sess->pcs.pcs_n4createdata;
+
+            if (pcs_fsmdata->pcs_updateapienabledn1n2)
+            {
+                bson_error_t error;
+                bson_t *bson_pdr_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_pdrs, -1, &error);
+                bson_t *bson_far_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_fars, -1, &error);
+                bson_t *bson_qer_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_qers, -1, &error);
+                bson_t *bson_bar_doc = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_bars, -1, &error);
+                bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosrulestr, -1, &error);
+                bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosflowstr, -1, &error);
+                bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasepcostr, -1, &error);
+
+                bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pcs-pfcp-est-done", BCON_INT32(1), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(pcs_n4createdata.pfcp_cause_value), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_DOCUMENT(bson_bar_doc), "}");
+
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                bson_destroy(bson_doc_nas_qos_rule);
+                bson_destroy(bson_doc_nas_qos_flow);
+                bson_destroy(bson_doc_nas_epco);
+                bson_destroy(bson_pdr_ary);
+                bson_destroy(bson_far_ary);
+                bson_destroy(bson_qer_ary);
+                bson_destroy(bson_bar_doc);
+            }
+            else
+            {
+                char *pcs_updatedoc;
+                pcs_dbrdata = sess->pcs.pcs_dbrdata;
+                asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pcs-pfcp-est-done\": 1, \"pdu-address\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s }", pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pfcp_cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+                pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                bson_free(pcs_dbrdata);
+            }
+            
+            if (pcs_rv != OGS_OK)
+            {
+                ogs_error("PCS Error while uploading n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+            else
+            {
+                ogs_info("PCS Successfully uploading n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+
+            ogs_free(pcs_n4createdata.pcs_upfnodeip);
+            ogs_free(pcs_n4createdata.pcs_smfnodeip);
+            free(pcs_n4createdata.pcs_pdrs);
+            free(pcs_n4createdata.pcs_fars);
+            free(pcs_n1n2data.pcs_nasqosrulestr);
+            free(pcs_n1n2data.pcs_nasqosflowstr);
+            free(pcs_n1n2data.pcs_nasepcostr);
+
+            /* ogs_pkbuf_free(param.n1smbuf);
+            ogs_pkbuf_free(param.n2smbuf);
+            ogs_free(pcs_n1n2data.pcs_upfn3ip);
+            ogs_free(pcs_n1n2data.pcs_pduaddress);
+            ogs_free(pcs_n1n2data.pcs_ie);
+            ogs_free(pcs_n1n2data.pcs_gtptunnel);
+            ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
+        }
+    }
+    else
+    {
+        ogs_info("PCS Successfully completed n1-n2 transfer transaction for supi [%s]", sess->smf_ue->supi);
+    }
+
     return true;
 }
 

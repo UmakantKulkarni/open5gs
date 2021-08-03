@@ -19,9 +19,10 @@
 
 #include "nudm-handler.h"
 #include "sbi-path.h"
+#include "mongoc.h"
 
 bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
-        ogs_sbi_message_t *recvmsg)
+        ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
 {
     char *strerror = NULL;
     smf_ue_t *smf_ue = NULL;
@@ -269,6 +270,43 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
     response = ogs_sbi_build_response(&sendmsg, OGS_SBI_HTTP_STATUS_CREATED);
     ogs_assert(response);
     ogs_assert(true == ogs_sbi_server_send_response(stream, response));
+
+    if (pcs_fsmdata->pcs_dbcommenabled && response->status == OGS_SBI_HTTP_STATUS_CREATED)
+    {
+        if (pcs_fsmdata->pcs_isproceduralstateless)
+        {
+            sess->pcs.pcs_createdone = 1;
+            ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
+        }
+        else
+        { 
+            int pcs_rv;
+            char *pcs_docjson;
+            struct pcs_smf_create pcs_createdata = sess->pcs.pcs_createdata;
+            char *pcs_imsistr = sess->smf_ue->supi;
+            pcs_imsistr += 5;
+            asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_antype, pcs_createdata.pcs_pei, pcs_createdata.pcs_dnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_mcc, pcs_createdata.pcs_mnc, pcs_createdata.pcs_amfid, pcs_createdata.pcs_tac, pcs_createdata.pcs_cellid, pcs_createdata.pcs_uelocts, pcs_createdata.pcs_uetimezone, pcs_createdata.pcs_smcntxsttsuri, pcs_createdata.pcs_pcfid, pcs_createdata.pcs_rattype);
+
+            bson_error_t error;
+            bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+            pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+            ogs_free(pcs_createdata.pcs_snssaisd);
+            free(pcs_docjson);
+
+            if (pcs_rv != OGS_OK)
+            {
+                ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+            else
+            {
+                ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+        }
+    }
+    else if (!pcs_fsmdata->pcs_dbcommenabled && response->status == OGS_SBI_HTTP_STATUS_CREATED)
+    {
+        ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
+    }
 
     ogs_free(sendmsg.http.location);
 

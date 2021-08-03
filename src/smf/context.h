@@ -108,6 +108,13 @@ struct pcs_smf_n4_create
     uint8_t pfcp_cause_value;
 };
 
+struct pcs_smf_update
+{
+    uint32_t pcs_upfn3teid;
+    long pcs_qosflowid;
+    char *pcs_upfn3ip;
+};
+
 typedef struct smf_context_s {
     const char*         diam_conf_path;   /* SMF Diameter conf path */
     ogs_diam_config_t   *diam_config;     /* SMF Diameter config */
@@ -407,6 +414,8 @@ typedef struct smf_sess_s {
         struct pcs_smf_create pcs_createdata;
         struct pcs_smf_n1n2 pcs_n1n2data;
         struct pcs_smf_n4_create pcs_n4createdata;
+        struct pcs_smf_update pcs_updatedata;
+        char *pcs_dbrdata;
     } pcs;
 
 } smf_sess_t;
