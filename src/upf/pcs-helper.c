@@ -150,6 +150,7 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
 
    bson_destroy(query);
    bson_destroy(bson_doc);
+   free(pcs_dbnewdata);
 
    return EXIT_SUCCESS;
 }
@@ -421,4 +422,162 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
    pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_keyval);
    
    return pcs_docjson;
+}
+
+struct pcs_upf_n4_create pcs_get_upf_n4_create_data(upf_sess_t *sess)
+{
+   struct pcs_upf_n4_create pcs_n4createdata;
+   
+   char *pcs_pfcpie, *pcs_pdrs, *pcs_fars, *pcs_qers, *pcs_var, *pcs_temp;
+   char pcs_comma[] = ",";
+   char pcs_curlybrace[] = "}";
+   char pcs_squarebrace[] = "]";
+   int pcs_numpdr = 0, pcs_numfar = 0, pcs_numqer = 0;
+   ogs_pfcp_pdr_t *pdr = NULL;
+   ogs_pfcp_far_t *far = NULL;
+   ogs_pfcp_qer_t *qer = NULL;
+   pcs_n4createdata.pcs_upfnodeip = ogs_ipv4_to_string(sess->pfcp_node->sock->local_addr.sin.sin_addr.s_addr);
+   pcs_n4createdata.pcs_upfn4seid = sess->upf_n4_seid;
+   pcs_n4createdata.pcs_smfn4seid = sess->smf_n4_seid;
+   
+   asprintf(&pcs_pdrs, "[");
+   ogs_list_for_each(&sess->pfcp.pdr_list, pdr)
+   {
+         ogs_assert(pdr);
+
+         pcs_numpdr =pcs_numpdr + 1;
+         if (pcs_numpdr > 1)
+         {
+            pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_comma);
+         }
+
+         asprintf(&pcs_pfcpie, "{\"id\": %d", pdr->id);
+         asprintf(&pcs_var, ", \"precedence\": %d", pdr->precedence);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         asprintf(&pcs_var, ", \"src-if\": %d", pdr->src_if);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         if (pdr->f_teid_len)
+         {
+            asprintf(&pcs_var, ", \"F-TEID\": {\"fteid\": %d", pdr->f_teid.teid);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            pcs_temp = ogs_ipv4_to_string(ogs_gtp_self()->gtpu_addr->sin.sin_addr.s_addr);
+            asprintf(&pcs_var, ", \"fteid-ip\": \"%s\"", pcs_temp);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            ogs_free(pcs_temp);
+            asprintf(&pcs_var, ", \"ip-type\": %d}", pdr->f_teid.ipv4);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         }
+         if (pdr->ue_ip_addr.addr)
+         {
+            pcs_temp = ogs_ipv4_to_string(pdr->ue_ip_addr.addr);
+            asprintf(&pcs_var, ", \"ue-ip\": \"%s\"", pcs_temp);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            ogs_free(pcs_temp);
+            asprintf(&pcs_var, ", \"pdn-type\": %d", pdr->ue_ip_addr.ipv4);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         }
+         if (pdr->dnn)
+         {
+            asprintf(&pcs_var, ", \"dnn\": \"%s\"", pdr->dnn);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         }
+         if (sizeof(*pdr->flow_description))
+         {
+            asprintf(&pcs_var, ", \"flow-description\": \"%s\"", *pdr->flow_description);
+            if(strstr(pcs_var, "null") == NULL)
+            {
+               pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            }
+         }
+         if (pdr->qfi)
+         {
+            asprintf(&pcs_var, ", \"qfi\": %d", pdr->qfi);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         }
+         if (pdr->outer_header_removal_len)
+         {
+            asprintf(&pcs_var, ", \"outer-header-removal\": %d", pdr->outer_header_removal.description);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         }
+         if (pdr->far)
+         {
+            if (pdr->far->id)
+            {
+               asprintf(&pcs_var, ", \"far-id\": %d", pdr->far->id);
+               pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            }
+         }
+         if (pdr->qer)
+         {
+            if (pdr->qer->id)
+            {
+               asprintf(&pcs_var, ", \"qer-id\": %d", pdr->qer->id);
+               pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            }
+         }
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_curlybrace);
+         pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_pfcpie);
+   }
+   pcs_n4createdata.pcs_pdrs = pcs_combine_strings(pcs_pdrs, pcs_squarebrace);
+
+   asprintf(&pcs_fars, "[");
+   ogs_list_for_each(&sess->pfcp.far_list, far)
+   {
+         pcs_numfar = pcs_numfar + 1;
+
+         if (pcs_numfar > 1)
+         {
+            pcs_fars = pcs_combine_strings(pcs_fars, pcs_comma);
+         }
+
+         asprintf(&pcs_pfcpie, "{\"id\": %d", far->id);
+         asprintf(&pcs_var, ", \"apply-action\": %d", far->apply_action);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         if (far->dst_if)
+         {
+            asprintf(&pcs_var, ", \"dst-if\": %d", far->dst_if);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         }
+         if (far->outer_header_creation.addr)
+         {
+            asprintf(&pcs_var, ", \"outer-header-creation\": {\"teid\": %d", far->outer_header_creation.teid);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            pcs_temp = ogs_ipv4_to_string(far->outer_header_creation.addr);
+            asprintf(&pcs_var, ", \"ip-addr\": \"%s\"}", pcs_temp);
+            pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+            ogs_free(pcs_temp);
+         }
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_curlybrace);
+         pcs_fars = pcs_combine_strings(pcs_fars, pcs_pfcpie);
+   }
+   pcs_n4createdata.pcs_fars = pcs_combine_strings(pcs_fars, pcs_squarebrace);
+
+   asprintf(&pcs_qers, "[");
+   ogs_list_for_each(&sess->pfcp.qer_list, qer)
+   {
+         pcs_numqer = pcs_numqer + 1;
+         if (pcs_numqer > 1)
+         {
+            pcs_qers = pcs_combine_strings(pcs_qers, pcs_comma);
+         }
+
+         asprintf(&pcs_pfcpie, "{\"id\": %d", qer->id);
+         asprintf(&pcs_var, ", \"gate-status\": {\"uplink\": %d, \"downlink\": %d}", qer->gate_status.uplink, qer->gate_status.downlink);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         asprintf(&pcs_var, ", \"mbr\": {\"uplink\": %ld, \"downlink\": %ld}", qer->mbr.uplink, qer->mbr.downlink);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         asprintf(&pcs_var, ", \"qfi\": %d", qer->qfi);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_var);
+         pcs_pfcpie = pcs_combine_strings(pcs_pfcpie, pcs_curlybrace);
+         pcs_qers = pcs_combine_strings(pcs_qers, pcs_pfcpie);
+   }
+   pcs_n4createdata.pcs_qers = pcs_combine_strings(pcs_qers, pcs_squarebrace);
+
+   asprintf(&pcs_pfcpie, "{\"bar-id\": %d}", sess->pfcp.bar->id);
+   pcs_n4createdata.pcs_bars = pcs_pfcpie;
+
+   //free(pcs_var);
+   //free(pcs_pfcpie);
+
+   return (pcs_n4createdata);
 }

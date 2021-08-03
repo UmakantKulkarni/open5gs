@@ -45,6 +45,19 @@ extern int __upf_log_domain;
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __upf_log_domain
 
+struct pcs_upf_n4_create
+{
+    char *pcs_smfnodeip;
+    char *pcs_upfnodeip;
+    uint64_t pcs_upfn4seid;
+    uint64_t pcs_smfn4seid;
+    char *pcs_pdrs;
+    char *pcs_fars;
+    char *pcs_qers;
+    char *pcs_bars;
+    uint8_t cause_value;
+};
+
 typedef struct upf_context_s {
     ogs_hash_t      *sess_hash;     /* hash table (F-SEID) */
     ogs_hash_t      *ipv4_hash;     /* hash table (IPv4 Address) */
@@ -55,6 +68,13 @@ typedef struct upf_context_s {
 
 #define UPF_SESS(pfcp_sess) ogs_container_of(pfcp_sess, upf_sess_t, pfcp)
 typedef struct upf_sess_s {
+
+    struct {
+        uint8_t pcs_n4createdone;
+        uint8_t pcs_n4updatedone;
+        struct pcs_upf_n4_create pcs_n4createdata;
+    } pcs;
+
     ogs_lnode_t     lnode;
     uint32_t        index;              /**< An index of this node */
 
