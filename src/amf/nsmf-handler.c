@@ -204,7 +204,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
 }
 
 int amf_nsmf_pdusession_handle_update_sm_context(
-        amf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg)
+        amf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
 {
     amf_ue_t *amf_ue = NULL;
     ogs_assert(sess);
@@ -700,6 +700,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
+        int pcs_rv;
         struct pcs_amf_update pcs_updatedata = sess->pcs.pcs_updatedata;
         if (pcs_fsmdata->pcs_isproceduralstateless)
         {

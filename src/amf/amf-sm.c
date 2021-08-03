@@ -429,7 +429,7 @@ void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
             SWITCH(sbi_message.h.resource.component[2])
             CASE(OGS_SBI_RESOURCE_NAME_MODIFY)
                 amf_nsmf_pdusession_handle_update_sm_context(
-                        sess, state, &sbi_message);
+                        sess, state, &sbi_message, pcs_fsmdata);
                 break;
 
             CASE(OGS_SBI_RESOURCE_NAME_RELEASE)

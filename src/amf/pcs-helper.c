@@ -550,9 +550,7 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
 struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
 {
    struct pcs_amf_update pcs_updatedata;
-   char *pcs_upfn3ip;
    uint32_t pcs_upfn3teid;
-   long pcs_qosflowid;
    ogs_ip_t pcs_upfn3ipbitstr;
    NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
    NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;

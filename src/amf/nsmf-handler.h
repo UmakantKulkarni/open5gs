@@ -29,7 +29,7 @@ extern "C" {
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
 int amf_nsmf_pdusession_handle_update_sm_context(
-        amf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg);
+        amf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata);
 int amf_nsmf_pdusession_handle_release_sm_context(amf_sess_t *sess, int state);
 
 #ifdef __cplusplus
