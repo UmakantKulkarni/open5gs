@@ -176,6 +176,8 @@ void upf_n4_handle_session_establishment_request(
 
         if (strlen(pcs_dbrdata) <= 19 && !pcs_fsmdata->pcs_isproceduralstateless)
         {
+            char *pcs_docjson;
+            int pcs_rv;
             pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
             pcs_n4createdata.pcs_smfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
             pcs_n4createdata.cause_value = cause_value;
@@ -442,6 +444,7 @@ void upf_n4_handle_session_modification_request(
         cJSON *pcs_dbreadjson, *pcs_jsondbval;
         int pcs_pfcpestdone = 0;
         asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
+        struct pcs_upf_n4_create pcs_n4createdata;
         if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_upfdbid);
