@@ -245,16 +245,6 @@ typedef struct smf_bearer_s {
 #define SMF_SESS(pfcp_sess) ogs_container_of(pfcp_sess, smf_sess_t, pfcp)
 typedef struct smf_sess_s {
 
-    struct {
-        uint8_t pcs_createdone;
-        uint8_t pcs_n1n2done;
-        uint8_t pcs_n4createdone;
-        uint8_t pcs_updatedone;
-        struct pcs_smf_create pcs_createdata;
-        struct pcs_smf_n1n2 pcs_n1n2data;
-        struct pcs_smf_n4_create pcs_n4createdata;
-    } pcs;
-
     ogs_sbi_object_t sbi;
     uint32_t        index;          /**< An index of this node */
     ogs_fsm_t       sm;             /* A state machine */
@@ -408,6 +398,17 @@ typedef struct smf_sess_s {
     ogs_pfcp_node_t *pfcp_node;
 
     smf_ue_t *smf_ue;
+
+    struct {
+        uint8_t pcs_createdone;
+        uint8_t pcs_n1n2done;
+        uint8_t pcs_n4createdone;
+        uint8_t pcs_updatedone;
+        struct pcs_smf_create pcs_createdata;
+        struct pcs_smf_n1n2 pcs_n1n2data;
+        struct pcs_smf_n4_create pcs_n4createdata;
+    } pcs;
+
 } smf_sess_t;
 
 void smf_context_init(void);

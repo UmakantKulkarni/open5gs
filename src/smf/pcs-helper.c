@@ -110,7 +110,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
       {
          ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
       }
-      ogs_debug("PCS Added new data to mongo by AMF");
+      ogs_debug("PCS Added new data to mongo by SMF");
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
@@ -120,7 +120,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
       {
          ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
       }
-      ogs_debug("PCS Updated data to mongo by AMF");
+      ogs_debug("PCS Updated data to mongo by SMF");
    }
 
    bson_destroy(query);
