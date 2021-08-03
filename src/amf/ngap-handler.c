@@ -1579,139 +1579,37 @@ void ngap_handle_pdu_session_resource_setup_response(
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
             mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            char *pcs_upfn3ip, *pcs_dbrdata, *pcs_docjson;
-            uint32_t pcs_upfn3teid;
-            long pcs_qosflowid;
-            ogs_ip_t pcs_upfn3ipbitstr;
+            char *pcs_dbrdata;
             cJSON *pcs_dbreadjson, *pcs_jsondbval;
             int pcs_n1n2done = 0;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
-            struct pcs_amf_create pcs_createdata;
-            struct pcs_amf_n1n2 pcs_n1n2data;
             if (!pcs_fsmdata->pcs_isproceduralstateless)
             {
                 pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+                sess->pcs.pcs_dbrdata = pcs_dbrdata;
                 pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
                 pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
                 if (cJSON_IsNumber(pcs_jsondbval))
                 {
                     pcs_n1n2done = pcs_jsondbval->valueint;
                 }
+                ogs_free(pcs_dbreadjson);
+                ogs_free(pcs_jsondbval);
             }
             else if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
-                if (pcs_n1n2done)
-                {
-                    pcs_createdata = sess->pcs.pcs_createdata;
-                    pcs_n1n2data = sess->pcs.pcs_n1n2data;
-                }
-                else
-                {
-                    ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request - 1");
-                }
             }
             if (pcs_n1n2done)
             {
-                NGAP_PDUSessionResourceSetupResponseTransfer_t pcs_n2smmessage;
-                NGAP_QosFlowPerTNLInformation_t *pcs_dlqosflowpertnlinformation = NULL;
-                NGAP_UPTransportLayerInformation_t *pcs_uptransportlayerinformation = NULL;
-                NGAP_GTPTunnel_t *pcs_gtptunnel = NULL;
-                NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
-                NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
-                int pcs_rv, i, pcs_decode_status = 1;
-                
-                pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), param.n2smbuf);
-                if (pcs_decode_status == 0)
-                {
-                    pcs_dlqosflowpertnlinformation = &pcs_n2smmessage.dLQosFlowPerTNLInformation;
-                    pcs_uptransportlayerinformation = &pcs_dlqosflowpertnlinformation->uPTransportLayerInformation;
-                    pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
-                    ogs_assert(pcs_gtptunnel);
-                    ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-                    pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-                    ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-                    
-                    pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
-                    for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
-                        pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
-                        if (pcs_associatedqosflowitem) {
-                            pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
-                        }
-                    }
-
-                    if (pcs_fsmdata->pcs_isproceduralstateless)
-                    {
-                        asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr, pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
-                        bson_error_t error;
-                        bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-                        pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
-                    }
-                    else
-                    {
-                        if (pcs_fsmdata->pcs_updateapienabledmodify)
-                        {
-                            
-                            bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_qosflowid), "}", "}");
-                            
-                            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-                        }
-                        else
-                        {
-                            char *pcs_updatedoc;
-                            asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_upfn3ip, pcs_upfn3teid, pcs_qosflowid);
-                            
-                            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
-                        }
-                    }
-
-                    if (pcs_rv != OGS_OK)
-                    {
-                        ogs_error("PCS Error while updateing dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
-                    }
-                    else
-                    {
-                        ogs_info("PCS Successfully updated dLQosFlowPerTNLInformation data to MongoDB for supi [%s]", sess->amf_ue->supi);
-                    }
-
-                    //ogs_free(pcs_upfn3ip);
-                    //ogs_free(pcs_gtptunnel);
-                    //ogs_free(ie);
-                    if (!pcs_fsmdata->pcs_isproceduralstateless)
-                    {
-                        bson_free(pcs_dbrdata);
-                        ogs_free(pcs_dbreadjson);
-                        ogs_free(pcs_jsondbval);
-                    }
-                    else
-                    {
-                        sess->pcs.pcs_updatedone = 1;
-                        ogs_free(pcs_createdata.pcs_snssaisd);
-                        ogs_free(pcs_createdata.pcs_amfueamfid);
-                        ogs_free(pcs_createdata.pcs_amfuetac);
-                        free(pcs_createdata.pcs_amfueplmnid);
-                        free(pcs_n1n2data.pcs_nasqosrulestr);
-                        free(pcs_n1n2data.pcs_nasqosflowstr);
-                        free(pcs_n1n2data.pcs_nasepcostr);
-                        /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
-                        ogs_free(pcs_n1n2data.pcs_pduaddress);
-                        ogs_free(pcs_n1n2data.pcs_ie);
-                        ogs_free(pcs_n1n2data.pcs_gtptunnel);
-                        ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
-                        free(pcs_docjson);
-                    }
-                }
-                else
-                {
-                    ogs_error("PCS ogs_asn_decode failed");
-                }
+                struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
+                sess->pcs.pcs_updatedata = pcs_updatedata;
             }
             else
             {
                 ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request - 2");
             }
-            
         }
         ogs_pkbuf_free(param.n2smbuf);
     }

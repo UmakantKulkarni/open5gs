@@ -86,6 +86,13 @@ struct pcs_amf_n1n2
     char *pcs_nasepcostr;
 };
 
+struct pcs_amf_update 
+{
+    char *pcs_upfn3ip;
+    int pcs_upfn3teid;
+    long pcs_qosflowid;
+};
+
 typedef struct ran_ue_s ran_ue_t;
 typedef struct amf_ue_s amf_ue_t;
 
@@ -508,6 +515,8 @@ typedef struct amf_sess_s {
         uint8_t pcs_updatedone;
         struct pcs_amf_create pcs_createdata;
         struct pcs_amf_n1n2 pcs_n1n2data;
+        struct pcs_amf_update pcs_updatedata;
+        char *pcs_dbrdata;
     } pcs;
 
     struct {
