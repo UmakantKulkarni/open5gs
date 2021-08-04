@@ -20,6 +20,7 @@
 #include "nudm-handler.h"
 #include "sbi-path.h"
 #include "mongoc.h"
+#include "pcs-helper.h"
 
 bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
         ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
@@ -279,7 +280,8 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
             ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
         }
         else
-        { 
+        {
+            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             int pcs_rv;
             char *pcs_docjson;
             struct pcs_smf_create pcs_createdata = sess->pcs.pcs_createdata;

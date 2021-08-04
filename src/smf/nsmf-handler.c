@@ -608,6 +608,7 @@ bool smf_nsmf_handle_update_sm_context(
             sess->pcs.pcs_dbrdata = pcs_dbrdata;
             cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
             cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
+            cJSON *pcs_jsondbval2 = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-pfcp-est-done");
         
             if (cJSON_IsNumber(pcs_jsondbval))
             {

@@ -1578,6 +1578,7 @@ void ngap_handle_pdu_session_resource_setup_response(
 
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
+            int pcs_n1n2done = 0;
             if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
@@ -1585,7 +1586,6 @@ void ngap_handle_pdu_session_resource_setup_response(
             else if (!pcs_fsmdata->pcs_isproceduralstateless)
             {
                 mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-                int pcs_n1n2done = 0;
                 char *pcs_imsistr = sess->amf_ue->supi;
                 pcs_imsistr += 5;
                 if (!pcs_fsmdata->pcs_isproceduralstateless)

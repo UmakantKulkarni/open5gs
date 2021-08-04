@@ -242,7 +242,7 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
             SWITCH(sbi_message->h.resource.component[0])
             CASE(OGS_SBI_RESOURCE_NAME_UE_CONTEXTS)
                 smf_namf_comm_handler_n1_n2_message_transfer(
-                        sess, e->sbi.state, sbi_message);
+                        sess, e->sbi.state, sbi_message, pcs_fsmdata);
                 break;
 
             DEFAULT
