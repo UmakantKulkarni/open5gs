@@ -190,11 +190,11 @@ void upf_n4_handle_session_establishment_request(
             
             if (pcs_rv != OGS_OK)
             {
-                ogs_error("PCS Error while inserting N4 data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+                ogs_error("PCS Error while inserting N4 Session Establishment data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
             else
             {
-                ogs_info("PCS Successfully inserted N4 data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+                ogs_info("PCS Successfully inserted N4 Session Establishment data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
 
             ogs_free(pcs_n4createdata.pcs_upfnodeip);
@@ -211,6 +211,7 @@ void upf_n4_handle_session_establishment_request(
             pcs_n4createdata.cause_value = cause_value;
             sess->pcs.pcs_n4createdone = 1;
             sess->pcs.pcs_n4createdata = pcs_n4createdata;
+            ogs_info("PCS Successfully completed Procedural Stateless N4 Session Establishment transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
         else
         {
@@ -536,11 +537,11 @@ void upf_n4_handle_session_modification_request(
             
             if (pcs_rv != OGS_OK)
             {
-                ogs_error("PCS Error while inserting N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+                ogs_error("PCS Error while inserting N4 Session Modification data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
             else
             {
-                ogs_info("PCS Successfully inserted N4 update data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+                ogs_info("PCS Successfully inserted N4 Session Modification data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
 
             free(pcs_var);

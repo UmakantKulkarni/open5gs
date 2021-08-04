@@ -177,11 +177,11 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             free(pcs_docjson);
             if (pcs_rv != OGS_OK)
             {
-                ogs_error("PCS Error while inserting data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
             }
             else
             {
-                ogs_info("PCS Successfully inserted data to MongoDB for supi [%s]", sess->amf_ue->supi);
+                ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
             }
         }
         else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless)
