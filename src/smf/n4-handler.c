@@ -239,7 +239,7 @@ void smf_5gc_n4_handle_session_establishment_response(
             struct pcs_smf_n1n2 pcs_n1n2data = pcs_get_smf_n1n2_data(sess, param.n1smbuf, param.n2smbuf);
             struct pcs_smf_n4_create pcs_n4createdata = pcs_get_smf_n4_create_data(sess);
             pcs_n4createdata.pfcp_cause_value = pfcp_cause_value;
-            pcs_n4createdata.pcs_upfnodeip = ogs_strdup(ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr));
+            pcs_n4createdata.pcs_upfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
             sess->pcs.pcs_n1n2data = pcs_n1n2data;
             sess->pcs.pcs_n4createdata = pcs_n4createdata;
         }
