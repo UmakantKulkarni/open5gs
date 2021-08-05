@@ -24,7 +24,7 @@
 #include "nsmf-handler.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
-#include "../pcs-mjson.h"
+#include "pcs-mjson.h"
 
 bool smf_nsmf_handle_create_sm_context(
     smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)

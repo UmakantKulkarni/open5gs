@@ -25,7 +25,7 @@
 #include "sbi-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
-#include "../pcs-mjson.h"
+#include "pcs-mjson.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
