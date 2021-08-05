@@ -25,7 +25,7 @@
 #include "n4-handler.h"
 #include "mongoc.h"
 #include "pcs-helper.h"
-#include "pcs-mjson.h"
+#include "mjson.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 

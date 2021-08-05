@@ -23,7 +23,7 @@
 #include "nas-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
-#include "pcs-mjson.h"
+#include "mjson.h"
 
 static bool served_tai_is_found(amf_gnb_t *gnb)
 {

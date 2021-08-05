@@ -27,7 +27,7 @@
 #include "ngap-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
-#include "pcs-mjson.h"
+#include "mjson.h"
 
 static uint8_t gtp_cause_from_pfcp(uint8_t pfcp_cause)
 {

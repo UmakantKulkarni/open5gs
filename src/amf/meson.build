@@ -16,7 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 libamf_sources = files('''
-    pcs-mjson.c
+    mjson.c
     pcs-helper.c
     context.c
     event.c
