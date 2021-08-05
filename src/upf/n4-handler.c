@@ -448,7 +448,7 @@ void upf_n4_handle_session_modification_request(
         if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_upfdbid);
-            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-n1n2-done", &pcs_n1n2done);
+            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-pfcp-est-done", &pcs_pfcpestdone);
         }
         else if (pcs_fsmdata->pcs_isproceduralstateless)
         {
