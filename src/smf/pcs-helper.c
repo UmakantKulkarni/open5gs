@@ -427,25 +427,6 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
 struct pcs_smf_create pcs_get_smf_create_data(smf_sess_t *sess, OpenAPI_sm_context_create_data_t *SmContextCreateData)
 {
    struct pcs_smf_create pcs_createdata;
-   /*pcs_createdata.pcs_supi = sess->smf_ue->supi;
-   pcs_createdata.pcs_pei = SmContextCreateData->pei;
-   pcs_createdata.pcs_dnn = SmContextCreateData->dnn;
-   pcs_createdata.pcs_smcontextref = sess->sm_context_ref;
-   pcs_createdata.pcs_snssaisst = sess->s_nssai.sst;
-   pcs_createdata.pcs_snssaisd = ogs_s_nssai_sd_to_string(sess->s_nssai.sd);
-   pcs_createdata.pcs_pdusessionid = sess->psi;
-   pcs_createdata.pcs_mcc = SmContextCreateData->guami->plmn_id->mcc;
-   pcs_createdata.pcs_mnc = SmContextCreateData->guami->plmn_id->mnc;
-   pcs_createdata.pcs_amfid = SmContextCreateData->guami->amf_id;
-   pcs_createdata.pcs_antype = SmContextCreateData->an_type;
-   pcs_createdata.pcs_rattype = OpenAPI_rat_type_ToString(SmContextCreateData->rat_type);
-   pcs_createdata.pcs_tac = SmContextCreateData->ue_location->nr_location->tai->tac;
-   pcs_createdata.pcs_cellid = SmContextCreateData->ue_location->nr_location->ncgi->nr_cell_id;
-   pcs_createdata.pcs_uelocts = SmContextCreateData->ue_location->nr_location->ue_location_timestamp;
-   pcs_createdata.pcs_uetimezone = SmContextCreateData->ue_time_zone;
-   pcs_createdata.pcs_smcntxsttsuri = SmContextCreateData->sm_context_status_uri;
-   pcs_createdata.pcs_pcfid = SmContextCreateData->pcf_id;*/
-
    pcs_createdata.pcs_supi = ogs_strdup(sess->smf_ue->supi);
    pcs_createdata.pcs_pei = ogs_strdup(SmContextCreateData->pei);
    pcs_createdata.pcs_dnn = ogs_strdup(SmContextCreateData->dnn);

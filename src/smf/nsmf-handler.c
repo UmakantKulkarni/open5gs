@@ -24,6 +24,7 @@
 #include "nsmf-handler.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
+#include "../pcs-mjson.h"
 
 bool smf_nsmf_handle_create_sm_context(
     smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
@@ -593,7 +594,7 @@ bool smf_nsmf_handle_update_sm_context(
 
     if (pcs_fsmdata->pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
     {
-        int pcs_n1n2done = 0, pcs_pfcpestdone = 0;
+        double pcs_n1n2done = 0, pcs_pfcpestdone = 0;
         if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && sess->pcs.pcs_n4createdone)
         {
             pcs_n1n2done = sess->pcs.pcs_n1n2done;
@@ -606,20 +607,11 @@ bool smf_nsmf_handle_update_sm_context(
             pcs_imsistr += 5;
             char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
             sess->pcs.pcs_dbrdata = pcs_dbrdata;
-            cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-            cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
-            cJSON *pcs_jsondbval2 = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-pfcp-est-done");
-        
-            if (cJSON_IsNumber(pcs_jsondbval))
-            {
-                pcs_n1n2done = pcs_jsondbval->valueint;
-                pcs_pfcpestdone = pcs_jsondbval2->valueint;
-            }
-            ogs_free(pcs_dbreadjson);
-            ogs_free(pcs_jsondbval);
+            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-n1n2-done", &pcs_n1n2done);
+            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-pfcp-est-done", &pcs_pfcpestdone);
         }
 
-        if (pcs_n1n2done && pcs_pfcpestdone)
+        if ((int)pcs_n1n2done && (int)pcs_pfcpestdone)
         {
             struct pcs_smf_update pcs_updatedata = pcs_get_smf_update_data(n2smbuf);
             sess->pcs.pcs_updatedata = pcs_updatedata;

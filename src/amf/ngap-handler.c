@@ -23,6 +23,7 @@
 #include "nas-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
+#include "../pcs-mjson.h"
 
 static bool served_tai_is_found(amf_gnb_t *gnb)
 {
@@ -1578,7 +1579,7 @@ void ngap_handle_pdu_session_resource_setup_response(
 
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
-            int pcs_n1n2done = 0;
+            double pcs_n1n2done = 0;
             if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
@@ -1592,25 +1593,18 @@ void ngap_handle_pdu_session_resource_setup_response(
                 {
                     char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
                     sess->pcs.pcs_dbrdata = pcs_dbrdata;
-                    cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-                    cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-n1n2-done");
-                    if (cJSON_IsNumber(pcs_jsondbval))
-                    {
-                        pcs_n1n2done = pcs_jsondbval->valueint;
-                    }
-                    ogs_free(pcs_dbreadjson);
-                    ogs_free(pcs_jsondbval);
+                    mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-n1n2-done", &pcs_n1n2done);
                 }
             }
             
-            if (pcs_n1n2done)
+            if ((int)pcs_n1n2done)
             {
                 struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
                 sess->pcs.pcs_updatedata = pcs_updatedata;
             }
             else
             {
-                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request - 2");
+                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
             }
         }
         ogs_pkbuf_free(param.n2smbuf);

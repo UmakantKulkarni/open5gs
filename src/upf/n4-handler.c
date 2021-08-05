@@ -25,7 +25,7 @@
 #include "n4-handler.h"
 #include "mongoc.h"
 #include "pcs-helper.h"
-#include "../../lib/sbi/openapi/external/cJSON.h"
+#include "../pcs-mjson.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
@@ -442,19 +442,13 @@ void upf_n4_handle_session_modification_request(
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
         char *pcs_upfdbid, *pcs_dbrdata;
-        cJSON *pcs_dbreadjson, *pcs_jsondbval;
-        int pcs_pfcpestdone = 0;
+        double pcs_pfcpestdone = 0;
         asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
         struct pcs_upf_n4_create pcs_n4createdata;
         if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_upfdbid);
-            pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-            pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-pfcp-est-done");
-            if (cJSON_IsNumber(pcs_jsondbval))
-            {
-                pcs_pfcpestdone = pcs_jsondbval->valueint;
-            }
+            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-n1n2-done", &pcs_n1n2done);
         }
         else if (pcs_fsmdata->pcs_isproceduralstateless)
         {
@@ -468,7 +462,7 @@ void upf_n4_handle_session_modification_request(
                 ogs_error("PCS PFCP update got triggered without processing PFCP Est request");
             }
         }
-        if (pcs_pfcpestdone)
+        if ((int)pcs_pfcpestdone)
         {
             char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp, *pcs_docjson;
             char pcs_comma[] = ",";
@@ -552,8 +546,6 @@ void upf_n4_handle_session_modification_request(
             if (!pcs_fsmdata->pcs_isproceduralstateless)
             {
                 bson_free(pcs_dbrdata);
-                ogs_free(pcs_dbreadjson);
-                ogs_free(pcs_jsondbval);
             }
             else
             {

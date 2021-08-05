@@ -27,6 +27,7 @@
 #include "ngap-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
+#include "../pcs-mjson.h"
 
 static uint8_t gtp_cause_from_pfcp(uint8_t pfcp_cause)
 {
@@ -213,7 +214,7 @@ void smf_5gc_n4_handle_session_establishment_response(
 
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        int pcs_createdone = 0;
+        double pcs_createdone = 0;
         if (pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_createdone = sess->pcs.pcs_createdone;
@@ -225,16 +226,9 @@ void smf_5gc_n4_handle_session_establishment_response(
             pcs_imsistr += 5;
             char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
             sess->pcs.pcs_dbrdata = pcs_dbrdata;
-            cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-            cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-create-done");
-            if (cJSON_IsNumber(pcs_jsondbval))
-            {
-                pcs_createdone = pcs_jsondbval->valueint;
-            }
-            ogs_free(pcs_dbreadjson);
-            ogs_free(pcs_jsondbval);
+            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-create-done", &pcs_createdone);
         }
-        if (pcs_createdone)
+        if ((int)pcs_createdone)
         {
             struct pcs_smf_n1n2 pcs_n1n2data = pcs_get_smf_n1n2_data(sess, param.n1smbuf, param.n2smbuf);
             struct pcs_smf_n4_create pcs_n4createdata = pcs_get_smf_n4_create_data(sess);

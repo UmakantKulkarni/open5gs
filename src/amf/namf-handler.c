@@ -25,6 +25,7 @@
 #include "sbi-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
+#include "../pcs-mjson.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
@@ -389,18 +390,12 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        int pcs_createdone = 0, pcs_rv;
+        double pcs_createdone = 0, pcs_rv;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-        cJSON *pcs_dbreadjson = cJSON_Parse(pcs_dbrdata);
-        cJSON *pcs_jsondbval = cJSON_GetObjectItemCaseSensitive(pcs_dbreadjson, "pcs-create-done");
-        struct pcs_amf_n1n2 pcs_n1n2data;
-        if (cJSON_IsNumber(pcs_jsondbval))
-        {
-            pcs_createdone = pcs_jsondbval->valueint;
-        }
-        if (pcs_createdone)
+        mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-create-done", &pcs_createdone);        
+        if ((int)pcs_createdone)
         {
             pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
             if (pcs_fsmdata->pcs_updateapienabledn1n2)
@@ -447,8 +442,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ogs_error("PCS n1-n2 request got triggered without processing Create-SM-Context request");
         }
         bson_free(pcs_dbrdata);
-        ogs_free(pcs_dbreadjson);
-        ogs_free(pcs_jsondbval);
     }
     else
     {
