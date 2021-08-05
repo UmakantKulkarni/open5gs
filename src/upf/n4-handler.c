@@ -453,7 +453,7 @@ void upf_n4_handle_session_modification_request(
         else if (pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_pfcpestdone = sess->pcs.pcs_n4createdone;
-            if (pcs_pfcpestdone)
+            if ((int)pcs_pfcpestdone)
             {
                 pcs_n4createdata = sess->pcs.pcs_n4createdata;
             }
