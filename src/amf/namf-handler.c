@@ -390,14 +390,15 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        double pcs_createdone = 0, pcs_rv;
+        double pcs_createdone = 0;
+        int pcs_rv;
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
         mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-create-done", &pcs_createdone);        
         if ((int)pcs_createdone)
         {
-            pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
+            struct pcs_amf_n1n2 pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
             if (pcs_fsmdata->pcs_updateapienabledn1n2)
             {
                 bson_error_t error;
