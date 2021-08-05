@@ -35,6 +35,7 @@ endforeach
 configure_file(output : 'smf-config.h', configuration : smf_conf)
 
 libsmf_sources = files('''
+    pcs-mjson.h
     pcs-helper.h
     event.h
     timer.h
@@ -66,6 +67,7 @@ libsmf_sources = files('''
     ngap-handler.h
     ngap-path.h
 
+    pcs-mjson.c
     pcs-helper.c
     init.c
     event.c
