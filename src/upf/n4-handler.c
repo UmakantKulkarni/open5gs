@@ -25,7 +25,7 @@
 #include "n4-handler.h"
 #include "mongoc.h"
 #include "pcs-helper.h"
-#include "mjson.h"
+#include "parson.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
@@ -448,7 +448,13 @@ void upf_n4_handle_session_modification_request(
         if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_upfdbid);
-            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-pfcp-est-done", &pcs_pfcpestdone);
+            JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+            if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+            {
+                JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+                pcs_pfcpestdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-pfcp-est-done");
+            }
+            json_value_free(pcs_dbrdatajsonval);
         }
         else if (pcs_fsmdata->pcs_isproceduralstateless)
         {

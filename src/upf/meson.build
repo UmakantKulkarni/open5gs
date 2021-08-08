@@ -45,7 +45,7 @@ endif
 configure_file(output : 'upf-config.h', configuration : upf_conf)
 
 libupf_sources = files('''
-    mjson.h
+    parson.h
     pcs-helper.h
     rule-match.h
     event.h
@@ -57,7 +57,7 @@ libupf_sources = files('''
     n4-build.h
     n4-handler.h
 
-    mjson.c
+    parson.c
     pcs-helper.c
     rule-match.c
     init.c

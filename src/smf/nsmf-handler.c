@@ -24,7 +24,7 @@
 #include "nsmf-handler.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
-#include "mjson.h"
+#include "parson.h"
 
 bool smf_nsmf_handle_create_sm_context(
     smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_sbi_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
@@ -607,8 +607,14 @@ bool smf_nsmf_handle_update_sm_context(
             pcs_imsistr += 5;
             char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
             sess->pcs.pcs_dbrdata = pcs_dbrdata;
-            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-n1n2-done", &pcs_n1n2done);
-            mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-pfcp-est-done", &pcs_pfcpestdone);
+            JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+            if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+            {
+                JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+                pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+                pcs_pfcpestdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-pfcp-est-done");
+            }
+            json_value_free(pcs_dbrdatajsonval);
         }
 
         if ((int)pcs_n1n2done && (int)pcs_pfcpestdone)

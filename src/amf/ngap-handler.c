@@ -23,7 +23,7 @@
 #include "nas-path.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
-#include "mjson.h"
+#include "parson.h"
 
 static bool served_tai_is_found(amf_gnb_t *gnb)
 {
@@ -1593,7 +1593,13 @@ void ngap_handle_pdu_session_resource_setup_response(
                 {
                     char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
                     sess->pcs.pcs_dbrdata = pcs_dbrdata;
-                    mjson_get_number(pcs_dbrdata, strlen(pcs_dbrdata), "$.pcs-n1n2-done", &pcs_n1n2done);
+                    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+                    if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+                    {
+                        JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+                        pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+                    }
+                    json_value_free(pcs_dbrdatajsonval);
                 }
             }
             
