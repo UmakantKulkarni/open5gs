@@ -106,7 +106,7 @@ static void upf_main(void *data)
     upf_sm.pcs_fsmdata.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
     upf_sm.pcs_fsmdata.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
     upf_sm.pcs_fsmdata.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
-    upf_sm.pcs_fsmdata.pcs_dbcollectioname = pcs_set_int_from_env("PCS_DB_COLLECTION_NAME");
+    upf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;
