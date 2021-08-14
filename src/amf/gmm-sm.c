@@ -676,8 +676,7 @@ void gmm_state_authentication(ogs_fsm_t *s, amf_event_t *e)
 
         DEFAULT
             ogs_error("Invalid service name [%s]", sbi_message->h.service.name);
-            //ogs_assert_if_reached();
-            break;
+            ogs_assert_if_reached();
         END
         break;
 
@@ -1004,8 +1003,7 @@ void gmm_state_initial_context_setup(ogs_fsm_t *s, amf_event_t *e)
 
         DEFAULT
             ogs_error("Invalid service name [%s]", sbi_message->h.service.name);
-            //ogs_assert_if_reached();
-            break;
+            ogs_assert_if_reached();
         END
         break;
 
