@@ -41,6 +41,7 @@ void upf_state_final(ogs_fsm_t *s, upf_event_t *e)
 
 void upf_state_operational(ogs_fsm_t *s, upf_event_t *e)
 {
+    ogs_info("PCS UPF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
     ogs_pkbuf_t *recvbuf = NULL;
 

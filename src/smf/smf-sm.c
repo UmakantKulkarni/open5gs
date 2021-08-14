@@ -45,6 +45,7 @@ void smf_state_final(ogs_fsm_t *s, smf_event_t *e)
 
 void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
 {
+    ogs_info("PCS SMF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     pcs_fsm_struct_t *pcs_fsmdata = &s->pcs_fsmdata;
     int rv;
     const char *api_version = NULL;

@@ -38,6 +38,7 @@ void nrf_state_final(ogs_fsm_t *s, nrf_event_t *e)
 
 void nrf_state_operational(ogs_fsm_t *s, nrf_event_t *e)
 {
+    ogs_info("PCS NRF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
     ogs_sbi_stream_t *stream = NULL;
     ogs_sbi_request_t *request = NULL;
