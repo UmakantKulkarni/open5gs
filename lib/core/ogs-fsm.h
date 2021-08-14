@@ -50,6 +50,7 @@ typedef struct _pcs_fsm_struct_t {
     uint8_t pcs_blockingapienabled;
     uint8_t pcs_isfullystateless;
     uint8_t pcs_isproceduralstateless;
+    char *pcs_dbcollectioname;
 } pcs_fsm_struct_t;
 
 typedef struct _ogs_fsm_t {

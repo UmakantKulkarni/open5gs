@@ -1580,7 +1580,7 @@ void ngap_handle_pdu_session_resource_setup_response(
         if (pcs_fsmdata->pcs_dbcommenabled) 
         {
             double pcs_n1n2done = 0;
-            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone)
+            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
             }
@@ -1603,14 +1603,21 @@ void ngap_handle_pdu_session_resource_setup_response(
                 }
             }
             
-            if ((int)pcs_n1n2done)
+            if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
             {
-                struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
-                sess->pcs.pcs_updatedata = pcs_updatedata;
+                if ((int)pcs_n1n2done)
+                {
+                    struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
+                    sess->pcs.pcs_updatedata = pcs_updatedata;
+                }
+                else
+                {
+                    ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+                }
             }
             else
             {
-                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+                ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
             }
         }
         ogs_pkbuf_free(param.n2smbuf);

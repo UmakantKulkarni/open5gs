@@ -164,10 +164,9 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-        struct pcs_amf_create pcs_createdata;
-        if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless)
+        if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
         {
-            pcs_createdata = pcs_get_amf_create_data(sess);
+            struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
             int pcs_rv;
             char *pcs_docjson;
             asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
@@ -189,12 +188,20 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
             }
         }
-        else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless)
+        else if (!pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
         {
-            pcs_createdata = pcs_get_amf_create_data(sess);
+            ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
+        }
+        else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+        {
+            struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
             sess->pcs.pcs_createdone = 1;
             sess->pcs.pcs_createdata = pcs_createdata;
             ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
+        }
+        else if (pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+        {
+            ogs_info("PCS Successfully completed Procedural Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
         }
         else
         {
@@ -702,7 +709,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
+    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_imsistr = sess->amf_ue->supi;
@@ -760,6 +767,10 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         {
             ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
+    }
+    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    {
+        ogs_info("PCS Successfully completed Update-SM-Context transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
     else if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
     {

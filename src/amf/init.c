@@ -112,6 +112,7 @@ static void amf_main(void *data)
     amf_sm.pcs_fsmdata.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
     amf_sm.pcs_fsmdata.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
     amf_sm.pcs_fsmdata.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+    amf_sm.pcs_fsmdata.pcs_dbcollectioname = pcs_set_int_from_env("PCS_DB_COLLECTION_NAME");
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;
@@ -158,7 +159,7 @@ static void amf_main(void *data)
         * Get a handle on the database "db_name" and collection "coll_name"
         */
         database = mongoc_client_get_database(client, "pcs_db");
-        collection = mongoc_client_get_collection(client, "pcs_db", "amf");
+        collection = mongoc_client_get_collection(client, "pcs_db", amf_sm.pcs_fsmdata.pcs_dbcollectioname);
 
         /*
         * Do work. This example pings the database, prints the result as JSON and

@@ -155,14 +155,22 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    return EXIT_SUCCESS;
 }
 
-char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
+char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey, char *pcs_docval, long pcs_docseid)
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
-   query = BCON_NEW("_id", pcs_docid);
+   if (pcs_docseid == -1)
+   {
+      query = BCON_NEW(pcs_dockey, pcs_docval);
+   }
+   else
+   {
+      query = BCON_NEW(pcs_dockey, pcs_docseid);
+   }
+
    cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
    int i = 0;
 
@@ -170,12 +178,20 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    {
       i = i + 1;
       pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
-      ogs_debug("PCS Read Data from MongoDB for id %s is %s", pcs_docid, pcs_dbrdata);
+      ogs_debug("PCS Read Data from MongoDB is %s", pcs_dbrdata);
    }
 
    if (i == 0)
    {
-      asprintf(&pcs_dbrdata, "{ \"_id\" : \"%s\" }", pcs_docid);
+      if (pcs_docseid == -1)
+      {
+         asprintf(&pcs_dbrdata, "{ \"%s\" : \"%s\" }", pcs_dockey, pcs_docval);
+      }
+      else
+      {
+         asprintf(&pcs_dbrdata, "{ \"%s\" : %ld }", pcs_dockey, pcs_docseid);
+      }
+      
    }
    bson_destroy(query);
    mongoc_cursor_destroy(cursor);
