@@ -219,7 +219,7 @@ void upf_n4_handle_session_establishment_request(
         else if (strlen(pcs_dbrdata) <= 19 && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
             pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
-            pcs_n4createdata.pcs_smfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
+            pcs_n4createdata.pcs_smfnodeip = ogs_strdup(ogs_ipv4_to_string(sess->pfcp_node->addr.sin.sin_addr.s_addr));
             pcs_n4createdata.cause_value = cause_value;
             sess->pcs.pcs_n4createdone = 1;
             sess->pcs.pcs_n4createdata = pcs_n4createdata;
@@ -531,6 +531,7 @@ void upf_n4_handle_session_modification_request(
                     pcs_fars = pcs_combine_strings(pcs_fars, pcs_pfcpie);
                 }
                 pcs_fars = pcs_combine_strings(pcs_fars, pcs_squarebrace);
+                pcs_n4createdata.pcs_smfnodeip = ogs_strdup(ogs_ipv4_to_string(sess->pfcp_node->addr.sin.sin_addr.s_addr));
 
                 if (pcs_fsmdata->pcs_isproceduralstateless)
                 {
