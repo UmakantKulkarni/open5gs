@@ -168,7 +168,8 @@ char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey,
    }
    else
    {
-      query = BCON_NEW(pcs_dockey, pcs_docseid);
+      query = bson_new ();
+      BSON_APPEND_DOUBLE (query, pcs_dockey, pcs_docseid);
    }
 
    cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
