@@ -462,15 +462,15 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         json_value_free(pcs_dbrdatajsonval);
         bson_free(pcs_dbrdata);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabled)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabled)
     {
         pthread_t pcs_thread1;
         struct pcs_amf_n1n2_udsf pcs_amfn1n2udsf;
         pcs_amfn1n2udsf.pcs_fsmdata = pcs_fsmdata;
         pcs_amfn1n2udsf.sess = sess;
         pcs_amfn1n2udsf.pdu_session_id = pdu_session_id;
-        pcs_amfn1n2udsf.n2buf = n1buf;
-        pcs_amfn1n2udsf.n2buf = n2buf;
+        pcs_amfn1n2udsf.n1buf = ogs_pkbuf_copy(n1buf);
+        pcs_amfn1n2udsf.n2buf = ogs_pkbuf_copy(n2buf);
         //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
         pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, &pcs_amfn1n2udsf);
     }

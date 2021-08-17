@@ -5,6 +5,7 @@
 #include "bson.h"
 #include "pcs-helper.h"
 #include <arpa/inet.h>
+#include "parson.h"
 
 int pcs_set_int_from_env(const char *pcs_env_var)
 {
