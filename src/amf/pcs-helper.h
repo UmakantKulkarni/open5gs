@@ -16,6 +16,15 @@ struct pcs_amf_create_udsf
     amf_sess_t *sess;
 };
 
+struct pcs_amf_n1n2_udsf
+{
+    pcs_fsm_struct_t *pcs_fsmdata;
+    amf_sess_t *sess;
+    ogs_pkbuf_t *n1buf;
+    ogs_pkbuf_t *n2buf;
+    uint8_t pdu_session_id;
+};
+
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
@@ -33,6 +42,7 @@ struct pcs_amf_create_udsf
     struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
     struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf);
     void *pcs_amf_create_udsf(void *pcs_amfcreateudsf);
+    void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf);
 
 #ifdef __cplusplus
 }

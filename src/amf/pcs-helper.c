@@ -594,9 +594,9 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
 
 void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 {
-   struct pcs_amf_create_udsf *pcs_amfcreatestruct = pcs_amfcreateudsf;
-   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreatestruct->pcs_fsmdata;
-   amf_sess_t *sess = pcs_amfcreatestruct->sess;
+   struct pcs_amf_create_udsf *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
+   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsfstruct->pcs_fsmdata;
+   amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
    mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
    char *pcs_imsistr = sess->amf_ue->supi;
    pcs_imsistr += 5;
@@ -631,3 +631,82 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    }
    return NULL;
 }
+
+void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
+{
+   struct pcs_amf_n1n2_udsf *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
+   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfn1n2udsfstruct->pcs_fsmdata;
+   amf_sess_t *sess = pcs_amfn1n2udsfstruct->sess;
+   ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
+   ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
+   uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
+   mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+   double pcs_createdone = 0;
+   int pcs_rv;
+   char *pcs_imsistr = sess->amf_ue->supi;
+   pcs_imsistr += 5;
+   char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+   JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+   if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+   {
+      JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+      pcs_createdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-create-done");
+   }
+   if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+   {
+      if ((int)pcs_createdone)
+      {
+            struct pcs_amf_n1n2 pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
+            if (pcs_fsmdata->pcs_updateapienabledn1n2)
+            {
+               bson_error_t error;
+               bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosrulestr, -1, &error);
+               bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosflowstr, -1, &error);
+               bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasepcostr, -1, &error);
+               bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress), "dnn", BCON_UTF8(pcs_n1n2data.pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
+
+               pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+               bson_destroy(bson_doc_nas_qos_rule);
+               bson_destroy(bson_doc_nas_qos_flow);
+               bson_destroy(bson_doc_nas_epco);                
+            }
+            else
+            {
+               char *pcs_updatedoc;
+               asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pdu-session-id\": %d, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s}", pdu_session_id, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr);
+               pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+            }
+
+            if (pcs_rv != OGS_OK)
+            {
+               ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+            }
+            else
+            {
+               ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+            }
+
+            free(pcs_n1n2data.pcs_nasqosrulestr);
+            free(pcs_n1n2data.pcs_nasqosflowstr);
+            free(pcs_n1n2data.pcs_nasepcostr);
+
+            /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
+            ogs_free(pcs_n1n2data.pcs_pduaddress);
+            ogs_free(pcs_n1n2data.pcs_ie);
+            ogs_free(pcs_n1n2data.pcs_gtptunnel);
+            ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
+      }
+      else
+      {
+            ogs_error("PCS n1-n2 request got triggered without processing Create-SM-Context request");
+      }
+   }
+   else
+   {
+      ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
+   }
+   json_value_free(pcs_dbrdatajsonval);
+   bson_free(pcs_dbrdata);
+   return NULL;
+}
+

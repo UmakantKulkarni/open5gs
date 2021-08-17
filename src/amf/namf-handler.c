@@ -26,6 +26,7 @@
 #include "pcs-helper.h"
 #include "mongoc.h"
 #include "parson.h"
+#include <pthread.h>
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
@@ -391,7 +392,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         double pcs_createdone = 0;
@@ -460,6 +461,18 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
         json_value_free(pcs_dbrdatajsonval);
         bson_free(pcs_dbrdata);
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabled)
+    {
+        pthread_t pcs_thread1;
+        struct pcs_amf_n1n2_udsf pcs_amfn1n2udsf;
+        pcs_amfn1n2udsf.pcs_fsmdata = pcs_fsmdata;
+        pcs_amfn1n2udsf.sess = sess;
+        pcs_amfn1n2udsf.pdu_session_id = pdu_session_id;
+        pcs_amfn1n2udsf.n2buf = n1buf;
+        pcs_amfn1n2udsf.n2buf = n2buf;
+        //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
+        pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, &pcs_amfn1n2udsf);
     }
     else
     {
