@@ -158,7 +158,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && amf_sm.pcs_fsmdata.pcs_blockingapienabled)
+    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_imsistr = sess->amf_ue->supi;
@@ -208,7 +208,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !amf_sm.pcs_fsmdata.pcs_blockingapienabled)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
     {
         struct pcs_amf_create_udsf pcs_amfcreateudsf;
         pcs_amfcreateudsf.pcs_fsmdata = pcs_fsmdata;

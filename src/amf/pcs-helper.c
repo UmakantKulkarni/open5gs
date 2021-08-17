@@ -592,10 +592,10 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
    return (pcs_updatedata);
 }
 
-void pcs_amf_create_udsf(pcs_amf_create_udsf pcs_amfcreateudsf)
+void pcs_amf_create_udsf(struct pcs_amf_create_udsf pcs_amfcreateudsf)
 {
-   pcs_fsmdata = pcs_amfcreateudsf->pcs_amfcreateudsf;
-   sess = pcs_amfcreateudsf->sess;
+   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsf.pcs_fsmdata;
+   amf_sess_t *sess = pcs_amfcreateudsf.sess;
    mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
    char *pcs_imsistr = sess->amf_ue->supi;
    pcs_imsistr += 5;
