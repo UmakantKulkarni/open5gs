@@ -10,7 +10,7 @@ extern "C"
 #include "bson.h"
 
 
-struct pcs_amf_create_udsf 
+struct pcs_amf_create_udsf
 {
     pcs_fsm_struct_t *pcs_fsmdata;
     amf_sess_t *sess;
@@ -32,7 +32,7 @@ struct pcs_amf_create_udsf
     struct pcs_amf_create pcs_get_amf_create_data(amf_sess_t *sess);
     struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
     struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf);
-    void pcs_amf_create_udsf(struct pcs_amf_create_udsf pcs_amfcreateudsf);
+    void *pcs_amf_create_udsf(void *pcs_amfcreateudsf);
 
 #ifdef __cplusplus
 }

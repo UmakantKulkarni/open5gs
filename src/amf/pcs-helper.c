@@ -592,10 +592,11 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
    return (pcs_updatedata);
 }
 
-void pcs_amf_create_udsf(struct pcs_amf_create_udsf pcs_amfcreateudsf)
+void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 {
-   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsf.pcs_fsmdata;
-   amf_sess_t *sess = pcs_amfcreateudsf.sess;
+   struct pcs_amf_create_udsf *pcs_amfcreatestruct = pcs_amfcreateudsf;
+   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreatestruct->pcs_fsmdata;
+   amf_sess_t *sess = pcs_amfcreatestruct->sess;
    mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
    char *pcs_imsistr = sess->amf_ue->supi;
    pcs_imsistr += 5;
@@ -628,4 +629,5 @@ void pcs_amf_create_udsf(struct pcs_amf_create_udsf pcs_amfcreateudsf)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
+   return NULL;
 }

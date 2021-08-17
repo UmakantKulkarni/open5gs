@@ -25,6 +25,7 @@
 #include "gmm-build.h"
 #include "pcs-helper.h"
 #include "mongoc.h"
+#include <pthread.h>
 
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
@@ -210,10 +211,12 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
     {
+        pthread_t pcs_thread1;
         struct pcs_amf_create_udsf pcs_amfcreateudsf;
         pcs_amfcreateudsf.pcs_fsmdata = pcs_fsmdata;
         pcs_amfcreateudsf.sess = sess;
-        pcs_amf_create_udsf(pcs_amfcreateudsf);
+        //pcs_amf_create_udsf(pcs_amfcreateudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, &pcs_amfcreateudsf);
     }
     else
     {
