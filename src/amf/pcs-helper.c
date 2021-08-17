@@ -591,3 +591,41 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
 
    return (pcs_updatedata);
 }
+
+void pcs_amf_create_udsf(pcs_amf_create_udsf pcs_amfcreateudsf)
+{
+   pcs_fsmdata = pcs_amfcreateudsf->pcs_amfcreateudsf;
+   sess = pcs_amfcreateudsf->sess;
+   mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
+   char *pcs_imsistr = sess->amf_ue->supi;
+   pcs_imsistr += 5;
+   char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+   if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+   {
+      struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
+      int pcs_rv;
+      char *pcs_docjson;
+      asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
+
+      bson_error_t error;
+      bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+      pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+      ogs_free(pcs_createdata.pcs_snssaisd);
+      ogs_free(pcs_createdata.pcs_amfueamfid);
+      ogs_free(pcs_createdata.pcs_amfuetac);
+      free(pcs_createdata.pcs_amfueplmnid);
+      free(pcs_docjson);
+      if (pcs_rv != OGS_OK)
+      {
+            ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+      }
+      else
+      {
+            ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+      }
+   }
+   else if (!pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+   {
+      ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
+   }
+}

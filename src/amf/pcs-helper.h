@@ -9,6 +9,13 @@ extern "C"
 #include "context.h"
 #include "bson.h"
 
+
+struct pcs_amf_create_udsf 
+{
+    pcs_fsm_struct_t pcs_fsmdata;
+    amf_sess_t *sess;
+};
+
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
@@ -25,6 +32,7 @@ extern "C"
     struct pcs_amf_create pcs_get_amf_create_data(amf_sess_t *sess);
     struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, ogs_pkbuf_t *n2buf);
     struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf);
+    void pcs_amf_create_udsf(pcs_amf_create_udsf pcs_amfcreateudsf);
 
 #ifdef __cplusplus
 }
