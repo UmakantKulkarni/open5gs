@@ -140,7 +140,7 @@ static void amf_main(void *data)
             ogs_error("PCS failed to parse URI: %s. Error message is: %s ", uri_string, error.message);
         }
 
-        if (amf_sm.pcs_fsmdata.pcs_blockingapienabled)
+        if (!amf_sm.pcs_fsmdata.pcs_blockingapienabled)
         {
             mongoc_client_pool_t *pcs_mongopool = mongoc_client_pool_new (uri);
             amf_sm.pcs_fsmdata.pcs_mongopool = pcs_mongopool;
