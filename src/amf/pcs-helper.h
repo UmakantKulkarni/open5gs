@@ -10,7 +10,7 @@ extern "C"
 #include "bson.h"
 
 
-struct pcs_amf_create_udsf
+struct pcs_amf_create_udsf_s
 {
     pcs_fsm_struct_t *pcs_fsmdata;
     amf_sess_t *sess;
