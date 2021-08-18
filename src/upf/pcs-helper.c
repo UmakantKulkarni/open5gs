@@ -713,7 +713,7 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    {
       if ((int)pcs_pfcpestdone)
       {
-         char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp, *pcs_docjson;
+         char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
          char pcs_comma[] = ",";
          char pcs_curlybrace[] = "}";
          char pcs_squarebrace[] = "]";
