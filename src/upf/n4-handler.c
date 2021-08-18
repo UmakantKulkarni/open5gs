@@ -26,6 +26,7 @@
 #include "mongoc.h"
 #include "pcs-helper.h"
 #include "parson.h"
+#include "pthread.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
@@ -166,7 +167,7 @@ void upf_n4_handle_session_establishment_request(
         upf_pfcp_send_session_establishment_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (pcs_fsmdata->pcs_dbcommenabled)
+    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         struct pcs_upf_n4_create pcs_n4createdata;
@@ -211,7 +212,7 @@ void upf_n4_handle_session_establishment_request(
             free(pcs_n4createdata.pcs_pdrs);
             free(pcs_n4createdata.pcs_fars);
             free(pcs_docjson);
-        }
+        }   
         else if (!pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") != 0)
         {
             ogs_info("PCS Successfully completed N4 Session Establishment transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
@@ -233,6 +234,18 @@ void upf_n4_handle_session_establishment_request(
         {
             ogs_error("PCS UE Context for UE [%ld] is already present in DB", sess->smf_n4_seid);
         }
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
+    {
+        sess->pcs.pcs_udsfcreatedone = 0;
+        sess->pcs.pcs_udsfupdatedone = 0;
+        pthread_t pcs_thread1;
+        struct pcs_upf_create_udsf_s pcs_upfcreateudsf;
+        pcs_upfcreateudsf.pcs_fsmdata = pcs_fsmdata;
+        pcs_upfcreateudsf.sess = sess;
+        pcs_upfcreateudsf.cause_value = cause_value;
+        //pcs_upf_create_udsf(pcs_upfcreateudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_upf_create_udsf, &pcs_upfcreateudsf);
     }
     else
     {
@@ -453,7 +466,7 @@ void upf_n4_handle_session_modification_request(
         upf_pfcp_send_session_modification_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence)
+    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && pcs_fsmdata->pcs_blockingapienabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
@@ -597,6 +610,15 @@ void upf_n4_handle_session_modification_request(
         {
             ogs_info("PCS Successfully completed N4 Session Modification transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone)
+    {
+        pthread_t pcs_thread1;
+        struct pcs_upf_update_udsf_s pcs_upfupdateudsf;
+        pcs_upfupdateudsf.pcs_fsmdata = pcs_fsmdata;
+        pcs_upfupdateudsf.sess = sess;
+        //pcs_upf_update_udsf(pcs_upfupdateudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, &pcs_upfupdateudsf);
     }
     else if (!pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence)
     {

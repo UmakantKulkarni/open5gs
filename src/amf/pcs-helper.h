@@ -16,7 +16,7 @@ struct pcs_amf_create_udsf
     amf_sess_t *sess;
 };
 
-struct pcs_amf_n1n2_udsf
+struct pcs_amf_n1n2_udsf_s
 {
     pcs_fsm_struct_t *pcs_fsmdata;
     amf_sess_t *sess;
@@ -25,14 +25,14 @@ struct pcs_amf_n1n2_udsf
     uint8_t pdu_session_id;
 };
 
-struct pcs_amf_update_req_udsf
+struct pcs_amf_update_req_udsf_s
 {
     pcs_fsm_struct_t *pcs_fsmdata;
     amf_sess_t *sess;
     ogs_pkbuf_t *n2smbuf;
 };
 
-struct pcs_amf_update_rsp_udsf
+struct pcs_amf_update_rsp_udsf_s
 {
     pcs_fsm_struct_t *pcs_fsmdata;
     amf_sess_t *sess;

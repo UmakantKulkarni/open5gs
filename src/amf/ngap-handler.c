@@ -1625,7 +1625,7 @@ void ngap_handle_pdu_session_resource_setup_response(
             else if (!pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done && sess->amf_ue->supi)
             {
                 pthread_t pcs_thread1;
-                struct pcs_amf_update_req_udsf pcs_amfupdaterequdsf;
+                struct pcs_amf_update_req_udsf_s pcs_amfupdaterequdsf;
                 pcs_amfupdaterequdsf.pcs_fsmdata = pcs_fsmdata;
                 pcs_amfupdaterequdsf.sess = sess;
                 pcs_amfupdaterequdsf.n2smbuf = ogs_pkbuf_copy(param.n2smbuf);

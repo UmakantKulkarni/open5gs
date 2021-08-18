@@ -9,6 +9,19 @@ extern "C"
 #include "context.h"
 #include "bson.h"
 
+struct pcs_upf_create_udsf_s
+{
+    pcs_fsm_struct_t *pcs_fsmdata;
+    upf_sess_t *sess;
+    uint8_t cause_value;
+};
+
+struct pcs_upf_update_udsf_s
+{
+    pcs_fsm_struct_t *pcs_fsmdata;
+    upf_sess_t *sess;
+};
+
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
@@ -23,6 +36,8 @@ extern "C"
     char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
     struct pcs_upf_n4_create pcs_get_upf_n4_create_data(upf_sess_t *sess);
+    void *pcs_upf_create_udsf(void *pcs_upfcreateudsf);
+    void *pcs_upf_update_udsf(void *pcs_upfupdateudsf);
 
 #ifdef __cplusplus
 }

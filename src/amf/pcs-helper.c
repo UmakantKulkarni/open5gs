@@ -595,7 +595,7 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
 
 void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 {
-   struct pcs_amf_create_udsf *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
+   struct pcs_amf_create_udsf_s *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
    mongoc_collection_t *pcs_dbcollection;
@@ -641,13 +641,13 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    }
    mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
-   //return NULL;
-   pthread_exit(NULL);
+   return NULL;
+   //pthread_exit(NULL);
 }
 
 void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
 {
-   struct pcs_amf_n1n2_udsf *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
+   struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfn1n2udsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfn1n2udsfstruct->sess;
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
@@ -731,13 +731,13 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);
    sess->pcs.pcs_udsfn1n2done = 1;
-   //return NULL;
-   pthread_exit(NULL);
+   return NULL;
+   //pthread_exit(NULL);
 }
 
 void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
 {
-   struct pcs_amf_update_req_udsf *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
+   struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfupdaterequdsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfupdaterequdsfstruct->sess;
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;
@@ -793,13 +793,13 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
    }
    sess->pcs.pcs_udsfupdatereqdone = 1;
-   //return NULL;
-   pthread_exit(NULL);
+   return NULL;
+   //pthread_exit(NULL);
 }
 
 void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 {
-   struct pcs_amf_update_rsp_udsf *pcs_amfupdaterspudsfstruct = pcs_amfupdaterspudsf;
+   struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsfstruct = pcs_amfupdaterspudsf;
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfupdaterspudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
 
@@ -870,7 +870,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
    }
    sess->pcs.pcs_udsfupdaterspdone = 1;
-   //return NULL;
-   pthread_exit(NULL);
+   return NULL;
+   //pthread_exit(NULL);
 
 }

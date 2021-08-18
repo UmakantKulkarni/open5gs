@@ -466,7 +466,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         //pthread_join(pcs_fsmdata->pcs_threadcreate, NULL);
         pthread_t pcs_thread1;
-        struct pcs_amf_n1n2_udsf pcs_amfn1n2udsf;
+        struct pcs_amf_n1n2_udsf_s pcs_amfn1n2udsf;
         pcs_amfn1n2udsf.pcs_fsmdata = pcs_fsmdata;
         pcs_amfn1n2udsf.sess = sess;
         pcs_amfn1n2udsf.pdu_session_id = pdu_session_id;
