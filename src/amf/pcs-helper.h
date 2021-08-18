@@ -9,34 +9,33 @@ extern "C"
 #include "context.h"
 #include "bson.h"
 
+    struct pcs_amf_create_udsf_s
+    {
+        pcs_fsm_struct_t *pcs_fsmdata;
+        amf_sess_t *sess;
+    };
 
-struct pcs_amf_create_udsf_s
-{
-    pcs_fsm_struct_t *pcs_fsmdata;
-    amf_sess_t *sess;
-};
+    struct pcs_amf_n1n2_udsf_s
+    {
+        pcs_fsm_struct_t *pcs_fsmdata;
+        amf_sess_t *sess;
+        ogs_pkbuf_t *n1buf;
+        ogs_pkbuf_t *n2buf;
+        uint8_t pdu_session_id;
+    };
 
-struct pcs_amf_n1n2_udsf_s
-{
-    pcs_fsm_struct_t *pcs_fsmdata;
-    amf_sess_t *sess;
-    ogs_pkbuf_t *n1buf;
-    ogs_pkbuf_t *n2buf;
-    uint8_t pdu_session_id;
-};
+    struct pcs_amf_update_req_udsf_s
+    {
+        pcs_fsm_struct_t *pcs_fsmdata;
+        amf_sess_t *sess;
+        ogs_pkbuf_t *n2smbuf;
+    };
 
-struct pcs_amf_update_req_udsf_s
-{
-    pcs_fsm_struct_t *pcs_fsmdata;
-    amf_sess_t *sess;
-    ogs_pkbuf_t *n2smbuf;
-};
-
-struct pcs_amf_update_rsp_udsf_s
-{
-    pcs_fsm_struct_t *pcs_fsmdata;
-    amf_sess_t *sess;
-};
+    struct pcs_amf_update_rsp_udsf_s
+    {
+        pcs_fsm_struct_t *pcs_fsmdata;
+        amf_sess_t *sess;
+    };
 
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);

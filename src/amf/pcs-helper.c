@@ -244,7 +244,7 @@ char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata)
          asprintf(&pcs_var, ", \"QOS-Rule-Operation-Code-Description\": \"INCORRECT_QOS_RULE\"");
          pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
       }
-   
+
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 3, 4);
       int pcs_qosruledqr = pcs_binary_to_decimal(pcs_temp);
       asprintf(&pcs_var, ", \"QOS-Rule-DQR\": %d", pcs_qosruledqr);
@@ -294,7 +294,7 @@ char *decode_nas_qos_rule_hex_to_str(char *pcs_hexipdata)
       int pcs_qosrulepreced = pcs_hex_to_int(pcs_hexipdata, 14, 16);
       asprintf(&pcs_var, ", \"QOS-Rule-Precedence\": %d", pcs_qosrulepreced);
       pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_var);
-   
+
       pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosrulef1, 16, 18);
       pcs_get_substring(pcs_qosrulef1, pcs_temp, 2, 8);
       int pcs_qosruleqfid = pcs_binary_to_decimal(pcs_temp);
@@ -319,7 +319,7 @@ char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata)
    char pcs_squarebrace[] = "]";
    char *pcs_docjson, *pcs_keyval, *pcs_var;
    asprintf(&pcs_docjson, "[");
-   
+
    pcs_hex_to_binary_str(pcs_hexipdata, pcs_qosflowf1, 0, 2);
    pcs_get_substring(pcs_qosflowf1, pcs_temp, 2, 8);
    int pcs_qosflowid = pcs_binary_to_decimal(pcs_temp);
@@ -421,7 +421,7 @@ char *decode_nas_epco_hex_to_str(char *pcs_hexipdata)
 
    pcs_keyval = pcs_combine_strings(pcs_keyval, pcs_curlybrace);
    pcs_docjson = pcs_combine_strings(pcs_docjson, pcs_keyval);
-   
+
    return pcs_docjson;
 }
 
@@ -503,35 +503,35 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
             switch (pcs_ie->id)
             {
             case NGAP_ProtocolIE_ID_id_PDUSessionAggregateMaximumBitRate:
-                  pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
-                  pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
-                  break;
+               pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul = sess->amf_ue->ue_ambr.uplink;
+               pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl = sess->amf_ue->ue_ambr.downlink;
+               break;
             case NGAP_ProtocolIE_ID_id_QosFlowSetupRequestList:
-                  pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
-                  ogs_assert(pcs_qosflowsetuprequestlist);
-                  for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
-                  {
-                     pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[pcs_l];
-                     ogs_assert(pcs_qosflowsetuprequestitem);
-                     pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
-                     pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
-                     pcs_allocationandretentionpriority = &pcs_qosflowlevelqosparameters->allocationAndRetentionPriority;
-                     pcs_n1n2data.pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
-                     pcs_n1n2data.pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
-                     pcs_n1n2data.pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
-                     pcs_n1n2data.pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
-                     pcs_n1n2data.pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
-                  }
-                  break;
+               pcs_qosflowsetuprequestlist = &pcs_ie->value.choice.QosFlowSetupRequestList;
+               ogs_assert(pcs_qosflowsetuprequestlist);
+               for (pcs_l = 0; pcs_l < pcs_qosflowsetuprequestlist->list.count; pcs_l++)
+               {
+                  pcs_qosflowsetuprequestitem = (struct NGAP_QosFlowSetupRequestItem *)pcs_qosflowsetuprequestlist->list.array[pcs_l];
+                  ogs_assert(pcs_qosflowsetuprequestitem);
+                  pcs_qosflowlevelqosparameters = &pcs_qosflowsetuprequestitem->qosFlowLevelQosParameters;
+                  pcs_qoscharacteristics = &pcs_qosflowlevelqosparameters->qosCharacteristics;
+                  pcs_allocationandretentionpriority = &pcs_qosflowlevelqosparameters->allocationAndRetentionPriority;
+                  pcs_n1n2data.pcs_preemptioncapability = pcs_allocationandretentionpriority->pre_emptionCapability;
+                  pcs_n1n2data.pcs_preemptionvulnerability = pcs_allocationandretentionpriority->pre_emptionVulnerability;
+                  pcs_n1n2data.pcs_plarp = pcs_allocationandretentionpriority->priorityLevelARP;
+                  pcs_n1n2data.pcs_qosflowidentifier = pcs_qosflowsetuprequestitem->qosFlowIdentifier;
+                  pcs_n1n2data.pcs_fiveqi = pcs_qoscharacteristics->choice.nonDynamic5QI->fiveQI;
+               }
+               break;
             case NGAP_ProtocolIE_ID_id_UL_NGU_UP_TNLInformation:
-                  pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
-                  pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
-                  ogs_assert(pcs_gtptunnel);
-                  ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
-                  ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
-                  pcs_n1n2data.pcs_upfn3teid = pcs_upfn3teid;
-                  pcs_n1n2data.pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
-                  break;
+               pcs_uptransportlayerinformation = &pcs_ie->value.choice.UPTransportLayerInformation;
+               pcs_gtptunnel = pcs_uptransportlayerinformation->choice.gTPTunnel;
+               ogs_assert(pcs_gtptunnel);
+               ogs_asn_BIT_STRING_to_ip(&pcs_gtptunnel->transportLayerAddress, &pcs_upfn3ipbitstr);
+               ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
+               pcs_n1n2data.pcs_upfn3teid = pcs_upfn3teid;
+               pcs_n1n2data.pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
+               break;
             }
          }
       }
@@ -542,7 +542,7 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
    }
    else
    {
-         ogs_error("PCS ogs_nas_5gsm_decode failed");
+      ogs_error("PCS ogs_nas_5gsm_decode failed");
    }
 
    return (pcs_n1n2data);
@@ -560,7 +560,7 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
    NGAP_AssociatedQosFlowList_t *pcs_associatedqosflowlist = NULL;
    NGAP_AssociatedQosFlowItem_t *pcs_associatedqosflowitem = NULL;
    int i, pcs_decode_status = 1;
-   
+
    pcs_decode_status = ogs_asn_decode(&asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &pcs_n2smmessage, sizeof(pcs_n2smmessage), n2buf);
    if (pcs_decode_status == 0)
    {
@@ -572,12 +572,14 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
       pcs_updatedata.pcs_upfn3ip = ogs_ipv4_to_string(pcs_upfn3ipbitstr.addr);
       ogs_asn_OCTET_STRING_to_uint32(&pcs_gtptunnel->gTP_TEID, &pcs_upfn3teid);
       pcs_updatedata.pcs_upfn3teid = pcs_upfn3teid;
-      
+
       pcs_associatedqosflowlist = &pcs_dlqosflowpertnlinformation->associatedQosFlowList;
-      for (i = 0; i < pcs_associatedqosflowlist->list.count; i++) {
+      for (i = 0; i < pcs_associatedqosflowlist->list.count; i++)
+      {
          pcs_associatedqosflowitem = (NGAP_AssociatedQosFlowItem_t *)pcs_associatedqosflowlist->list.array[i];
-         if (pcs_associatedqosflowitem) {
-               pcs_updatedata.pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
+         if (pcs_associatedqosflowitem)
+         {
+            pcs_updatedata.pcs_qosflowid = pcs_associatedqosflowitem->qosFlowIdentifier;
          }
       }
    }
@@ -599,10 +601,10 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
    if (pcs_mongoclient == NULL)
    {
-      pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
+      pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
    }
    else
    {
@@ -628,18 +630,18 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       free(pcs_docjson);
       if (pcs_rv != OGS_OK)
       {
-            ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+         ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
       }
       else
       {
-            ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+         ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
       }
    }
    else if (!pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+   mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
    return NULL;
    //pthread_exit(NULL);
@@ -654,10 +656,10 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
    if (pcs_mongoclient == NULL)
    {
-      pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
+      pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
    }
    else
    {
@@ -678,41 +680,41 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    {
       if ((int)pcs_createdone)
       {
-            struct pcs_amf_n1n2 pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
-            if (pcs_fsmdata->pcs_updateapienabledn1n2)
-            {
-               bson_error_t error;
-               bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosrulestr, -1, &error);
-               bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosflowstr, -1, &error);
-               bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasepcostr, -1, &error);
-               bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress), "dnn", BCON_UTF8(pcs_n1n2data.pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
+         struct pcs_amf_n1n2 pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
+         if (pcs_fsmdata->pcs_updateapienabledn1n2)
+         {
+            bson_error_t error;
+            bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosrulestr, -1, &error);
+            bson_t *bson_doc_nas_qos_flow = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosflowstr, -1, &error);
+            bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasepcostr, -1, &error);
+            bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-session-id", BCON_INT32(pdu_session_id), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress), "dnn", BCON_UTF8(pcs_n1n2data.pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
-               pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-               bson_destroy(bson_doc_nas_qos_rule);
-               bson_destroy(bson_doc_nas_qos_flow);
-               bson_destroy(bson_doc_nas_epco);                
-            }
-            else
-            {
-               char *pcs_updatedoc;
-               asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pdu-session-id\": %d, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s}", pdu_session_id, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr);
-               pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
-            }
+            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+            bson_destroy(bson_doc_nas_qos_rule);
+            bson_destroy(bson_doc_nas_qos_flow);
+            bson_destroy(bson_doc_nas_epco);
+         }
+         else
+         {
+            char *pcs_updatedoc;
+            asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pdu-session-id\": %d, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s}", pdu_session_id, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr);
+            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+         }
 
-            if (pcs_rv != OGS_OK)
-            {
-               ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
-            }
-            else
-            {
-               ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
-            }
+         if (pcs_rv != OGS_OK)
+         {
+            ogs_error("PCS Error while updateing n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+         }
+         else
+         {
+            ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
+         }
 
-            free(pcs_n1n2data.pcs_nasqosrulestr);
-            free(pcs_n1n2data.pcs_nasqosflowstr);
-            free(pcs_n1n2data.pcs_nasepcostr);
+         free(pcs_n1n2data.pcs_nasqosrulestr);
+         free(pcs_n1n2data.pcs_nasqosflowstr);
+         free(pcs_n1n2data.pcs_nasepcostr);
 
-            /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
+         /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
             ogs_free(pcs_n1n2data.pcs_pduaddress);
             ogs_free(pcs_n1n2data.pcs_ie);
             ogs_free(pcs_n1n2data.pcs_gtptunnel);
@@ -720,14 +722,14 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       }
       else
       {
-            ogs_error("PCS n1-n2 request got triggered without processing Create-SM-Context request");
+         ogs_error("PCS n1-n2 request got triggered without processing Create-SM-Context request");
       }
    }
    else
    {
       ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+   mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);
    sess->pcs.pcs_udsfn1n2done = 1;
@@ -750,10 +752,10 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else if (!pcs_fsmdata->pcs_isproceduralstateless)
    {
-      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
+      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
       if (pcs_mongoclient == NULL)
       {
-         pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
+         pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
       }
       else
       {
@@ -768,14 +770,14 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
          JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
          if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
          {
-               JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
-               pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+            JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+            pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
          }
          json_value_free(pcs_dbrdatajsonval);
       }
-      mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+      mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    }
-   
+
    if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
    {
       if ((int)pcs_n1n2done)
@@ -804,7 +806,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
 
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
@@ -844,22 +846,22 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    else
    {
       if (pcs_fsmdata->pcs_updateapienabledmodify)
-      {  
-            bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
-            
-            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+      {
+         bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
+
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
       }
       else
       {
-            char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
-            char *pcs_updatedoc;
-            asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
-            
-            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
-            bson_free(pcs_dbrdata);
+         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
+         char *pcs_updatedoc;
+         asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
+
+         pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+         bson_free(pcs_dbrdata);
       }
    }
-   mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+   mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
 
    if (pcs_rv != OGS_OK)
    {
@@ -872,5 +874,4 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    sess->pcs.pcs_udsfupdaterspdone = 1;
    return NULL;
    //pthread_exit(NULL);
-
 }
