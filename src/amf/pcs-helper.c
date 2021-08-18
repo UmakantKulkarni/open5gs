@@ -598,7 +598,9 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    struct pcs_amf_create_udsf *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
-   mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_pop (pcs_fsmdata->pcs_mongopool);
+   mongoc_collection_t *pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+   //mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
    char *pcs_imsistr = sess->amf_ue->supi;
    pcs_imsistr += 5;
    char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
@@ -630,6 +632,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
+   mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
    //return NULL;
    pthread_exit(NULL);
@@ -643,7 +646,9 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
-   mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_pop (pcs_fsmdata->pcs_mongopool);
+   mongoc_collection_t *pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+   //mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
    double pcs_createdone = 0;
    int pcs_rv;
    char *pcs_imsistr = sess->amf_ue->supi;
@@ -708,6 +713,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    {
       ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
+   mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);
    sess->pcs.pcs_udsfn1n2done = 1;
@@ -729,7 +735,9 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else if (!pcs_fsmdata->pcs_isproceduralstateless)
    {
-      mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_pop (pcs_fsmdata->pcs_mongopool);
+      mongoc_collection_t *pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+      //mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
       char *pcs_imsistr = sess->amf_ue->supi;
       pcs_imsistr += 5;
       if (!pcs_fsmdata->pcs_isproceduralstateless)
@@ -744,6 +752,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
          }
          json_value_free(pcs_dbrdatajsonval);
       }
+      mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    }
    
    if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
@@ -773,7 +782,9 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfupdaterspudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
 
-   mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_pop (pcs_fsmdata->pcs_mongopool);
+   mongoc_collection_t *pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+   //mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
    char *pcs_imsistr = sess->amf_ue->supi;
    pcs_imsistr += 5;
    int pcs_rv;
@@ -829,6 +840,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    {
       ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
    }
+   mongoc_client_pool_push (pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
    sess->pcs.pcs_udsfupdaterspdone = 1;
    //return NULL;
    pthread_exit(NULL);
