@@ -598,7 +598,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    struct pcs_amf_create_udsf *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop ( (pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
    if (pcs_mongoclient == NULL)
    {
       mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
@@ -652,7 +652,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop ( (pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
    if (pcs_mongoclient == NULL)
    {
       mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
@@ -747,7 +747,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else if (!pcs_fsmdata->pcs_isproceduralstateless)
    {
-      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop ( (pcs_fsmdata->pcs_mongopool);
+      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
       if (pcs_mongoclient == NULL)
       {
          mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
@@ -800,7 +800,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfupdaterspudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
 
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop ( (pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop (pcs_fsmdata->pcs_mongopool);
    if (pcs_mongoclient == NULL)
    {
       mongoc_collection_t *pcs_dbcollection =  pcs_fsmdata->pcs_dbcollection;
