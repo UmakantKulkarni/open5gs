@@ -143,6 +143,7 @@ static void amf_main(void *data)
         if (!amf_sm.pcs_fsmdata.pcs_blockingapienabled)
         {
             mongoc_client_pool_t *pcs_mongopool = mongoc_client_pool_new (uri);
+            mongoc_client_pool_max_size(pcs_mongopool, 999999999);
             amf_sm.pcs_fsmdata.pcs_mongopool = pcs_mongopool;
         }
 

@@ -1622,7 +1622,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                     ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
                 }
             }
-            else if (!pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done)
+            else if (!pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done && sess->amf_ue->supi)
             {
                 pthread_t pcs_thread1;
                 struct pcs_amf_update_req_udsf pcs_amfupdaterequdsf;

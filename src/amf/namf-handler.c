@@ -462,7 +462,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         json_value_free(pcs_dbrdatajsonval);
         bson_free(pcs_dbrdata);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->amf_ue->supi)
     {
         //pthread_join(pcs_fsmdata->pcs_threadcreate, NULL);
         pthread_t pcs_thread1;
