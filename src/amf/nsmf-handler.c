@@ -209,8 +209,12 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done && sess->pcs.pcs_udsfupdatereqdone)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
     {
+        sess->pcs.pcs_udsfcreatedone = 0;
+        sess->pcs.pcs_udsfn1n2done = 0;
+        sess->pcs.pcs_udsfupdatereqdone = 0;
+        sess->pcs.pcs_udsfupdaterspdone = 0;
         pthread_t pcs_thread1;
         sess->pcs.pcs_threadcreate = pcs_thread1;
         struct pcs_amf_create_udsf pcs_amfcreateudsf;
@@ -779,7 +783,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabled)
+    else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done && sess->pcs.pcs_udsfupdatereqdone)
     {
         pthread_t pcs_thread1;
         sess->pcs.pcs_threadupdatersp = pcs_thread1;
