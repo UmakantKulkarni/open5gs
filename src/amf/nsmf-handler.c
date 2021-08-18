@@ -720,7 +720,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && pcs_fsmdata->pcs_blockingapienabled)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_imsistr = sess->amf_ue->supi;
@@ -779,7 +779,17 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
-    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabled)
+    {
+        pthread_t pcs_thread1;
+        pcs_fsmdata->pcs_threadupdatersp = pcs_thread1;
+        struct pcs_amf_update_rsp_udsf pcs_amfupdaterspudsf;
+        pcs_amfupdaterspudsf.pcs_fsmdata = pcs_fsmdata;
+        pcs_amfupdaterspudsf.sess = sess;
+        //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, &pcs_amfupdaterspudsf);
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
