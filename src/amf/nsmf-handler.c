@@ -212,7 +212,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
     {
         pthread_t pcs_thread1;
-        pcs_fsmdata->pcs_threadcreate = pcs_thread1;
+        sess->pcs.pcs_threadcreate = pcs_thread1;
         struct pcs_amf_create_udsf pcs_amfcreateudsf;
         pcs_amfcreateudsf.pcs_fsmdata = pcs_fsmdata;
         pcs_amfcreateudsf.sess = sess;
@@ -782,7 +782,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabled)
     {
         pthread_t pcs_thread1;
-        pcs_fsmdata->pcs_threadupdatersp = pcs_thread1;
+        sess->pcs.pcs_threadupdatersp = pcs_thread1;
         struct pcs_amf_update_rsp_udsf pcs_amfupdaterspudsf;
         pcs_amfupdaterspudsf.pcs_fsmdata = pcs_fsmdata;
         pcs_amfupdaterspudsf.sess = sess;

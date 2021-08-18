@@ -29,7 +29,6 @@ extern "C" {
 #endif
 
 #include "mongoc.h"
-#include <pthread.h>
 
 extern const char *OGS_FSM_NAME_INIT_SIG;
 extern const char *OGS_FSM_NAME_ENTRY_SIG;
@@ -53,10 +52,6 @@ typedef struct _pcs_fsm_struct_t {
     uint8_t pcs_isfullystateless;
     uint8_t pcs_isproceduralstateless;
     char *pcs_dbcollectioname;
-    pthread_t pcs_threadcreate;
-    pthread_t pcs_threadn1n2;
-    pthread_t pcs_threadupdatereq;
-    pthread_t pcs_threadupdatersp;
 } pcs_fsm_struct_t;
 
 typedef struct _ogs_fsm_t {
