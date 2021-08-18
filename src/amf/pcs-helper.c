@@ -630,6 +630,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
+   sess->pcs.pcs_udsfcreatedone = 1;
    //return NULL;
    pthread_exit(NULL);
 }
@@ -709,6 +710,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    }
    json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);
+   sess->pcs.pcs_udsfn1n2done = 1;
    //return NULL;
    pthread_exit(NULL);
 }
@@ -760,6 +762,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    {
       ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
    }
+   sess->pcs.pcs_udsfupdatereqdone = 1;
    //return NULL;
    pthread_exit(NULL);
 }
@@ -826,6 +829,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    {
       ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
    }
+   sess->pcs.pcs_udsfupdaterspdone = 1;
    //return NULL;
    pthread_exit(NULL);
 

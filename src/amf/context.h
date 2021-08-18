@@ -522,6 +522,10 @@ typedef struct amf_sess_s {
         pthread_t pcs_threadn1n2;
         pthread_t pcs_threadupdatereq;
         pthread_t pcs_threadupdatersp;
+        uint8_t pcs_udsfcreatedone;
+        uint8_t pcs_udsfn1n2done;
+        uint8_t pcs_udsfupdatereqdone;
+        uint8_t pcs_udsfupdaterspdone;
     } pcs;
 
     struct {

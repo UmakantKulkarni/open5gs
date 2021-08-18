@@ -1622,7 +1622,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                     ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
                 }
             }
-            else if (!pcs_fsmdata->pcs_blockingapienabled)
+            else if (!pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done)
             {
                 pthread_t pcs_thread1;
                 sess->pcs.pcs_threadupdatereq = pcs_thread1;

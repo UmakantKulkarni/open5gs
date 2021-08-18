@@ -209,7 +209,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->pcs.pcs_udsfn1n2done && sess->pcs.pcs_udsfupdatereqdone)
     {
         pthread_t pcs_thread1;
         sess->pcs.pcs_threadcreate = pcs_thread1;
