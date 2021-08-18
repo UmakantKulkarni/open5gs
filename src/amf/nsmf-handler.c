@@ -212,6 +212,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled)
     {
         pthread_t pcs_thread1;
+        pcs_fsmdata->pcs_threadcreate = pcs_thread1;
         struct pcs_amf_create_udsf pcs_amfcreateudsf;
         pcs_amfcreateudsf.pcs_fsmdata = pcs_fsmdata;
         pcs_amfcreateudsf.sess = sess;

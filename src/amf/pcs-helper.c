@@ -630,7 +630,8 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   return NULL;
+   //return NULL;
+   pthread_exit(NULL);
 }
 
 void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
@@ -708,6 +709,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    }
    json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);
-   return NULL;
+   //return NULL;
+   pthread_exit(NULL);
 }
 
