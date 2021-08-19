@@ -26,14 +26,6 @@ extern "C"
 
     struct pcs_amf_update_req_udsf_s
     {
-        uint8_t pcs_dbcommenabled;
-        uint8_t pcs_updateapienabledcreate;
-        uint8_t pcs_updateapienabledn1n2;
-        uint8_t pcs_updateapienabledmodify;
-        uint8_t pcs_blockingapienabled;
-        uint8_t pcs_isfullystateless;
-        uint8_t pcs_isproceduralstateless;
-        char *pcs_dbcollectioname;
         uint64_t pcs_amfuengapid;
         long pcs_pdusessionid;
         mongoc_collection_t *pcs_dbcollection;
@@ -43,7 +35,7 @@ extern "C"
     struct pcs_amf_update_rsp_udsf_s
     {
         pcs_fsm_struct_t *pcs_fsmdata;
-        amf_sess_t *sess;
+        amf_sess_t *sess;   
     };
 
     int pcs_set_int_from_env(const char *pcs_env_var);
