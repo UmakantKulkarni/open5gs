@@ -35,8 +35,9 @@ extern "C"
 
     struct pcs_amf_update_rsp_udsf_s
     {
-        pcs_fsm_struct_t *pcs_fsmdata;
-        amf_sess_t *sess;   
+        uint64_t pcs_amfuengapid;
+        long pcs_pdusessionid;
+        mongoc_collection_t *pcs_dbcollection;
     };
 
     int pcs_set_int_from_env(const char *pcs_env_var);

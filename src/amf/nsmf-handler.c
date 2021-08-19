@@ -787,8 +787,9 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     {
         pthread_t pcs_thread1;
         struct pcs_amf_update_rsp_udsf_s pcs_amfupdaterspudsf;
-        pcs_amfupdaterspudsf.pcs_fsmdata = pcs_fsmdata;
-        pcs_amfupdaterspudsf.sess = sess;
+        pcs_amfupdaterspudsf.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        pcs_amfupdaterspudsf.pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;;
+        pcs_amfupdaterspudsf.pcs_pdusessionid = (long)sess->psi;
         //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
         pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, &pcs_amfupdaterspudsf);
     }

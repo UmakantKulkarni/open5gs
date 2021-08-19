@@ -860,15 +860,29 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
 void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 {
    struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsfstruct = pcs_amfupdaterspudsf;
-   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfupdaterspudsfstruct->pcs_fsmdata;
-   amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
+   
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfupdaterspudsfstruct->pcs_amfuengapid);
+   amf_ue_t *amf_ue;
+   if (ran_ue)
+   {
+      amf_ue = ran_ue->amf_ue;
+   }
+   else
+   {
+      return NULL;
+   }
+
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+   uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
 
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    if (pcs_mongoclient == NULL)
    {
-      pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+      pcs_dbcollection = pcs_amfupdaterspudsfstruct->pcs_dbcollection;
    }
    else
    {
@@ -886,7 +900,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    pcs_imsistr += 5;
    int pcs_rv;
    struct pcs_amf_update pcs_updatedata = sess->pcs.pcs_updatedata;
-   if (pcs_fsmdata->pcs_isproceduralstateless)
+   if (pcs_isproceduralstateless)
    {
       struct pcs_amf_create pcs_createdata = sess->pcs.pcs_createdata;
       struct pcs_amf_n1n2 pcs_n1n2data = sess->pcs.pcs_n1n2data;
@@ -912,7 +926,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    }
    else
    {
-      if (pcs_fsmdata->pcs_updateapienabledmodify)
+      if (pcs_updateapienabledmodify)
       {
          bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
 
