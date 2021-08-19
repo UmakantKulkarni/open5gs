@@ -19,7 +19,8 @@ extern "C"
     struct pcs_amf_n1n2_udsf_s
     {
         mongoc_collection_t *pcs_dbcollection;
-        char *pcs_supi;
+        uint64_t pcs_amfuengapid;
+        long pcs_pdusessionid;
         ogs_pkbuf_t *n1buf;
         ogs_pkbuf_t *n2buf;
         uint8_t pdu_session_id;

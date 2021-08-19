@@ -680,8 +680,18 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
 
-   amf_ue_t *amf_ue = amf_ue_find_by_supi(pcs_amfn1n2udsfstruct->pcs_supi);
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pdu_session_id);
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfcreateudsfstruct->pcs_amfuengapid);
+   amf_ue_t *amf_ue;
+   if (ran_ue)
+   {
+      amf_ue = ran_ue->amf_ue;
+   }
+   else
+   {
+      return NULL;
+   }
+
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfcreateudsfstruct->pcs_pdusessionid);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
 

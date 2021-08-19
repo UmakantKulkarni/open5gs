@@ -476,12 +476,18 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             pthread_t pcs_thread1;
             struct pcs_amf_n1n2_udsf_s pcs_amfn1n2udsf;
             pcs_amfn1n2udsf.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            pcs_amfn1n2udsf.pcs_supi = supi;
+            pcs_amfn1n2udsf.pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;;
+            pcs_amfn1n2udsf.pcs_pdusessionid = (long)sess->psi;
             pcs_amfn1n2udsf.pdu_session_id = pdu_session_id;
             pcs_amfn1n2udsf.n1buf = ogs_pkbuf_copy(n1buf);
             pcs_amfn1n2udsf.n2buf = ogs_pkbuf_copy(n2buf);
             //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
             pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, &pcs_amfn1n2udsf);
+        }
+        else
+        {
+            ogs_error("pcs_udsfcreatedone thread is not complete");
+            return OGS_ERROR;
         }
     }
     else
