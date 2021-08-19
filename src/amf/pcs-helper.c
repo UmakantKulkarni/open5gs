@@ -614,7 +614,15 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
-   char *pcs_imsistr = sess->amf_ue->supi;
+   char *pcs_imsistr;
+   if (sess)
+   {
+      pcs_imsistr = sess->amf_ue->supi;
+   }
+   else
+   {
+      return NULL;
+   }
    pcs_imsistr += 5;
    char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
    if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") == 0)
@@ -673,7 +681,15 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    }
    double pcs_createdone = 0;
    int pcs_rv;
-   char *pcs_imsistr = sess->amf_ue->supi;
+   char *pcs_imsistr;
+   if (sess)
+   {
+      pcs_imsistr = sess->amf_ue->supi;
+   }
+   else
+   {
+      return NULL;
+   }
    pcs_imsistr += 5;
    char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
@@ -845,7 +861,15 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    {
       pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
-   char *pcs_imsistr = sess->amf_ue->supi;
+   char *pcs_imsistr;
+   if (sess)
+   {
+      pcs_imsistr = sess->amf_ue->supi;
+   }
+   else
+   {
+      return NULL;
+   }
    pcs_imsistr += 5;
    int pcs_rv;
    struct pcs_amf_update pcs_updatedata = sess->pcs.pcs_updatedata;
