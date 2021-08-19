@@ -687,7 +687,6 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
 
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_amfn1n2udsfstruct->pcs_dbcollection;
