@@ -11,8 +11,9 @@ extern "C"
 
     struct pcs_amf_create_udsf_s
     {
-        pcs_fsm_struct_t *pcs_fsmdata;
-        amf_sess_t *sess;
+        uint64_t pcs_amfuengapid;
+        long pcs_pdusessionid;
+        mongoc_collection_t *pcs_dbcollection;
     };
 
     struct pcs_amf_n1n2_udsf_s
