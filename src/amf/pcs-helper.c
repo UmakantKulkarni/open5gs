@@ -7,6 +7,8 @@
 #include <arpa/inet.h>
 #include "parson.h"
 
+extern mongoc_client_pool_t *PCS_MONGO_POOL;
+
 int pcs_set_int_from_env(const char *pcs_env_var)
 {
    int pcs_enval = 0;
@@ -458,7 +460,8 @@ struct pcs_amf_n1n2 pcs_get_amf_n1n2_data(amf_sess_t *sess, ogs_pkbuf_t *n1buf, 
    struct pcs_amf_n1n2 pcs_n1n2data;
    int pcs_nas_decode_status = 1, pcs_ngap_decode_status = 1;
    ogs_nas_5gs_message_t pcs_nasmessage;
-   pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
+   if (n1buf)
+      pcs_nas_decode_status = ogs_nas_5gsm_decode(&pcs_nasmessage, n1buf);
    if (pcs_nas_decode_status == 0 && pcs_nasmessage.gsm.h.message_type == 194)
    {
       ogs_nas_5gs_pdu_session_establishment_accept_t *pcs_pdusessionestablishmentaccept = &pcs_nasmessage.gsm.pdu_session_establishment_accept;
@@ -601,7 +604,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    pcs_fsm_struct_t *pcs_fsmdata = pcs_amfcreateudsfstruct->pcs_fsmdata;
    amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
@@ -641,7 +644,8 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+   mongoc_collection_destroy(pcs_dbcollection);
+   mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
    return NULL;
    //pthread_exit(NULL);
@@ -656,7 +660,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
@@ -729,7 +733,8 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    {
       ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+   mongoc_collection_destroy(pcs_dbcollection);
+   mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);
    sess->pcs.pcs_udsfn1n2done = 1;
@@ -752,7 +757,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else if (!pcs_fsmdata->pcs_isproceduralstateless)
    {
-      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
+      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
       if (pcs_mongoclient == NULL)
       {
          pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
@@ -775,7 +780,8 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
          }
          json_value_free(pcs_dbrdatajsonval);
       }
-      mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+      mongoc_collection_destroy(pcs_dbcollection);
+      mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    }
 
    if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
@@ -806,7 +812,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
 
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(pcs_fsmdata->pcs_mongopool);
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
@@ -861,7 +867,8 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          bson_free(pcs_dbrdata);
       }
    }
-   mongoc_client_pool_push(pcs_fsmdata->pcs_mongopool, pcs_mongoclient);
+   mongoc_collection_destroy(pcs_dbcollection);
+   mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
 
    if (pcs_rv != OGS_OK)
    {

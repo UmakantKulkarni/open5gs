@@ -25,6 +25,7 @@
 static ogs_thread_t *thread;
 static void amf_main(void *data);
 static int initialized = 0;
+mongoc_client_pool_t *PCS_MONGO_POOL;
 
 int amf_initialize()
 {
@@ -120,7 +121,7 @@ static void amf_main(void *data)
     mongoc_collection_t *collection;
     if (amf_sm.pcs_fsmdata.pcs_dbcommenabled)
     {
-        const char *uri_string = "mongodb://mongodb-svc:27017";
+        const char *uri_string = "mongodb://mongodb-svc:27017/?waitQueueTimeoutMS=1000";
         bson_error_t error;
         bson_t *command, reply;
         char *str;
@@ -142,9 +143,9 @@ static void amf_main(void *data)
 
         if (!amf_sm.pcs_fsmdata.pcs_blockingapienabled)
         {
-            mongoc_client_pool_t *pcs_mongopool = mongoc_client_pool_new (uri);
+            PCS_MONGO_POOL = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(pcs_mongopool, 999999999);
-            amf_sm.pcs_fsmdata.pcs_mongopool = pcs_mongopool;
+            //amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
         }
 
         /*
