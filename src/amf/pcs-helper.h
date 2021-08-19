@@ -18,8 +18,8 @@ extern "C"
 
     struct pcs_amf_n1n2_udsf_s
     {
-        pcs_fsm_struct_t *pcs_fsmdata;
-        amf_sess_t *sess;
+        mongoc_collection_t *pcs_dbcollection;
+        char *pcs_supi;
         ogs_pkbuf_t *n1buf;
         ogs_pkbuf_t *n2buf;
         uint8_t pdu_session_id;

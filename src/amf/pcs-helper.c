@@ -676,17 +676,21 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
 {
    struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
-   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfn1n2udsfstruct->pcs_fsmdata;
-   amf_sess_t *sess = pcs_amfn1n2udsfstruct->sess;
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
+
+   amf_ue_t *amf_ue = amf_ue_find_by_supi(pcs_amfn1n2udsfstruct->pcs_supi);
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pdu_session_id);
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+   uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    if (pcs_mongoclient == NULL)
    {
-      pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+      pcs_dbcollection = pcs_amfn1n2udsfstruct->pcs_dbcollection;
    }
    else
    {
@@ -716,7 +720,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       if ((int)pcs_createdone)
       {
          struct pcs_amf_n1n2 pcs_n1n2data = pcs_get_amf_n1n2_data(sess, n1buf, n2buf);
-         if (pcs_fsmdata->pcs_updateapienabledn1n2)
+         if (pcs_updateapienabledn1n2)
          {
             bson_error_t error;
             bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosrulestr, -1, &error);

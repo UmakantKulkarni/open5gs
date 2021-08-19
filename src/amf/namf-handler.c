@@ -462,18 +462,27 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         json_value_free(pcs_dbrdatajsonval);
         bson_free(pcs_dbrdata);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone && sess->amf_ue->supi)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabled)
     {
-        //pthread_join(pcs_fsmdata->pcs_threadcreate, NULL);
-        pthread_t pcs_thread1;
-        struct pcs_amf_n1n2_udsf_s pcs_amfn1n2udsf;
-        pcs_amfn1n2udsf.pcs_fsmdata = pcs_fsmdata;
-        pcs_amfn1n2udsf.sess = sess;
-        pcs_amfn1n2udsf.pdu_session_id = pdu_session_id;
-        pcs_amfn1n2udsf.n1buf = ogs_pkbuf_copy(n1buf);
-        pcs_amfn1n2udsf.n2buf = ogs_pkbuf_copy(n2buf);
-        //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
-        pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, &pcs_amfn1n2udsf);
+        int c = 0;
+        while(sess->pcs.pcs_udsfcreatedone == 0 && c < 200) {
+            usleep(5);
+            c = c + 1;
+            if (sess->pcs.pcs_udsfcreatedone)
+                c = 201;
+        }
+        if (sess->pcs.pcs_udsfcreatedone)
+        {
+            pthread_t pcs_thread1;
+            struct pcs_amf_n1n2_udsf_s pcs_amfn1n2udsf;
+            pcs_amfn1n2udsf.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            pcs_amfn1n2udsf.pcs_supi = supi;
+            pcs_amfn1n2udsf.pdu_session_id = pdu_session_id;
+            pcs_amfn1n2udsf.n1buf = ogs_pkbuf_copy(n1buf);
+            pcs_amfn1n2udsf.n2buf = ogs_pkbuf_copy(n2buf);
+            //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
+            pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, &pcs_amfn1n2udsf);
+        }
     }
     else
     {
