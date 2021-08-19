@@ -1626,8 +1626,17 @@ void ngap_handle_pdu_session_resource_setup_response(
             {
                 pthread_t pcs_thread1;
                 struct pcs_amf_update_req_udsf_s pcs_amfupdaterequdsf;
-                pcs_amfupdaterequdsf.pcs_fsmdata = pcs_fsmdata;
-                pcs_amfupdaterequdsf.sess = sess;
+                pcs_amfupdaterequdsf.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+                pcs_amfupdaterequdsf.pcs_updateapienabledcreate = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_CREATE");
+                pcs_amfupdaterequdsf.pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+                pcs_amfupdaterequdsf.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+                pcs_amfupdaterequdsf.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
+                pcs_amfupdaterequdsf.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
+                pcs_amfupdaterequdsf.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+                pcs_amfupdaterequdsf.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+                pcs_amfupdaterequdsf.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                pcs_amfupdaterequdsf.pcs_amfuengapid = amf_ue_ngap_id;
+                pcs_amfupdaterequdsf.pcs_pdusessionid = PDUSessionItem->pDUSessionID;
                 pcs_amfupdaterequdsf.n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
                 //pcs_amf_update_req_udsf(pcs_amfupdaterequdsf);
                 pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, &pcs_amfupdaterequdsf);

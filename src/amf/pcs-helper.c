@@ -745,30 +745,32 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
 void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
 {
    struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
-   pcs_fsm_struct_t *pcs_fsmdata = pcs_amfupdaterequdsfstruct->pcs_fsmdata;
-   amf_sess_t *sess = pcs_amfupdaterequdsfstruct->sess;
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;
+
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
+   amf_ue_t *amf_ue = ran_ue->amf_ue;
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
 
    mongoc_collection_t *pcs_dbcollection;
    double pcs_n1n2done = 0;
-   if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+   if (pcs_amfupdaterequdsfstruct->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_amfupdaterequdsfstruct->pcs_dbcollectioname, "amf") == 0)
    {
       pcs_n1n2done = sess->pcs.pcs_n1n2done;
    }
-   else if (!pcs_fsmdata->pcs_isproceduralstateless)
+   else if (!pcs_amfupdaterequdsfstruct->pcs_isproceduralstateless)
    {
       mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
       if (pcs_mongoclient == NULL)
       {
-         pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+         pcs_dbcollection = pcs_amfupdaterequdsfstruct->pcs_dbcollection;
       }
       else
       {
-         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_amfupdaterequdsfstruct->pcs_dbcollectioname);
       }
       char *pcs_imsistr = sess->amf_ue->supi;
       pcs_imsistr += 5;
-      if (!pcs_fsmdata->pcs_isproceduralstateless)
+      if (!pcs_amfupdaterequdsfstruct->pcs_isproceduralstateless)
       {
          char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
          sess->pcs.pcs_dbrdata = pcs_dbrdata;
@@ -784,7 +786,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    }
 
-   if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+   if (strcmp(pcs_amfupdaterequdsfstruct->pcs_dbcollectioname, "amf") == 0)
    {
       if ((int)pcs_n1n2done)
       {
