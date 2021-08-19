@@ -662,13 +662,14 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
    }
    else
    {
-      pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+      pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
    double pcs_createdone = 0;
    int pcs_rv;
@@ -681,7 +682,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
       pcs_createdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-create-done");
    }
-   if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+   if (strcmp(pcs_dbcollectioname, "amf") == 0)
    {
       if ((int)pcs_createdone)
       {
@@ -835,6 +836,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    if (pcs_mongoclient == NULL)
    {
       pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
