@@ -785,23 +785,13 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabled)
     {
-        int c = 0;
-        while(sess->pcs.pcs_udsfupdatereqdone == 0 && c < 200) {
-            usleep(5);
-            c = c + 1;
-            if (sess->pcs.pcs_udsfupdatereqdone)
-                c = 201;
-        }
-        if (sess->pcs.pcs_udsfupdatereqdone)
-        {
-            pthread_t pcs_thread1;
-            struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
-            pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-            (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
-            //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
-            pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
-        }
+        pthread_t pcs_thread1;
+        struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
+        pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+        (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
+        //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
     {

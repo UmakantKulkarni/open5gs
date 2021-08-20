@@ -699,7 +699,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       c = c + 1;
       if (sess->pcs.pcs_udsfcreatedone)
       {
-         c = 201;
+         ogs_info("PCSSSSSSSS Finally create is done %d", c);
       }
    }
 
@@ -821,71 +821,89 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    {
       return NULL;
    }
-    
    amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
-   mongoc_collection_t *pcs_dbcollection;
-   double pcs_n1n2done = 0;
-   if (pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_dbcollectioname, "amf") == 0)
-   {
-      pcs_n1n2done = sess->pcs.pcs_n1n2done;
+   int c = 0;
+   while(sess->pcs.pcs_udsfn1n2done == 0 && c < PCS_REPEAT_COUNTER) {
+      usleep(5);
+      c = c + 1;
+      if (sess->pcs.pcs_udsfn1n2done)
+      {
+         ogs_info("PCSSSSSSSS Finally n1-n2 is done %d", c);
+      }
    }
-   else if (!pcs_isproceduralstateless)
+   if (sess->pcs.pcs_udsfn1n2done)
    {
-      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-      if (pcs_mongoclient == NULL)
+      char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+      uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+
+      mongoc_collection_t *pcs_dbcollection;
+      double pcs_n1n2done = 0;
+      if (pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_dbcollectioname, "amf") == 0)
       {
-         pcs_dbcollection = pcs_amfupdaterequdsfstruct->pcs_dbcollection;
+         pcs_n1n2done = sess->pcs.pcs_n1n2done;
       }
-      else
+      else if (!pcs_isproceduralstateless)
       {
-         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
-      }
-      char *pcs_imsistr;
-      if (sess)
-      {
-         pcs_imsistr = sess->amf_ue->supi;
-      }
-      else
-      {
-         return NULL;
-      }
-      pcs_imsistr += 5;
-      if (!pcs_isproceduralstateless)
-      {
-         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-         sess->pcs.pcs_dbrdata = pcs_dbrdata;
-         JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
-         if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+         mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+         if (pcs_mongoclient == NULL)
          {
-            JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
-            pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+            pcs_dbcollection = pcs_amfupdaterequdsfstruct->pcs_dbcollection;
          }
-         json_value_free(pcs_dbrdatajsonval);
+         else
+         {
+            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+         }
+         char *pcs_imsistr;
+         if (sess)
+         {
+            pcs_imsistr = sess->amf_ue->supi;
+         }
+         else
+         {
+            return NULL;
+         }
+         pcs_imsistr += 5;
+         if (!pcs_isproceduralstateless)
+         {
+            char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            sess->pcs.pcs_dbrdata = pcs_dbrdata;
+            JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+            if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+            {
+               JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+               pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+            }
+            json_value_free(pcs_dbrdatajsonval);
+         }
+         mongoc_collection_destroy(pcs_dbcollection);
+         mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
       }
-      mongoc_collection_destroy(pcs_dbcollection);
-      mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
-   }
 
-   if (strcmp(pcs_dbcollectioname, "amf") == 0)
-   {
-      if ((int)pcs_n1n2done)
+      if (strcmp(pcs_dbcollectioname, "amf") == 0)
       {
-         struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(n2smbuf);
-         sess->pcs.pcs_updatedata = pcs_updatedata;
+         if ((int)pcs_n1n2done)
+         {
+            struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(n2smbuf);
+            sess->pcs.pcs_updatedata = pcs_updatedata;
+         }
+         else
+         {
+            ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+         }
       }
       else
       {
-         ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+         ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
       }
+      sess->pcs.pcs_udsfupdatereqdone = 1;
    }
    else
    {
-      ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
+      ogs_error("pcs_udsfn1n2edone thread is not complete");
+      sess->pcs.pcs_udsfupdatereqdone = 0;
+      return NULL;
    }
-   sess->pcs.pcs_udsfupdatereqdone = 1;
    return NULL;
    //pthread_exit(NULL);
 }
@@ -904,88 +922,106 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    {
       return NULL;
    }
-
    amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
-   uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
 
-   mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-   if (pcs_mongoclient == NULL)
-   {
-      pcs_dbcollection = pcs_amfupdaterspudsfstruct->pcs_dbcollection;
-   }
-   else
-   {
-      pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
-   }
-   char *pcs_imsistr;
-   if (sess)
-   {
-      pcs_imsistr = sess->amf_ue->supi;
-   }
-   else
-   {
-      return NULL;
-   }
-   pcs_imsistr += 5;
-   int pcs_rv;
-   struct pcs_amf_update pcs_updatedata = sess->pcs.pcs_updatedata;
-   if (pcs_isproceduralstateless)
-   {
-      struct pcs_amf_create pcs_createdata = sess->pcs.pcs_createdata;
-      struct pcs_amf_n1n2 pcs_n1n2data = sess->pcs.pcs_n1n2data;
-      char *pcs_docjson;
-      asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr, pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
-      bson_error_t error;
-      bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-      pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
-      sess->pcs.pcs_updatedone = 1;
-      ogs_free(pcs_createdata.pcs_snssaisd);
-      ogs_free(pcs_createdata.pcs_amfueamfid);
-      ogs_free(pcs_createdata.pcs_amfuetac);
-      free(pcs_createdata.pcs_amfueplmnid);
-      free(pcs_n1n2data.pcs_nasqosrulestr);
-      free(pcs_n1n2data.pcs_nasqosflowstr);
-      free(pcs_n1n2data.pcs_nasepcostr);
-      /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
-      ogs_free(pcs_n1n2data.pcs_pduaddress);
-      ogs_free(pcs_n1n2data.pcs_ie);
-      ogs_free(pcs_n1n2data.pcs_gtptunnel);
-      ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
-      free(pcs_docjson);
-   }
-   else
-   {
-      if (pcs_updateapienabledmodify)
+   int c = 0;
+   while(sess->pcs.pcs_udsfupdatereqdone == 0 && c < PCS_REPEAT_COUNTER) {
+      usleep(5);
+      c = c + 1;
+      if (sess->pcs.pcs_udsfupdatereqdone)
       {
-         bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
+         ogs_info("PCSSSSSSSS Finally updatereq is done %d", c);
+      }
+   }
+   if (sess->pcs.pcs_udsfupdatereqdone)
+   {
+      char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+      uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+      uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
 
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+      mongoc_collection_t *pcs_dbcollection;
+      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+      if (pcs_mongoclient == NULL)
+      {
+         pcs_dbcollection = pcs_amfupdaterspudsfstruct->pcs_dbcollection;
       }
       else
       {
-         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
-         char *pcs_updatedoc;
-         asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
-
-         pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
-         bson_free(pcs_dbrdata);
+         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
       }
-   }
-   mongoc_collection_destroy(pcs_dbcollection);
-   mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+      char *pcs_imsistr;
+      if (sess)
+      {
+         pcs_imsistr = sess->amf_ue->supi;
+      }
+      else
+      {
+         return NULL;
+      }
+      pcs_imsistr += 5;
+      int pcs_rv;
+      struct pcs_amf_update pcs_updatedata = sess->pcs.pcs_updatedata;
+      if (pcs_isproceduralstateless)
+      {
+         struct pcs_amf_create pcs_createdata = sess->pcs.pcs_createdata;
+         struct pcs_amf_n1n2 pcs_n1n2data = sess->pcs.pcs_n1n2data;
+         char *pcs_docjson;
+         asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr, pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
+         bson_error_t error;
+         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+         sess->pcs.pcs_updatedone = 1;
+         ogs_free(pcs_createdata.pcs_snssaisd);
+         ogs_free(pcs_createdata.pcs_amfueamfid);
+         ogs_free(pcs_createdata.pcs_amfuetac);
+         free(pcs_createdata.pcs_amfueplmnid);
+         free(pcs_n1n2data.pcs_nasqosrulestr);
+         free(pcs_n1n2data.pcs_nasqosflowstr);
+         free(pcs_n1n2data.pcs_nasepcostr);
+         /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
+         ogs_free(pcs_n1n2data.pcs_pduaddress);
+         ogs_free(pcs_n1n2data.pcs_ie);
+         ogs_free(pcs_n1n2data.pcs_gtptunnel);
+         ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
+         free(pcs_docjson);
+      }
+      else
+      {
+         if (pcs_updateapienabledmodify)
+         {
+            bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
 
-   if (pcs_rv != OGS_OK)
-   {
-      ogs_error("PCS Error while uploading Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+         }
+         else
+         {
+            char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
+            char *pcs_updatedoc;
+            asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
+
+            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+            bson_free(pcs_dbrdata);
+         }
+      }
+      mongoc_collection_destroy(pcs_dbcollection);
+      mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+
+      if (pcs_rv != OGS_OK)
+      {
+         ogs_error("PCS Error while uploading Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+      }
+      else
+      {
+         ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+      }
+      sess->pcs.pcs_udsfupdaterspdone = 1;
    }
    else
    {
-      ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+      ogs_error("pcs_udsfupdatereqdone thread is not complete");
+      sess->pcs.pcs_udsfupdaterspdone = 0;
+      return NULL;
    }
-   sess->pcs.pcs_udsfupdaterspdone = 1;
    return NULL;
    //pthread_exit(NULL);
 }
