@@ -22,6 +22,7 @@
 #include "pfcp-path.h"
 #include "mongoc.h"
 #include "pcs-helper.h"
+mongoc_client_pool_t *PCS_MONGO_POOL;
 
 static ogs_thread_t *thread;
 static void upf_main(void *data);
@@ -138,7 +139,7 @@ static void upf_main(void *data)
         {
             mongoc_client_pool_t *pcs_mongopool = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(pcs_mongopool, 999999999);
-            upf_sm.pcs_fsmdata.pcs_mongopool = pcs_mongopool;
+            //upf_sm.pcs_fsmdata.pcs_mongopool = pcs_mongopool;
         }
 
         /*

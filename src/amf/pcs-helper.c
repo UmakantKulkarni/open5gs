@@ -9,7 +9,7 @@
 
 extern mongoc_client_pool_t *PCS_MONGO_POOL;
 
-const int PCS_REPEAT_COUNTER = 200;
+const int PCS_REPEAT_COUNTER = 100000;
 
 int pcs_set_int_from_env(const char *pcs_env_var)
 {

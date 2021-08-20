@@ -11,15 +11,15 @@ extern "C"
 
     struct pcs_upf_create_udsf_s
     {
-        pcs_fsm_struct_t *pcs_fsmdata;
-        upf_sess_t *sess;
-        uint8_t cause_value;
+        mongoc_collection_t *pcs_dbcollection;
+        uint64_t *pcs_upfn4seid;
+        uint8_t *cause_value;
     };
 
     struct pcs_upf_update_udsf_s
     {
-        pcs_fsm_struct_t *pcs_fsmdata;
-        upf_sess_t *sess;
+        mongoc_collection_t *pcs_dbcollection;
+        uint64_t *pcs_upfn4seid;
     };
 
     int pcs_set_int_from_env(const char *pcs_env_var);

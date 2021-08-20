@@ -240,12 +240,12 @@ void upf_n4_handle_session_establishment_request(
         sess->pcs.pcs_udsfcreatedone = 0;
         sess->pcs.pcs_udsfupdatedone = 0;
         pthread_t pcs_thread1;
-        struct pcs_upf_create_udsf_s pcs_upfcreateudsf;
-        pcs_upfcreateudsf.pcs_fsmdata = pcs_fsmdata;
-        pcs_upfcreateudsf.sess = sess;
-        pcs_upfcreateudsf.cause_value = cause_value;
+        struct pcs_upf_create_udsf_s *pcs_upfcreateudsf = malloc(sizeof(struct pcs_upf_create_udsf_s));
+        pcs_upfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        (*pcs_upfcreateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
+        (*pcs_upfcreateudsf).cause_value = (uint8_t *) cause_value;
         //pcs_upf_create_udsf(pcs_upfcreateudsf);
-        pthread_create(&pcs_thread1, NULL, pcs_upf_create_udsf, &pcs_upfcreateudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_upf_create_udsf, (void*) pcs_upfcreateudsf);
     }
     else
     {
@@ -614,11 +614,11 @@ void upf_n4_handle_session_modification_request(
     else if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabled && sess->pcs.pcs_udsfcreatedone)
     {
         pthread_t pcs_thread1;
-        struct pcs_upf_update_udsf_s pcs_upfupdateudsf;
-        pcs_upfupdateudsf.pcs_fsmdata = pcs_fsmdata;
-        pcs_upfupdateudsf.sess = sess;
+        struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
+        pcs_upfupdateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
         //pcs_upf_update_udsf(pcs_upfupdateudsf);
-        pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, &pcs_upfupdateudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
     }
     else if (!pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence)
     {
