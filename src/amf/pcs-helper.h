@@ -11,33 +11,33 @@ extern "C"
 
     struct pcs_amf_create_udsf_s
     {
-        uint64_t pcs_amfuengapid;
-        long pcs_pdusessionid;
+        uint64_t *pcs_amfuengapid;
+        long *pcs_pdusessionid;
         mongoc_collection_t *pcs_dbcollection;
     };
 
     struct pcs_amf_n1n2_udsf_s
     {
         mongoc_collection_t *pcs_dbcollection;
-        uint64_t pcs_amfuengapid;
-        long pcs_pdusessionid;
+        uint64_t *pcs_amfuengapid;
+        long *pcs_pdusessionid;
         ogs_pkbuf_t *n1buf;
         ogs_pkbuf_t *n2buf;
-        uint8_t pdu_session_id;
+        uint8_t *pdu_session_id;
     };
 
     struct pcs_amf_update_req_udsf_s
     {
-        uint64_t pcs_amfuengapid;
-        long pcs_pdusessionid;
+        uint64_t *pcs_amfuengapid;
+        long *pcs_pdusessionid;
         mongoc_collection_t *pcs_dbcollection;
         ogs_pkbuf_t *n2smbuf;
     };
 
     struct pcs_amf_update_rsp_udsf_s
     {
-        uint64_t pcs_amfuengapid;
-        long pcs_pdusessionid;
+        uint64_t *pcs_amfuengapid;
+        long *pcs_pdusessionid;
         mongoc_collection_t *pcs_dbcollection;
     };
 

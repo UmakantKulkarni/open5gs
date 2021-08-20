@@ -216,12 +216,12 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         sess->pcs.pcs_udsfupdatereqdone = 0;
         sess->pcs.pcs_udsfupdaterspdone = 0;
         pthread_t pcs_thread1;
-        struct pcs_amf_create_udsf_s pcs_amfcreateudsf;
-        pcs_amfcreateudsf.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        pcs_amfcreateudsf.pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;;
-        pcs_amfcreateudsf.pcs_pdusessionid = (long)sess->psi;
+        struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
+        pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        (*pcs_amfcreateudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+        (*pcs_amfcreateudsf).pcs_pdusessionid = (long *) (long)sess->psi;
         //pcs_amf_create_udsf(pcs_amfcreateudsf);
-        pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, &pcs_amfcreateudsf);
+        pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
     }
     else
     {
@@ -795,12 +795,12 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         if (sess->pcs.pcs_udsfupdatereqdone)
         {
             pthread_t pcs_thread1;
-            struct pcs_amf_update_rsp_udsf_s pcs_amfupdaterspudsf;
-            pcs_amfupdaterspudsf.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            pcs_amfupdaterspudsf.pcs_amfuengapid = sess->amf_ue->ran_ue->amf_ue_ngap_id;;
-            pcs_amfupdaterspudsf.pcs_pdusessionid = (long)sess->psi;
+            struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
+            pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+            (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
             //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
-            pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, &pcs_amfupdaterspudsf);
+            pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
         }
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)

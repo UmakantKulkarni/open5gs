@@ -602,7 +602,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 {
    struct pcs_amf_create_udsf_s *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
 
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfcreateudsfstruct->pcs_amfuengapid);
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfcreateudsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
    if (ran_ue)
    {
@@ -613,7 +613,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       return NULL;
    }
 
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfcreateudsfstruct->pcs_pdusessionid);
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
    
@@ -678,9 +678,9 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
-   uint8_t pdu_session_id = pcs_amfn1n2udsfstruct->pdu_session_id;
+   uint8_t pdu_session_id = (uint8_t)pcs_amfn1n2udsfstruct->pdu_session_id;
 
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfn1n2udsfstruct->pcs_amfuengapid);
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfn1n2udsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
    if (ran_ue)
    {
@@ -691,7 +691,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       return NULL;
    }
 
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfn1n2udsfstruct->pcs_pdusessionid);
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
 
@@ -791,7 +791,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;
 
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
    if (ran_ue)
    {
@@ -802,7 +802,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       return NULL;
    }
     
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
@@ -874,7 +874,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 {
    struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsfstruct = pcs_amfupdaterspudsf;
    
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id(pcs_amfupdaterspudsfstruct->pcs_amfuengapid);
+   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterspudsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
    if (ran_ue)
    {
@@ -885,7 +885,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       return NULL;
    }
 
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
+   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
    uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
