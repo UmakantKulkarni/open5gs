@@ -139,7 +139,7 @@ static void upf_main(void *data)
         {
             PCS_MONGO_POOL = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
-            //upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
+            upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
         }
 
         /*

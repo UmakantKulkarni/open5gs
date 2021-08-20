@@ -145,7 +145,7 @@ static void amf_main(void *data)
         {
             PCS_MONGO_POOL = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
-            //amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
+            amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
         }
 
         /*
