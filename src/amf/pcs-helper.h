@@ -23,7 +23,6 @@ extern "C"
         long *pcs_pdusessionid;
         ogs_pkbuf_t *n1buf;
         ogs_pkbuf_t *n2buf;
-        uint8_t *pdu_session_id;
     };
 
     struct pcs_amf_update_req_udsf_s
