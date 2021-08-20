@@ -137,9 +137,9 @@ static void upf_main(void *data)
 
         if (!upf_sm.pcs_fsmdata.pcs_blockingapienabled)
         {
-            mongoc_client_pool_t *pcs_mongopool = mongoc_client_pool_new (uri);
-            mongoc_client_pool_max_size(pcs_mongopool, 999999999);
-            //upf_sm.pcs_fsmdata.pcs_mongopool = pcs_mongopool;
+            PCS_MONGO_POOL = mongoc_client_pool_new (uri);
+            mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
+            //upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
         }
 
         /*
