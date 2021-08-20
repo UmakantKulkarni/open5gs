@@ -640,9 +640,8 @@ void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       int pcs_rv;
       pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
       pcs_n4createdata.pcs_smfnodeip = ogs_ipv4_to_string(sess->pfcp_node->addr.sin.sin_addr.s_addr);
-      pcs_n4createdata.cause_value = (uint8_t)pcs_upfcreateudsfstruct->cause_value;
 
-      asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+      asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %ld, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, (long)pcs_upfcreateudsfstruct->cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
 
       bson_error_t error;
       bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
@@ -694,6 +693,7 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    {
       char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
       uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+      uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
       mongoc_collection_t *pcs_dbcollection;
       mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
       if (pcs_mongoclient == NULL)
@@ -770,9 +770,9 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
             }
             pcs_fars = pcs_combine_strings(pcs_fars, pcs_squarebrace);
 
-            if (!pcs_fsmdata->pcs_isproceduralstateless)
+            if (!pcs_isproceduralstateless)
             {
-               if (pcs_fsmdata->pcs_updateapienabledmodify)
+               if (pcs_updateapienabledmodify)
                {
                   bson_error_t error;
                   bson_t *bson_doc_ary = bson_new_from_json((const uint8_t *)pcs_fars, -1, &error);
