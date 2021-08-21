@@ -606,6 +606,7 @@ struct pcs_upf_n4_create pcs_get_upf_n4_create_data(upf_sess_t *sess)
 void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 {
    struct pcs_upf_create_udsf_s *pcs_upfcreateudsfstruct = pcs_upfcreateudsf;
+   char *pcs_dbrdata = pcs_upfcreateudsfstruct->pcs_dbrdata;
    upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfcreateudsfstruct->pcs_upfn4seid);
 
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
@@ -623,16 +624,8 @@ void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 
    struct pcs_upf_n4_create pcs_n4createdata;
    pcs_n4createdata.pcs_smfn4seid = sess->smf_n4_seid;
-   char *pcs_upfdbid, *pcs_dbrdata;
+   char *pcs_upfdbid;
    asprintf(&pcs_upfdbid, "%ld", pcs_n4createdata.pcs_smfn4seid);
-   if (strcmp(pcs_dbcollectioname, "upf") == 0)
-   {
-      pcs_dbrdata = read_data_from_db(pcs_dbcollection, "_id", pcs_upfdbid, -1);
-   }
-   else
-   {
-      pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, pcs_n4createdata.pcs_smfn4seid);
-   }
 
    if (strlen(pcs_dbrdata) <= 19 && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") == 0)
    {
@@ -641,7 +634,7 @@ void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
       pcs_n4createdata.pcs_smfnodeip = ogs_ipv4_to_string(sess->pfcp_node->addr.sin.sin_addr.s_addr);
 
-      asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %ld, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, (long)pcs_upfcreateudsfstruct->cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+      asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, 1, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
 
       bson_error_t error;
       bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
@@ -677,6 +670,7 @@ void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
 {
    struct pcs_upf_create_udsf_s *pcs_upfupdateudsfstruct = pcs_upfupdateudsf;
+   char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
    upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfupdateudsfstruct->pcs_upfn4seid);
 
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
@@ -694,19 +688,11 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    }
 
    uint64_t pcs_smfn4seid = sess->smf_n4_seid;
-   char *pcs_upfdbid, *pcs_dbrdata;
+   char *pcs_upfdbid;
    double pcs_pfcpestdone = 0;
    asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
    if (!pcs_isproceduralstateless)
    {
-      if (strcmp(pcs_dbcollectioname, "upf") == 0)
-      {
-         pcs_dbrdata = read_data_from_db(pcs_dbcollection, "_id", pcs_upfdbid, -1);
-      }
-      else
-      {
-         pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid);
-      }
       JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
       if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
       {

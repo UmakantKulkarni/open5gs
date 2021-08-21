@@ -603,6 +603,7 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
 void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 {
    struct pcs_amf_create_udsf_s *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
+   char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
 
    ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfcreateudsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
@@ -639,7 +640,6 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       return NULL;
    }
    pcs_imsistr += 5;
-   char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
    if (strlen(pcs_dbrdata) <= 29 && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") == 0)
    {
       struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
@@ -680,6 +680,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
+   char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
 
    ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfn1n2udsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
@@ -718,7 +719,6 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       return NULL;
    }
    pcs_imsistr += 5;
-   char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
    if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
    {
@@ -792,6 +792,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
 {
    struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;
+   char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
 
    ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
@@ -837,7 +838,6 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       pcs_imsistr += 5;
       if (!pcs_isproceduralstateless)
       {
-         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
          sess->pcs.pcs_dbrdata = pcs_dbrdata;
          JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
          if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)

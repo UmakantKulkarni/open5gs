@@ -13,13 +13,14 @@ extern "C"
     {
         mongoc_collection_t *pcs_dbcollection;
         uint64_t *pcs_upfn4seid;
-        uint64_t *cause_value;
+        char *pcs_dbrdata;
     };
 
     struct pcs_upf_update_udsf_s
     {
         mongoc_collection_t *pcs_dbcollection;
         uint64_t *pcs_upfn4seid;
+        char *pcs_dbrdata;
     };
 
     int pcs_set_int_from_env(const char *pcs_env_var);

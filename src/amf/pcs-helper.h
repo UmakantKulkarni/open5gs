@@ -14,6 +14,7 @@ extern "C"
         uint64_t *pcs_amfuengapid;
         long *pcs_pdusessionid;
         mongoc_collection_t *pcs_dbcollection;
+        char *pcs_dbrdata;
     };
 
     struct pcs_amf_n1n2_udsf_s
@@ -23,6 +24,7 @@ extern "C"
         long *pcs_pdusessionid;
         ogs_pkbuf_t *n1buf;
         ogs_pkbuf_t *n2buf;
+        char *pcs_dbrdata;
     };
 
     struct pcs_amf_update_req_udsf_s
@@ -31,6 +33,7 @@ extern "C"
         long *pcs_pdusessionid;
         mongoc_collection_t *pcs_dbcollection;
         ogs_pkbuf_t *n2smbuf;
+        char *pcs_dbrdata;
     };
 
     struct pcs_amf_update_rsp_udsf_s

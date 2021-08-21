@@ -45,11 +45,14 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             sess->pcs.pcs_udsfn1n2done = 0;
             sess->pcs.pcs_udsfupdatereqdone = 0;
             sess->pcs.pcs_udsfupdaterspdone = 0;
+            char *pcs_imsistr = sess->amf_ue->supi;
+            pcs_imsistr += 5;
             pthread_t pcs_thread1;
             struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
             pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_amfcreateudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
             (*pcs_amfcreateudsf).pcs_pdusessionid = (long *) (long)sess->psi;
+            pcs_amfcreateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
             //pcs_amf_create_udsf(pcs_amfcreateudsf);
             pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
             ogs_info("PCS Started Create UDSF thread");
