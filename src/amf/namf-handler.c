@@ -91,6 +91,19 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         return OGS_ERROR;
     }
 
+    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2)
+    {
+        int pcs_loop = 0;
+        while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
+            usleep(50);
+            pcs_loop = pcs_loop + 1;
+            if (sess->pcs.pcs_udsfcreatedone)
+            {
+                ogs_info("PCS Finally create is done %d", pcs_loop);
+            }
+        }
+    }
+
     n1MessageContainer = N1N2MessageTransferReqData->n1_message_container;
     if (n1MessageContainer) {
         n1MessageContent = n1MessageContainer->n1_message_content;
@@ -374,6 +387,28 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_assert_if_reached();
     }
 
+    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2)
+    {
+        if (sess->pcs.pcs_udsfcreatedone)
+        {
+            pthread_t pcs_thread1;
+            struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
+            pcs_amfn1n2udsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            (*pcs_amfn1n2udsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+            (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
+            pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
+            pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
+            //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
+            pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
+            ogs_info("PCS Started N1-N2 UDSF thread");    
+        }
+        else
+        {
+            ogs_error("pcs_udsfcreatedone thread is not complete");
+            sess->pcs.pcs_udsfn1n2done = 0;
+        }
+    }
+
     response = ogs_sbi_build_response(&sendmsg, status);
     ogs_assert(response);
     ogs_assert(true == ogs_sbi_server_send_response(stream, response));
@@ -392,7 +427,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabled)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         double pcs_createdone = 0;
@@ -461,18 +496,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
         json_value_free(pcs_dbrdatajsonval);
         bson_free(pcs_dbrdata);
-    }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabled)
-    {
-        pthread_t pcs_thread1;
-        struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
-        pcs_amfn1n2udsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        (*pcs_amfn1n2udsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-        (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
-        pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
-        pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
-        //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
-        pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);        
     }
     else
     {

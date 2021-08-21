@@ -39,6 +39,22 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         ogs_sbi_message_t message;
         ogs_sbi_header_t header;
 
+        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate)
+        {
+            sess->pcs.pcs_udsfcreatedone = 0;
+            sess->pcs.pcs_udsfn1n2done = 0;
+            sess->pcs.pcs_udsfupdatereqdone = 0;
+            sess->pcs.pcs_udsfupdaterspdone = 0;
+            pthread_t pcs_thread1;
+            struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
+            pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            (*pcs_amfcreateudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+            (*pcs_amfcreateudsf).pcs_pdusessionid = (long *) (long)sess->psi;
+            //pcs_amf_create_udsf(pcs_amfcreateudsf);
+            pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
+            ogs_info("PCS Started Create UDSF thread");
+        }
+
         if (!recvmsg->http.location) {
             ogs_error("[%d:%d] No http.location", sess->psi, sess->pti);
             ogs_assert(OGS_OK ==
@@ -159,7 +175,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabled)
+    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_imsistr = sess->amf_ue->supi;
@@ -209,20 +225,6 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabled && sess->amf_ue->supi)
-    {
-        sess->pcs.pcs_udsfcreatedone = 0;
-        sess->pcs.pcs_udsfn1n2done = 0;
-        sess->pcs.pcs_udsfupdatereqdone = 0;
-        sess->pcs.pcs_udsfupdaterspdone = 0;
-        pthread_t pcs_thread1;
-        struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
-        pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        (*pcs_amfcreateudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-        (*pcs_amfcreateudsf).pcs_pdusessionid = (long *) (long)sess->psi;
-        //pcs_amf_create_udsf(pcs_amfcreateudsf);
-        pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
-    }
     else
     {
         ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
@@ -242,6 +244,35 @@ int amf_nsmf_pdusession_handle_update_sm_context(
 
     if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT ||
         recvmsg->res_status == OGS_SBI_HTTP_STATUS_OK) {
+
+        if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+        {
+            int pcs_loop = 0;
+            while(sess->pcs.pcs_udsfupdatereqdone == 0 && pcs_loop < 10000) {
+                usleep(50);
+                pcs_loop = pcs_loop + 1;
+                if (sess->pcs.pcs_udsfupdatereqdone)
+                {
+                    ogs_info("PCS Finally updatereq is done %d", pcs_loop);
+                }
+            }
+            if (sess->pcs.pcs_udsfupdatereqdone)
+            {
+                pthread_t pcs_thread1;
+                struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
+                pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+                (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
+                //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
+                pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
+                ogs_info("PCS Started Update-Rsp UDSF thread");
+            }
+            else
+            {
+                ogs_error("pcs_udsfupdatereqdone thread is not complete");
+                sess->pcs.pcs_udsfupdaterspdone = 0;
+            }
+        }
 
         OpenAPI_sm_context_updated_data_t *SmContextUpdatedData = NULL;
         OpenAPI_ref_to_binary_data_t *n1SmMsg = NULL;
@@ -724,7 +755,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && pcs_fsmdata->pcs_blockingapienabled)
+    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
     {
         mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         char *pcs_imsistr = sess->amf_ue->supi;
@@ -782,16 +813,6 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         {
             ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
-    }
-    else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabled)
-    {
-        pthread_t pcs_thread1;
-        struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
-        pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-        (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
-        //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
-        pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
     {

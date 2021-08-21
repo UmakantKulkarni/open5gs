@@ -110,7 +110,10 @@ static void amf_main(void *data)
     amf_sm.pcs_fsmdata.pcs_updateapienabledcreate = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_CREATE");
     amf_sm.pcs_fsmdata.pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
     amf_sm.pcs_fsmdata.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
-    amf_sm.pcs_fsmdata.pcs_blockingapienabled = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED");
+    amf_sm.pcs_fsmdata.pcs_blockingapienabledcreate = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
+    amf_sm.pcs_fsmdata.pcs_blockingapienabledn1n2 = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_N1N2");
+    amf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyreq = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYREQ");
+    amf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYRSP");
     amf_sm.pcs_fsmdata.pcs_isfullystateless = pcs_set_int_from_env("PCS_IS_TRANSACTIONAL_STATELESS");
     amf_sm.pcs_fsmdata.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
     amf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
@@ -141,7 +144,7 @@ static void amf_main(void *data)
             ogs_error("PCS failed to parse URI: %s. Error message is: %s ", uri_string, error.message);
         }
 
-        if (!amf_sm.pcs_fsmdata.pcs_blockingapienabled)
+        if (!amf_sm.pcs_fsmdata.pcs_blockingapienabledcreate || !amf_sm.pcs_fsmdata.pcs_blockingapienabledn1n2 || !amf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyreq || !amf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp)
         {
             PCS_MONGO_POOL = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);

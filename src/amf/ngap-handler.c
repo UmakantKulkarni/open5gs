@@ -1556,6 +1556,19 @@ void ngap_handle_pdu_session_resource_setup_response(
             return;
         }
 
+        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledmodifyreq)
+        {
+            int pcs_loop = 0;
+            while(sess->pcs.pcs_udsfn1n2done == 0 && pcs_loop < 10000) {
+                usleep(50);
+                pcs_loop = pcs_loop + 1;
+                if (sess->pcs.pcs_udsfn1n2done)
+                {
+                    ogs_info("PCS Finally n1n2 is done %d", pcs_loop);
+                }
+            }
+        }
+
         if (!SESSION_CONTEXT_IN_SMF(sess)) {
             ogs_error("Session Context is not in SMF [%d]",
                     (int)PDUSessionItem->pDUSessionID);
@@ -1572,57 +1585,9 @@ void ngap_handle_pdu_session_resource_setup_response(
         param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
         ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
 
-        ogs_assert(true ==
-            amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
-                sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
-                amf_nsmf_pdusession_build_update_sm_context));
-
-        if (pcs_fsmdata->pcs_dbcommenabled) 
+        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledmodifyreq)
         {
-            if (pcs_fsmdata->pcs_blockingapienabled)
-            {
-                double pcs_n1n2done = 0;
-                if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
-                {
-                    pcs_n1n2done = sess->pcs.pcs_n1n2done;
-                }
-                else if (!pcs_fsmdata->pcs_isproceduralstateless)
-                {
-                    mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-                    char *pcs_imsistr = sess->amf_ue->supi;
-                    pcs_imsistr += 5;
-                    if (!pcs_fsmdata->pcs_isproceduralstateless)
-                    {
-                        char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-                        sess->pcs.pcs_dbrdata = pcs_dbrdata;
-                        JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
-                        if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
-                        {
-                            JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
-                            pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
-                        }
-                        json_value_free(pcs_dbrdatajsonval);
-                    }
-                }
-                
-                if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
-                {
-                    if ((int)pcs_n1n2done)
-                    {
-                        struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
-                        sess->pcs.pcs_updatedata = pcs_updatedata;
-                    }
-                    else
-                    {
-                        ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
-                    }
-                }
-                else
-                {
-                    ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
-                }
-            }
-            else if (!pcs_fsmdata->pcs_blockingapienabled)
+            if (sess->pcs.pcs_udsfn1n2done)
             {
                 pthread_t pcs_thread1;
                 struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
@@ -1632,6 +1597,61 @@ void ngap_handle_pdu_session_resource_setup_response(
                 pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
                 //pcs_amf_update_req_udsf(pcs_amfupdaterequdsf);
                 pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                ogs_info("PCS Started Update-Req UDSF thread");
+            }
+            else
+            {
+                ogs_error("pcs_udsfn1n2edone thread is not complete");
+                sess->pcs.pcs_udsfupdatereqdone = 0;
+            }
+        }
+
+        ogs_assert(true ==
+            amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
+                sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
+                amf_nsmf_pdusession_build_update_sm_context));
+
+        if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
+        {
+            double pcs_n1n2done = 0;
+            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+            {
+                pcs_n1n2done = sess->pcs.pcs_n1n2done;
+            }
+            else if (!pcs_fsmdata->pcs_isproceduralstateless)
+            {
+                mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                char *pcs_imsistr = sess->amf_ue->supi;
+                pcs_imsistr += 5;
+                if (!pcs_fsmdata->pcs_isproceduralstateless)
+                {
+                    char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+                    sess->pcs.pcs_dbrdata = pcs_dbrdata;
+                    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+                    if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+                    {
+                        JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+                        pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+                    }
+                    json_value_free(pcs_dbrdatajsonval);
+                }
+            }
+            
+            if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+            {
+                if ((int)pcs_n1n2done)
+                {
+                    struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
+                    sess->pcs.pcs_updatedata = pcs_updatedata;
+                }
+                else
+                {
+                    ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+                }
+            }
+            else
+            {
+                ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
             }
         }
         ogs_pkbuf_free(param.n2smbuf);

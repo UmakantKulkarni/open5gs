@@ -13,7 +13,7 @@ extern "C"
     {
         mongoc_collection_t *pcs_dbcollection;
         uint64_t *pcs_upfn4seid;
-        uint8_t *cause_value;
+        uint64_t *cause_value;
     };
 
     struct pcs_upf_update_udsf_s

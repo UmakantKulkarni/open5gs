@@ -49,7 +49,10 @@ typedef struct _pcs_fsm_struct_t {
     uint8_t pcs_updateapienabledcreate;
     uint8_t pcs_updateapienabledn1n2;
     uint8_t pcs_updateapienabledmodify;
-    uint8_t pcs_blockingapienabled;
+    uint8_t pcs_blockingapienabledcreate;
+    uint8_t pcs_blockingapienabledn1n2;
+    uint8_t pcs_blockingapienabledmodifyreq;
+    uint8_t pcs_blockingapienabledmodifyrsp;
     uint8_t pcs_isfullystateless;
     uint8_t pcs_isproceduralstateless;
     char *pcs_dbcollectioname;
