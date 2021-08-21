@@ -649,12 +649,12 @@ void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
          ogs_info("PCS Successfully inserted N4 Session Establishment data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
       }
 
-      ogs_free(pcs_n4createdata.pcs_upfnodeip);
+      /*ogs_free(pcs_n4createdata.pcs_upfnodeip);
       ogs_free(pcs_n4createdata.pcs_smfnodeip);
       free(pcs_upfdbid);
       free(pcs_n4createdata.pcs_pdrs);
       free(pcs_n4createdata.pcs_fars);
-      free(pcs_docjson);
+      free(pcs_docjson);*/
    }
    else if (!pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") != 0)
    {
@@ -699,7 +699,7 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
          JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
          pcs_pfcpestdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-pfcp-est-done");
       }
-      json_value_free(pcs_dbrdatajsonval);
+      //json_value_free(pcs_dbrdatajsonval);
    }
 
    if (strcmp(pcs_dbcollectioname, "upf") == 0)
@@ -772,7 +772,7 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
             ogs_info("PCS Successfully inserted N4 Session Modification data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
          }
 
-         free(pcs_var);
+         /*free(pcs_var);
          free(pcs_upfdbid);
          free(pcs_pfcpie);
          free(pcs_fars);
@@ -780,7 +780,7 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
          if (!pcs_isproceduralstateless)
          {
             bson_free(pcs_dbrdata);
-         }
+         }*/
       }
       else
       {

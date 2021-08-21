@@ -650,11 +650,11 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       bson_error_t error;
       bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
       pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
-      ogs_free(pcs_createdata.pcs_snssaisd);
+      /*ogs_free(pcs_createdata.pcs_snssaisd);
       ogs_free(pcs_createdata.pcs_amfueamfid);
       ogs_free(pcs_createdata.pcs_amfuetac);
       free(pcs_createdata.pcs_amfueplmnid);
-      free(pcs_docjson);
+      free(pcs_docjson);*/
       if (pcs_rv != OGS_OK)
       {
          ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
@@ -739,9 +739,9 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
             bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-session-id", BCON_INT64((long)pcs_amfn1n2udsfstruct->pcs_pdusessionid), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress), "dnn", BCON_UTF8(pcs_n1n2data.pcs_dnn), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
             pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
-            bson_destroy(bson_doc_nas_qos_rule);
+            /*bson_destroy(bson_doc_nas_qos_rule);
             bson_destroy(bson_doc_nas_qos_flow);
-            bson_destroy(bson_doc_nas_epco);
+            bson_destroy(bson_doc_nas_epco);*/
          }
          else
          {
@@ -759,9 +759,9 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
             ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
          }
 
-         free(pcs_n1n2data.pcs_nasqosrulestr);
+         /*free(pcs_n1n2data.pcs_nasqosrulestr);
          free(pcs_n1n2data.pcs_nasqosflowstr);
-         free(pcs_n1n2data.pcs_nasepcostr);
+         free(pcs_n1n2data.pcs_nasepcostr);*/
 
          /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
             ogs_free(pcs_n1n2data.pcs_pduaddress);
@@ -780,8 +780,8 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    }
    mongoc_collection_destroy(pcs_dbcollection);
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
-   json_value_free(pcs_dbrdatajsonval);
-   bson_free(pcs_dbrdata);
+   /*json_value_free(pcs_dbrdatajsonval);
+   bson_free(pcs_dbrdata);*/
    sess->pcs.pcs_udsfn1n2done = 1;
    
    return NULL;
@@ -845,7 +845,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
             JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
             pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
          }
-         json_value_free(pcs_dbrdatajsonval);
+         //json_value_free(pcs_dbrdatajsonval);
       }
       mongoc_collection_destroy(pcs_dbcollection);
       mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
@@ -925,19 +925,19 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
       pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
       sess->pcs.pcs_updatedone = 1;
-      ogs_free(pcs_createdata.pcs_snssaisd);
+      /*ogs_free(pcs_createdata.pcs_snssaisd);
       ogs_free(pcs_createdata.pcs_amfueamfid);
       ogs_free(pcs_createdata.pcs_amfuetac);
       free(pcs_createdata.pcs_amfueplmnid);
       free(pcs_n1n2data.pcs_nasqosrulestr);
       free(pcs_n1n2data.pcs_nasqosflowstr);
-      free(pcs_n1n2data.pcs_nasepcostr);
+      free(pcs_n1n2data.pcs_nasepcostr);*/
       /* ogs_free(pcs_n1n2data.pcs_upfn3ip);
       ogs_free(pcs_n1n2data.pcs_pduaddress);
       ogs_free(pcs_n1n2data.pcs_ie);
       ogs_free(pcs_n1n2data.pcs_gtptunnel);
       ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
-      free(pcs_docjson);
+      //free(pcs_docjson);
    }
    else
    {
@@ -954,7 +954,7 @@ void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
 
          pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
-         bson_free(pcs_dbrdata);
+         //bson_free(pcs_dbrdata);
       }
    }
    mongoc_collection_destroy(pcs_dbcollection);
