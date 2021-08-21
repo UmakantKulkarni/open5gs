@@ -1560,7 +1560,7 @@ void ngap_handle_pdu_session_resource_setup_response(
         {
             int pcs_loop = 0;
             while(sess->pcs.pcs_udsfn1n2done == 0 && pcs_loop < 10000) {
-                usleep(50);
+                usleep(5);
                 pcs_loop = pcs_loop + 1;
                 if (sess->pcs.pcs_udsfn1n2done)
                 {

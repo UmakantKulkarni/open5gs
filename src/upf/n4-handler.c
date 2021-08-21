@@ -303,7 +303,7 @@ void upf_n4_handle_session_modification_request(
     {
         int pcs_loop = 0;
         while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
-            usleep(50);
+            usleep(5);
             pcs_loop = pcs_loop + 1;
             if (sess->pcs.pcs_udsfcreatedone)
             {
