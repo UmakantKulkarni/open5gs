@@ -249,7 +249,7 @@ void upf_n4_handle_session_establishment_request(
             ogs_error("PCS UE Context for UE [%ld] is already present in DB", sess->smf_n4_seid);
         }
     }
-    else
+    else if (!pcs_fsmdata->pcs_dbcommenabled)
     {
         ogs_info("PCS Successfully completed N4 Session Establishment transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }

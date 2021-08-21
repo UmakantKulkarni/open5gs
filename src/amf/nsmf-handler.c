@@ -202,6 +202,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             }
             else
             {
+                sess->pcs.pcs_udsfcreatedone = 1;
                 ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
             }
         }
@@ -811,6 +812,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         }
         else
         {
+            sess->pcs.pcs_udsfupdaterspdone = 1;
             ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
         }
     }
@@ -818,7 +820,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
+    else if (!pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
     }

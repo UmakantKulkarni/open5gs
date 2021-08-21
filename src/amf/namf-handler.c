@@ -472,6 +472,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
                 }
                 else
                 {
+                    sess->pcs.pcs_udsfn1n2done = 1;
                     ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
                 }
 
@@ -497,7 +498,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         json_value_free(pcs_dbrdatajsonval);
         bson_free(pcs_dbrdata);
     }
-    else
+    else if (!pcs_fsmdata->pcs_dbcommenabled)
     {
         ogs_info("PCS Successfully completed n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
     }

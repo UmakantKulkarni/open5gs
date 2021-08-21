@@ -1643,6 +1643,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 {
                     struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
                     sess->pcs.pcs_updatedata = pcs_updatedata;
+                    sess->pcs.pcs_udsfupdatereqdone = 1;
                 }
                 else
                 {
