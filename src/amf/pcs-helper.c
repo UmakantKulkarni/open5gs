@@ -680,7 +680,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
-   char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
+   char *pcs_dbrdata = pcs_amfn1n2udsfstruct->pcs_dbrdata;
 
    ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfn1n2udsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
@@ -792,7 +792,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
 {
    struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;
-   char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
+   char *pcs_dbrdata = pcs_amfupdaterequdsfstruct->pcs_dbrdata;
 
    ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
    amf_ue_t *amf_ue;
