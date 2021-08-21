@@ -1556,7 +1556,7 @@ void ngap_handle_pdu_session_resource_setup_response(
             return;
         }
 
-        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledmodifyreq)
+        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledn1n2 && !pcs_fsmdata->pcs_blockingapienabledmodifyreq)
         {
             int pcs_loop = 0;
             while(sess->pcs.pcs_udsfn1n2done == 0 && pcs_loop < 10000) {

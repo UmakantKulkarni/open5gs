@@ -249,7 +249,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT ||
         recvmsg->res_status == OGS_SBI_HTTP_STATUS_OK) {
 
-        if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+        if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && !pcs_fsmdata->pcs_blockingapienabledmodifyreq && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
         {
             int pcs_loop = 0;
             while(sess->pcs.pcs_udsfupdatereqdone == 0 && pcs_loop < 10000) {
