@@ -777,10 +777,6 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
          free(pcs_pfcpie);
          free(pcs_fars);
 
-         if (!pcs_isproceduralstateless)
-         {
-            bson_free(pcs_dbrdata);
-         }
       }
       else
       {
