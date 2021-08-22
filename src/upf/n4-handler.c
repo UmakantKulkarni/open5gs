@@ -300,7 +300,7 @@ void upf_n4_handle_session_modification_request(
         return;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledmodifyreq && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
     {
         int pcs_loop = 0;
         while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
@@ -487,35 +487,6 @@ void upf_n4_handle_session_modification_request(
         }
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
-    {
-        if (sess->pcs.pcs_udsfcreatedone)
-        {
-            char *pcs_upfdbid;
-            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
-            pthread_t pcs_thread1;
-            struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
-            pcs_upfupdateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
-            if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
-            {
-                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "_id", pcs_upfdbid, -1));
-            }
-            else
-            {
-                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid));
-            }
-            //pcs_upf_update_udsf(pcs_upfupdateudsf);
-            pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
-            ogs_info("PCS Started Update UDSF thread");
-        }
-        else
-        {
-            ogs_error("pcs_udsfcreatedone thread is not complete");
-            sess->pcs.pcs_udsfupdatedone = 0;
-        }
-    }
-
     ogs_assert(OGS_OK ==
         upf_pfcp_send_session_modification_response(
             xact, sess, created_pdr, num_of_created_pdr));
@@ -663,6 +634,34 @@ void upf_n4_handle_session_modification_request(
         else
         {
             ogs_info("PCS Successfully completed N4 Session Modification transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+        }
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+    {
+        if (sess->pcs.pcs_udsfcreatedone)
+        {
+            char *pcs_upfdbid;
+            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
+            pthread_t pcs_thread1;
+            struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
+            pcs_upfupdateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
+            if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+            {
+                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "_id", pcs_upfdbid, -1));
+            }
+            else
+            {
+                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid));
+            }
+            //pcs_upf_update_udsf(pcs_upfupdateudsf);
+            pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
+            ogs_info("PCS Started Update UDSF thread");
+        }
+        else
+        {
+            ogs_error("pcs_udsfcreatedone thread is not complete");
+            sess->pcs.pcs_udsfupdatedone = 0;
         }
     }
     else if (!pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence)
