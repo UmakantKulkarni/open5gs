@@ -300,7 +300,7 @@ void upf_n4_handle_session_modification_request(
         return;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledcreate)
     {
         int pcs_loop = 0;
         while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
