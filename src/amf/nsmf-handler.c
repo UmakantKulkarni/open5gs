@@ -229,7 +229,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
     }
-    else
+    else if (!pcs_fsmdata->pcs_dbcommenabled)
     {
         ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
     }
@@ -265,7 +265,16 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             }
             if (!pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
             {
-                if (sess->pcs.pcs_udsfupdatereqdone)
+                int pcs_flag = 0;
+                if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
+                {
+                    pcs_flag = sess->pcs.pcs_udsfupdatereqdone;
+                }
+                else
+                {
+                    pcs_flag = 1;
+                }
+                if (pcs_flag)
                 {
                     pthread_t pcs_thread1;
                     struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
