@@ -878,13 +878,15 @@ static bool compare_ue_info(ogs_pfcp_node_t *node, smf_sess_t *sess)
         if (ogs_strcasecmp(node->dnn[i], sess->session.name) == 0) return true;
 
     for (i = 0; i < node->num_of_e_cell_id; i++)
-        if (node->e_cell_id[i] == sess->e_cgi.cell_id) return true;
+        if (sess->gtp_rat_type == OGS_GTP_RAT_TYPE_EUTRAN &&
+                node->e_cell_id[i] == sess->e_cgi.cell_id) return true;
 
     for (i = 0; i < node->num_of_nr_cell_id; i++)
         if (node->nr_cell_id[i] == sess->nr_cgi.cell_id) return true;
 
     for (i = 0; i < node->num_of_tac; i++)
-        if ((node->tac[i] == sess->e_tai.tac) ||
+        if ((sess->gtp_rat_type == OGS_GTP_RAT_TYPE_EUTRAN &&
+                node->tac[i] == sess->e_tai.tac) ||
             (node->tac[i] == sess->nr_tai.tac.v)) return true;
 
     return false;
@@ -1039,8 +1041,8 @@ smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_stru
         return NULL;
     }
 
-    ogs_fqdn_parse(apn,
-            req->access_point_name.data, req->access_point_name.len);
+    ogs_assert(0 < ogs_fqdn_parse(apn, req->access_point_name.data,
+            ogs_min(req->access_point_name.len, OGS_MAX_APN_LEN+1)));
 
     ogs_trace("smf_sess_add_by_message() [APN:%s]", apn);
 
@@ -1601,6 +1603,7 @@ smf_bearer_t *smf_qos_flow_add(smf_sess_t *sess)
     ogs_pfcp_pdr_t *ul_pdr = NULL;
     ogs_pfcp_far_t *dl_far = NULL;
     ogs_pfcp_far_t *ul_far = NULL;
+    ogs_pfcp_urr_t *urr = NULL;
     ogs_pfcp_qer_t *qer = NULL;
 
     ogs_assert(sess);
@@ -1617,6 +1620,7 @@ smf_bearer_t *smf_qos_flow_add(smf_sess_t *sess)
 
     ogs_list_init(&qos_flow->pf_list);
 
+    /* PDR */
     dl_pdr = ogs_pfcp_pdr_add(&sess->pfcp);
     ogs_assert(dl_pdr);
     qos_flow->dl_pdr = dl_pdr;
@@ -1639,7 +1643,7 @@ smf_bearer_t *smf_qos_flow_add(smf_sess_t *sess)
         ogs_assert(ul_pdr->apn);
     }
 
-    ul_pdr->outer_header_removal_len = 1;
+    ul_pdr->outer_header_removal_len = 2;
     if (sess->session.session_type == OGS_PDU_SESSION_TYPE_IPV4) {
         ul_pdr->outer_header_removal.description =
             OGS_PFCP_OUTER_HEADER_REMOVAL_GTPU_UDP_IPV4;
@@ -1651,7 +1655,10 @@ smf_bearer_t *smf_qos_flow_add(smf_sess_t *sess)
             OGS_PFCP_OUTER_HEADER_REMOVAL_GTPU_UDP_IP;
     } else
         ogs_assert_if_reached();
+    ul_pdr->outer_header_removal.gtpu_extheader_deletion =
+        OGS_PFCP_PDU_SESSION_CONTAINER_TO_BE_DELETED;
 
+    /* FAR */
     dl_far = ogs_pfcp_far_add(&sess->pfcp);
     ogs_assert(dl_far);
     qos_flow->dl_far = dl_far;
@@ -1672,6 +1679,19 @@ smf_bearer_t *smf_qos_flow_add(smf_sess_t *sess)
 
     ul_far->apply_action = OGS_PFCP_APPLY_ACTION_FORW;
 
+    /* URR */
+    urr = ogs_pfcp_urr_add(&sess->pfcp);
+    ogs_assert(urr);
+    qos_flow->urr = urr;
+
+    urr->meas_method = OGS_PFCP_MEASUREMENT_METHOD_VOLUME;
+    urr->rep_triggers.volume_threshold = 1;
+    urr->vol_threshold.tovol = 1;
+    urr->vol_threshold.total_volume = 1024*1024*100;
+
+    ogs_pfcp_pdr_associate_urr(dl_pdr, urr);
+
+    /* QER */
     qer = ogs_pfcp_qer_add(&sess->pfcp);
     ogs_assert(qer);
     qos_flow->qer = qer;
@@ -1950,6 +1970,7 @@ smf_bearer_t *smf_bearer_add(smf_sess_t *sess)
 
     ogs_list_init(&bearer->pf_list);
 
+    /* PDR */
     dl_pdr = ogs_pfcp_pdr_add(&sess->pfcp);
     ogs_assert(dl_pdr);
     bearer->dl_pdr = dl_pdr;
@@ -1983,6 +2004,7 @@ smf_bearer_t *smf_bearer_add(smf_sess_t *sess)
     } else
         ogs_assert_if_reached();
 
+    /* FAR */
     dl_far = ogs_pfcp_far_add(&sess->pfcp);
     ogs_assert(dl_far);
     bearer->dl_far = dl_far;
@@ -2025,6 +2047,8 @@ int smf_bearer_remove(smf_bearer_t *bearer)
     ogs_pfcp_far_remove(bearer->dl_far);
     ogs_assert(bearer->ul_far);
     ogs_pfcp_far_remove(bearer->ul_far);
+    if (bearer->urr)
+        ogs_pfcp_urr_remove(bearer->urr);
     if (bearer->qer)
         ogs_pfcp_qer_remove(bearer->qer);
 

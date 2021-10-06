@@ -286,7 +286,7 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
             break;
 
         case OGS_NAS_5GS_PDU_SESSION_RELEASE_REQUEST:
-            {
+            if (sess->policy_association_id) {
                 smf_npcf_smpolicycontrol_param_t param;
 
                 memset(&param, 0, sizeof(param));
@@ -301,6 +301,10 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
                     smf_sbi_discover_and_send(OpenAPI_nf_type_PCF, sess, stream,
                         OGS_PFCP_DELETE_TRIGGER_UE_REQUESTED, &param,
                         smf_npcf_smpolicycontrol_build_delete));
+            } else {
+                ogs_error("[%s:%d] No PolicyAssociationId",
+                        smf_ue->supi, sess->psi);
+                OGS_FSM_TRAN(s, smf_gsm_state_exception);
             }
             break;
 
@@ -371,9 +375,6 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
 
         case OpenAPI_n2_sm_info_type_PDU_RES_REL_RSP:
             ngap_state = sess->ngap_state.pdu_session_resource_release;
-
-            /* Clear NGAP State */
-            sess->ngap_state.pdu_session_resource_release = SMF_NGAP_STATE_NONE;
 
             if (ngap_state == SMF_NGAP_STATE_DELETE_TRIGGER_UE_REQUESTED) {
                 ogs_assert(true == ogs_sbi_send_http_status_no_content(stream));
