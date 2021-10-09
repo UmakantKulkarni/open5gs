@@ -309,10 +309,10 @@ libcore = library('ogscore',
     version : libogslib_version,
     c_args : '-DOGS_CORE_COMPILATION',
     include_directories : [libcore_inc, libinc],
-    dependencies : [threads, librt, libexecinfo, libsocket],
+    dependencies : [threads, librt, libexecinfo, libsocket, libpcs_dep],
     install : true)
 
 libcore_dep = declare_dependency(
     link_with : libcore,
     include_directories : [libcore_inc, libinc],
-    dependencies : [threads, librt, libexecinfo, libsocket])
+    dependencies : [threads, librt, libexecinfo, libsocket, libpcs_dep])

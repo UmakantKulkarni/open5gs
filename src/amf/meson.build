@@ -68,7 +68,8 @@ libmongoc_dep = dependency('libmongoc-1.0')
 
 libamf = static_library('amf',
     sources : libamf_sources,
-    dependencies : [libapp_dep,
+    dependencies : [libpcs_dep,
+                    libapp_dep,
                     libsctp_dep,
                     libngap_dep,
                     libnas_5gs_dep,
@@ -78,7 +79,8 @@ libamf = static_library('amf',
 
 libamf_dep = declare_dependency(
     link_with : libamf,
-    dependencies : [libapp_dep,
+    dependencies : [libpcs_dep,
+                    libapp_dep,
                     libsctp_dep,
                     libngap_dep,
                     libnas_5gs_dep,

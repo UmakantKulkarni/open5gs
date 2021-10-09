@@ -26,6 +26,7 @@
 #include "pcs-helper.h"
 #include "mongoc.h"
 #include <pthread.h>
+#include "pcs-thread-pool.h"
 
 int amf_nsmf_pdusession_handle_create_sm_context(
         amf_sess_t *sess, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
@@ -276,13 +277,15 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                 }
                 if (pcs_flag)
                 {
-                    pthread_t pcs_thread1;
+                    ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
+                    //pthread_t pcs_thread1;
                     struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
                     pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
                     (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
                     (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
                     //pcs_amf_update_rsp_udsf(pcs_amfupdaterspudsf);
-                    pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
+                    //pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
+                    mt_add_job(pcs_threadpool, &pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
                     ogs_info("PCS Started Update-Rsp UDSF thread");
                 }
                 else

@@ -395,7 +395,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
-            pthread_t pcs_thread1;
+            //pthread_t pcs_thread1;
             struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
             pcs_amfn1n2udsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_amfn1n2udsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
