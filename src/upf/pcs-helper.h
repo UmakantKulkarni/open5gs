@@ -37,8 +37,8 @@ extern "C"
     char *decode_nas_qos_flow_hex_to_str(char *pcs_hexipdata);
     char *decode_nas_epco_hex_to_str(char *pcs_hexipdata);
     struct pcs_upf_n4_create pcs_get_upf_n4_create_data(upf_sess_t *sess);
-    void *pcs_upf_create_udsf(void *pcs_upfcreateudsf);
-    void *pcs_upf_update_udsf(void *pcs_upfupdateudsf);
+    void pcs_upf_create_udsf(void *pcs_upfcreateudsf);
+    void pcs_upf_update_udsf(void *pcs_upfupdateudsf);
 
 #ifdef __cplusplus
 }

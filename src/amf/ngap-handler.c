@@ -24,6 +24,7 @@
 #include "pcs-helper.h"
 #include "mongoc.h"
 #include "parson.h"
+#include "pcs-thread-pool.h"
 
 static bool served_tai_is_found(amf_gnb_t *gnb)
 {
@@ -1633,9 +1634,10 @@ void ngap_handle_pdu_session_resource_setup_response(
         {
             if (sess->pcs.pcs_udsfn1n2done)
             {
+                ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
                 char *pcs_imsistr = sess->amf_ue->supi;
                 pcs_imsistr += 5;
-                pthread_t pcs_thread1;
+                //pthread_t pcs_thread1;
                 struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
                 pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
                 (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
@@ -1643,7 +1645,8 @@ void ngap_handle_pdu_session_resource_setup_response(
                 pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
                 pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
                 //pcs_amf_update_req_udsf(pcs_amfupdaterequdsf);
-                pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                mt_add_job(pcs_threadpool, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
                 ogs_info("PCS Started Update-Req UDSF thread");
             }
             else

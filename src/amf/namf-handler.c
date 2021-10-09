@@ -26,7 +26,6 @@
 #include "pcs-helper.h"
 #include "mongoc.h"
 #include "parson.h"
-#include <pthread.h>
 #include "pcs-thread-pool.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(

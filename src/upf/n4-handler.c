@@ -26,7 +26,7 @@
 #include "mongoc.h"
 #include "pcs-helper.h"
 #include "parson.h"
-#include "pthread.h"
+#include "pcs-thread-pool.h"
 
 void upf_n4_handle_session_establishment_request(
         upf_sess_t *sess, ogs_pfcp_xact_t *xact, 
@@ -173,11 +173,12 @@ void upf_n4_handle_session_establishment_request(
 
     if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate && cause_value)
     {
+        ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
         sess->pcs.pcs_udsfcreatedone = 0;
         sess->pcs.pcs_udsfupdatedone = 0;
         char *pcs_upfdbid;
         asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
-        pthread_t pcs_thread1;
+        //pthread_t pcs_thread1;
         struct pcs_upf_create_udsf_s *pcs_upfcreateudsf = malloc(sizeof(struct pcs_upf_create_udsf_s));
         pcs_upfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         (*pcs_upfcreateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
@@ -190,7 +191,8 @@ void upf_n4_handle_session_establishment_request(
             pcs_upfcreateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid));
         }
         //pcs_upf_create_udsf(pcs_upfcreateudsf);
-        pthread_create(&pcs_thread1, NULL, pcs_upf_create_udsf, (void*) pcs_upfcreateudsf);
+        //pthread_create(&pcs_thread1, NULL, pcs_upf_create_udsf, (void*) pcs_upfcreateudsf);
+        mt_add_job(pcs_threadpool, &pcs_upf_create_udsf, (void*) pcs_upfcreateudsf);
         ogs_info("PCS Started Create UDSF thread");
     }
 
@@ -672,9 +674,10 @@ void upf_n4_handle_session_modification_request(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
+            ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
             char *pcs_upfdbid;
             asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
-            pthread_t pcs_thread1;
+            //pthread_t pcs_thread1;
             struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
             pcs_upfupdateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
@@ -687,7 +690,8 @@ void upf_n4_handle_session_modification_request(
                 pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid));
             }
             //pcs_upf_update_udsf(pcs_upfupdateudsf);
-            pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
+            //pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
+            mt_add_job(pcs_threadpool, &pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
             ogs_info("PCS Started Update UDSF thread");
         }
         else

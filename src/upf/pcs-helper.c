@@ -603,7 +603,7 @@ struct pcs_upf_n4_create pcs_get_upf_n4_create_data(upf_sess_t *sess)
    return (pcs_n4createdata);
 }
 
-void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
+void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 {
    struct pcs_upf_create_udsf_s *pcs_upfcreateudsfstruct = pcs_upfcreateudsf;
    char *pcs_dbrdata = pcs_upfcreateudsfstruct->pcs_dbrdata;
@@ -663,11 +663,11 @@ void *pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
-   return NULL;
+   return;
    //pthread_exit(NULL);
 }
 
-void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
+void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
 {
    struct pcs_upf_create_udsf_s *pcs_upfupdateudsfstruct = pcs_upfupdateudsf;
    char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
@@ -791,6 +791,6 @@ void *pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    sess->pcs.pcs_udsfupdatedone = 1;
 
-   return NULL;
+   return;
    //pthread_exit(NULL);
 }

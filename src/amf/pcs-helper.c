@@ -600,7 +600,7 @@ struct pcs_amf_update pcs_get_amf_update_data(ogs_pkbuf_t *n2buf)
    return (pcs_updatedata);
 }
 
-void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
+void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 {
    struct pcs_amf_create_udsf_s *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
    char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
@@ -613,7 +613,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    }
    else
    {
-      return NULL;
+      return;
    }
 
    amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
@@ -637,7 +637,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    }
    else
    {
-      return NULL;
+      return;
    }
    pcs_imsistr += 5;
    if (strlen(pcs_dbrdata) <= 29 && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") == 0)
@@ -671,7 +671,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    mongoc_collection_destroy(pcs_dbcollection);
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
-   return NULL;
+   return;
    //pthread_exit(NULL);
 }
 
@@ -788,7 +788,7 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    //pthread_exit(NULL);
 }
 
-void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
+void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
 {
    struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsfstruct = pcs_amfupdaterequdsf;
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;

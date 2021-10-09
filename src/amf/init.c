@@ -22,12 +22,14 @@
 #include "mongoc.h"
 #include "pcs-helper.h"
 #include "pcs-thread-pool.h"
+#include <unistd.h>
 
 static ogs_thread_t *thread;
 static void amf_main(void *data);
 static int initialized = 0;
 mongoc_client_pool_t *PCS_MONGO_POOL;
-uint64_t pcs_threadpoolsize = 21;
+//uint64_t pcs_threadpoolsize = 21;
+long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
 ThreadPool *PCS_THREADPOOL;
 
 int amf_initialize()
@@ -152,7 +154,7 @@ static void amf_main(void *data)
             PCS_MONGO_POOL = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
             amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
-            PCS_THREADPOOL = mt_create_pool(pcs_threadpoolsize);
+            PCS_THREADPOOL = mt_create_pool((uint64_t)pcs_numprocessors);
             amf_sm.pcs_fsmdata.pcs_threadpool = PCS_THREADPOOL;
         }
 
