@@ -885,7 +885,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    }
    else
    {
-      return NULL;
+      return;
    }
    amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
 
@@ -910,7 +910,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    }
    else
    {
-      return NULL;
+      return;
    }
    pcs_imsistr += 5;
    int pcs_rv;
@@ -970,6 +970,6 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    }
    sess->pcs.pcs_udsfupdaterspdone = 1;
    
-   return NULL;
+   return;
    //pthread_exit(NULL);
 }
