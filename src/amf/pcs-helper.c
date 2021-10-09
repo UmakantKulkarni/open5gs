@@ -675,7 +675,7 @@ void *pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    //pthread_exit(NULL);
 }
 
-void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
+void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
 {
    struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsfstruct = pcs_amfn1n2udsf;
    ogs_pkbuf_t *n1buf = pcs_amfn1n2udsfstruct->n1buf;
@@ -690,7 +690,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    }
    else
    {
-      return NULL;
+      return;
    }
    amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
 
@@ -716,7 +716,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    }
    else
    {
-      return NULL;
+      return;
    }
    pcs_imsistr += 5;
    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
@@ -784,7 +784,7 @@ void *pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    bson_free(pcs_dbrdata);*/
    sess->pcs.pcs_udsfn1n2done = 1;
    
-   return NULL;
+   return;
    //pthread_exit(NULL);
 }
 

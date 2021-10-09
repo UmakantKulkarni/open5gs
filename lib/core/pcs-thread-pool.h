@@ -17,6 +17,11 @@
 #ifndef PCSTHREADPOOL_H
 #define PCSTHREADPOOL_H
 
+#ifdef __cplusplus
+extern "C"
+{
+#endif
+
 #include <stdint.h> // Standard integer
 
 //#define DEBUG // The debug switch
@@ -175,4 +180,8 @@ uint64_t mt_get_job_count(ThreadPool *pool);
  */
 uint64_t mt_get_thread_count(ThreadPool *);
 
+#ifdef __cplusplus
+}
 #endif
+
+#endif /* PCS_THREAD_POOL_H */

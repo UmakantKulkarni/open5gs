@@ -21,7 +21,7 @@
 #include "ngap-path.h"
 #include "mongoc.h"
 #include "pcs-helper.h"
-#include "pcs-thread-pool.h"
+#include "../../lib/core/pcs-thread-pool.h"
 
 static ogs_thread_t *thread;
 static void amf_main(void *data);
