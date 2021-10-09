@@ -45,7 +45,6 @@ endif
 configure_file(output : 'upf-config.h', configuration : upf_conf)
 
 libupf_sources = files('''
-    parson.h
     pcs-helper.h
     rule-match.h
     event.h
@@ -57,7 +56,6 @@ libupf_sources = files('''
     n4-build.h
     n4-handler.h
 
-    parson.c
     pcs-helper.c
     rule-match.c
     init.c
@@ -92,6 +90,7 @@ libarp_nd_dep = declare_dependency(
 libupf = static_library('upf',
     sources : libupf_sources,
     dependencies : [
+        libpcs_dep,
         libapp_dep,
         libsbi_dep,
         libgtp_dep,
@@ -105,6 +104,7 @@ libupf = static_library('upf',
 libupf_dep = declare_dependency(
     link_with : libupf,
     dependencies : [
+        libpcs_dep,
         libapp_dep,
         libsbi_dep,
         libgtp_dep,

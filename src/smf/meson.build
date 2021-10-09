@@ -35,7 +35,6 @@ endforeach
 configure_file(output : 'smf-config.h', configuration : smf_conf)
 
 libsmf_sources = files('''
-    parson.h
     pcs-helper.h
     event.h
     timer.h
@@ -67,7 +66,6 @@ libsmf_sources = files('''
     ngap-handler.h
     ngap-path.h
 
-    parson.c
     pcs-helper.c
     init.c
     event.c
@@ -110,7 +108,8 @@ libmongoc_dep = dependency('libmongoc-1.0')
 
 libsmf = static_library('smf',
     sources : libsmf_sources,
-    dependencies : [libapp_dep,
+    dependencies : [libpcs_dep,
+                    libapp_dep,
                     libsbi_dep,
                     libngap_dep,
                     libnas_5gs_dep,
@@ -123,7 +122,8 @@ libsmf = static_library('smf',
 
 libsmf_dep = declare_dependency(
     link_with : libsmf,
-    dependencies : [libapp_dep,
+    dependencies : [libpcs_dep,
+                    libapp_dep,
                     libsbi_dep,
                     libngap_dep,
                     libnas_5gs_dep,
