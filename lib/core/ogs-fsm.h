@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #include "mongoc.h"
+#include "pcs-thread-pool.h"
 
 extern const char *OGS_FSM_NAME_INIT_SIG;
 extern const char *OGS_FSM_NAME_ENTRY_SIG;
