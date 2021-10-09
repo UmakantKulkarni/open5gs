@@ -155,6 +155,7 @@ static void amf_main(void *data)
             mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
             amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
             PCS_THREADPOOL = mt_create_pool((uint64_t)pcs_numprocessors);
+            ogs_info("PCS Number of Processors is %ld", pcs_numprocessors)
             amf_sm.pcs_fsmdata.pcs_threadpool = PCS_THREADPOOL;
         }
 

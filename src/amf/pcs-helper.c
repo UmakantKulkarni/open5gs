@@ -802,7 +802,7 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else
    {
-      return NULL;
+      return;
    }
    amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
    
@@ -833,7 +833,7 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       }
       else
       {
-         return NULL;
+         return;
       }
       pcs_imsistr += 5;
       if (!pcs_isproceduralstateless)
@@ -869,7 +869,7 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    sess->pcs.pcs_udsfupdatereqdone = 1;
    
-   return NULL;
+   return;
    //pthread_exit(NULL);
 }
 
