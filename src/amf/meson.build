@@ -16,6 +16,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 libamf_sources = files('''
+    pcs-thread-pool.c
     parson.c
     pcs-helper.c
     context.c
