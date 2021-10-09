@@ -31,7 +31,6 @@ static int initialized = 0;
 
 mongoc_client_pool_t *PCS_MONGO_POOL;
 //uint64_t pcs_threadpoolsize = 21;
-long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
 ThreadPool *PCS_THREADPOOL;
 
 int upf_initialize()
@@ -146,8 +145,10 @@ static void upf_main(void *data)
             PCS_MONGO_POOL = mongoc_client_pool_new (uri);
             mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
             upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
+
+            long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+            ogs_info("PCS Number of Processors is %ld", pcs_numprocessors);
             PCS_THREADPOOL = mt_create_pool((uint64_t)pcs_numprocessors);
-            ogs_info("PCS Number of Processors is %ld", pcs_numprocessors)
             upf_sm.pcs_fsmdata.pcs_threadpool = PCS_THREADPOOL;
         }
 
