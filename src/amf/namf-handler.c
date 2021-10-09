@@ -27,6 +27,7 @@
 #include "mongoc.h"
 #include "parson.h"
 #include <pthread.h>
+#include "pcs-thread-pool.h"
 
 int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
@@ -391,6 +392,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
+            pcs_threadpool = pcs_fsmdata->pcs_threadpool;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
             pthread_t pcs_thread1;
@@ -402,7 +404,8 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
             pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
             //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
-            pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
+            //pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
+            mt_add_job(pcs_threadpool, &pcs_amf_n1n2_udsf, pcs_amfn1n2udsf);
             ogs_info("PCS Started N1-N2 UDSF thread");    
         }
         else
