@@ -30,7 +30,6 @@ static void upf_main(void *data);
 static int initialized = 0;
 
 mongoc_client_pool_t *PCS_MONGO_POOL;
-//uint64_t pcs_threadpoolsize = 21;
 ThreadPool *PCS_THREADPOOL;
 
 int upf_initialize()
