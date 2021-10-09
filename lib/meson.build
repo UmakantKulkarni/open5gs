@@ -17,6 +17,7 @@
 
 libinc = include_directories('.')
 
+subdir('pcs')
 subdir('core')
 subdir('ipfw')
 subdir('crypt')
