@@ -873,7 +873,7 @@ void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    //pthread_exit(NULL);
 }
 
-void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
+void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 {
    struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsfstruct = pcs_amfupdaterspudsf;
    

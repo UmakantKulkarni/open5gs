@@ -62,7 +62,7 @@ extern "C"
     void *pcs_amf_create_udsf(void *pcs_amfcreateudsf);
     void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf);
     void *pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf);
-    void *pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf);
+    void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf);
 
 #ifdef __cplusplus
 }
