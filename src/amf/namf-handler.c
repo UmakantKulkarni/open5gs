@@ -392,7 +392,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
-            pcs_threadpool = pcs_fsmdata->pcs_threadpool;
+            ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
             pthread_t pcs_thread1;
@@ -405,7 +405,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
             //pcs_amf_n1n2_udsf(pcs_amfn1n2udsf);
             //pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
-            mt_add_job(pcs_threadpool, &pcs_amf_n1n2_udsf, pcs_amfn1n2udsf);
+            mt_add_job(pcs_threadpool, pcs_amf_n1n2_udsf, pcs_amfn1n2udsf);
             ogs_info("PCS Started N1-N2 UDSF thread");    
         }
         else
