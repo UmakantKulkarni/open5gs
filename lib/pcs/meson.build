@@ -25,13 +25,17 @@ libpcs_sources = files('''
 
 libpcs_inc = include_directories('.')
 
+thread_dep = dependency('threads')
+
 libpcs = library('pcsapp',
     sources : libpcs_sources,
     version : libogslib_version,
     include_directories : [libpcs_inc, libinc],
+    dependencies : [thread_dep],
     install : true)
 
 libpcs_dep = declare_dependency(
     link_with : libpcs,
-    include_directories : [libpcs_inc, libinc]
+    include_directories : [libpcs_inc, libinc],
+    dependencies : [thread_dep],
 )
