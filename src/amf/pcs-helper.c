@@ -7,10 +7,6 @@
 #include <arpa/inet.h>
 #include "parson.h"
 
-extern mongoc_client_pool_t *PCS_MONGO_POOL;
-
-const int PCS_REPEAT_COUNTER = 100000;
-
 int pcs_set_int_from_env(const char *pcs_env_var)
 {
    int pcs_enval = 0;
@@ -106,6 +102,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
 
 int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
 {
+   int rc = 0;
    bson_error_t error;
    bson_t *query = NULL;
 
@@ -113,6 +110,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    {
       if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
       {
+         rc = 1;
          ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
       }
       ogs_debug("PCS Added new data to mongo by AMF");
@@ -123,6 +121,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
+         rc = 1;
          ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
       }
       ogs_debug("PCS Updated data to mongo by AMF");
@@ -131,11 +130,12 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    bson_destroy(query);
    bson_destroy(bson_doc);
 
-   return EXIT_SUCCESS;
+   return rc;
 }
 
 int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
+   int rc = 0;
    bson_error_t error;
    bson_t *query = BCON_NEW("_id", pcs_docid);
 
@@ -146,10 +146,12 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
 
    if (!mongoc_collection_delete_one(collection, query, NULL, NULL, &error))
    {
+      rc = 1;
       ogs_error("PCS mongoc_collection_delete_one failed during delete-create process %s\n", error.message);
    }
    if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
    {
+      rc = 1;
       ogs_error("PCS mongoc_collection_insert_one failed during delete-create process %s\n", error.message);
    }
 
@@ -157,7 +159,31 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    bson_destroy(bson_doc);
    free(pcs_dbnewdata);
 
-   return EXIT_SUCCESS;
+   return rc;
+}
+
+int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+{
+   int rc = 0;
+   bson_error_t error;
+   bson_t *query = BCON_NEW("_id", pcs_docid);
+
+   pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
+   pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
+   ogs_debug("Final Data after delete-create operation is %s", pcs_dbnewdata);
+   bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_dbnewdata, -1, &error);
+
+   if (!mongoc_collection_replace_one(collection, query, bson_doc, NULL, NULL, &error))
+   {
+      rc = 1;
+      ogs_error("PCS mongoc_collection_replace_one failed during delete-create process %s\n", error.message);
+   }
+
+   bson_destroy(query);
+   bson_destroy(bson_doc);
+   free(pcs_dbnewdata);
+
+   return rc;
 }
 
 char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
@@ -671,8 +697,8 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    mongoc_collection_destroy(pcs_dbcollection);
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    sess->pcs.pcs_udsfcreatedone = 1;
+
    return;
-   //pthread_exit(NULL);
 }
 
 void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
@@ -696,6 +722,7 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
 
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+   uint8_t pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
 
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
@@ -747,7 +774,14 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
          {
             char *pcs_updatedoc;
             asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pdu-session-id\": %ld, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s}", (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr);
-            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+            if (pcs_replaceapienabledn1n2)
+            {
+               pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+            }
+            else
+            {
+               pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+            }
          }
 
          if (pcs_rv != OGS_OK)
@@ -785,7 +819,6 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    sess->pcs.pcs_udsfn1n2done = 1;
    
    return;
-   //pthread_exit(NULL);
 }
 
 void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
