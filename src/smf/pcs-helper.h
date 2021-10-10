@@ -6,6 +6,8 @@ extern "C"
 {
 #endif
 
+    extern mongoc_client_pool_t *PCS_MONGO_POOL;
+
 #include "context.h"
 #include "bson.h"
 

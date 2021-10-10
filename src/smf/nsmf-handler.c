@@ -211,7 +211,16 @@ bool smf_nsmf_handle_create_sm_context(
 
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        mongoc_collection_t *pcs_dbcollection;
+        mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+        if (pcs_mongoclient == NULL)
+        {
+            pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        }
+        else
+        {
+            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+        }
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
@@ -632,7 +641,16 @@ bool smf_nsmf_handle_update_sm_context(
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            mongoc_collection_t *pcs_dbcollection;
+            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+            if (pcs_mongoclient == NULL)
+            {
+                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            }
+            else
+            {
+                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+            }
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
             char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);

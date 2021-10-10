@@ -281,7 +281,16 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            mongoc_collection_t *pcs_dbcollection;
+            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+            if (pcs_mongoclient == NULL)
+            {
+                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            }
+            else
+            {
+                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+            }
             int pcs_rv;
             char *pcs_docjson;
             struct pcs_smf_create pcs_createdata = sess->pcs.pcs_createdata;

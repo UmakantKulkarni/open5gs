@@ -101,6 +101,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
 
 int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
 {
+   int rc = 0;
    bson_error_t error;
    bson_t *query = NULL;
 
@@ -108,6 +109,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    {
       if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
       {
+         rc = 1;
          ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
       }
       ogs_debug("PCS Added new data to mongo by SMF");
@@ -118,6 +120,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
+         rc = 1;
          ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
       }
       ogs_debug("PCS Updated data to mongo by SMF");
@@ -126,11 +129,12 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    bson_destroy(query);
    bson_destroy(bson_doc);
 
-   return EXIT_SUCCESS;
+   return rc;
 }
 
 int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
+   int rc = 0;
    bson_error_t error;
    bson_t *query = BCON_NEW("_id", pcs_docid);
 
@@ -141,10 +145,12 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
 
    if (!mongoc_collection_delete_one(collection, query, NULL, NULL, &error))
    {
+      rc = 1;
       ogs_error("PCS mongoc_collection_delete_one failed during delete-create process %s\n", error.message);
    }
    if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
    {
+      rc = 1;
       ogs_error("PCS mongoc_collection_insert_one failed during delete-create process %s\n", error.message);
    }
 
@@ -152,7 +158,7 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    bson_destroy(bson_doc);
    free(pcs_dbnewdata);
 
-   return EXIT_SUCCESS;
+   return rc;
 }
 
 char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)

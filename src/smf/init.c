@@ -27,8 +27,9 @@
 
 static ogs_thread_t *thread;
 static void smf_main(void *data);
-
 static int initialized = 0;
+
+mongoc_client_pool_t *PCS_MONGO_POOL;
 
 int smf_initialize()
 {
@@ -173,6 +174,10 @@ static void smf_main(void *data)
         {
             ogs_error("PCS failed to parse URI: %s. Error message is: %s ", uri_string, error.message);
         }
+
+        PCS_MONGO_POOL = mongoc_client_pool_new (uri);
+        mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
+        amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
 
         /*
         * Create a new client instance

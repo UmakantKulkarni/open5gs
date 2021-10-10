@@ -167,7 +167,16 @@ bool smf_namf_comm_handler_n1_n2_message_transfer(
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            mongoc_collection_t *pcs_dbcollection;
+            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+            if (pcs_mongoclient == NULL)
+            {
+                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            }
+            else
+            {
+                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+            }
             int pcs_rv;
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;

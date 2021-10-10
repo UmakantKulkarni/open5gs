@@ -223,7 +223,16 @@ void smf_5gc_n4_handle_session_establishment_response(
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            mongoc_collection_t *pcs_dbcollection;
+            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+            if (pcs_mongoclient == NULL)
+            {
+                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            }
+            else
+            {
+                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+            }
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
             char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
@@ -402,7 +411,16 @@ void smf_5gc_n4_handle_session_modification_response(
 
             if (pcs_fsmdata->pcs_dbcommenabled)
             {
-                mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                mongoc_collection_t *pcs_dbcollection;
+                mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+                if (pcs_mongoclient == NULL)
+                {
+                    pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                }
+                else
+                {
+                    pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+                }
                 char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
                 char pcs_comma[] = ",";
                 char pcs_curlybrace[] = "}";
