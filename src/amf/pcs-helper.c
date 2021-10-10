@@ -631,21 +631,41 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    struct pcs_amf_create_udsf_s *pcs_amfcreateudsfstruct = pcs_amfcreateudsf;
    char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
 
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfcreateudsfstruct->pcs_amfuengapid);
-   amf_ue_t *amf_ue;
-   if (ran_ue)
+   uint8_t pcs_blockingapienabledcreate = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+
+   if (pcs_blockingapienabledcreate)
    {
-      amf_ue = ran_ue->amf_ue;
+      amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
+   }
+   else
+   {
+      ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfcreateudsfstruct->pcs_amfuengapid);
+      amf_ue_t *amf_ue;
+      if (ran_ue)
+      {
+         amf_ue = ran_ue->amf_ue;
+      }
+      else
+      {
+         return;
+      }
+
+      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
+   }
+
+   char *pcs_imsistr;
+   if (sess)
+   {
+      pcs_imsistr = sess->amf_ue->supi;
+      pcs_imsistr += 5;
    }
    else
    {
       return;
    }
 
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
-   
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    if (pcs_mongoclient == NULL)
@@ -656,16 +676,7 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
-   char *pcs_imsistr;
-   if (sess)
-   {
-      pcs_imsistr = sess->amf_ue->supi;
-   }
-   else
-   {
-      return;
-   }
-   pcs_imsistr += 5;
+
    if (strlen(pcs_dbrdata) <= 29 && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") == 0)
    {
       struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
@@ -694,10 +705,10 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   mongoc_collection_destroy(pcs_dbcollection);
+   //mongoc_collection_destroy(pcs_dbcollection);
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
-   sess->pcs.pcs_udsfcreatedone = 1;
 
+   sess->pcs.pcs_udsfcreatedone = 1;
    return;
 }
 
@@ -708,21 +719,40 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    ogs_pkbuf_t *n2buf = pcs_amfn1n2udsfstruct->n2buf;
    char *pcs_dbrdata = pcs_amfn1n2udsfstruct->pcs_dbrdata;
 
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfn1n2udsfstruct->pcs_amfuengapid);
-   amf_ue_t *amf_ue;
-   if (ran_ue)
+   uint8_t pcs_blockingapienabledn1n2 = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_N1N2");
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+   uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+   uint8_t pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
+
+   if (pcs_blockingapienabledn1n2)
    {
-      amf_ue = ran_ue->amf_ue;
+      amf_sess_t *sess = pcs_amfn1n2udsfstruct->sess;
+   }
+   else
+   {
+      ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfn1n2udsfstruct->pcs_amfuengapid);
+      amf_ue_t *amf_ue;
+      if (ran_ue)
+      {
+         amf_ue = ran_ue->amf_ue;
+      }
+      else
+      {
+         return;
+      }
+      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
+   }
+
+   char *pcs_imsistr;
+   if (sess)
+   {
+      pcs_imsistr = sess->amf_ue->supi;
+      pcs_imsistr += 5;
    }
    else
    {
       return;
    }
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
-
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
-   uint8_t pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
 
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
@@ -734,18 +764,10 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    {
       pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
+
    double pcs_createdone = 0;
    int pcs_rv;
-   char *pcs_imsistr;
-   if (sess)
-   {
-      pcs_imsistr = sess->amf_ue->supi;
-   }
-   else
-   {
-      return;
-   }
-   pcs_imsistr += 5;
+
    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
    if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
    {
@@ -812,12 +834,12 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    {
       ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
    }
-   mongoc_collection_destroy(pcs_dbcollection);
+   //mongoc_collection_destroy(pcs_dbcollection);
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    /*json_value_free(pcs_dbrdatajsonval);
    bson_free(pcs_dbrdata);*/
+
    sess->pcs.pcs_udsfn1n2done = 1;
-   
    return;
 }
 
@@ -827,20 +849,28 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    ogs_pkbuf_t *n2smbuf = pcs_amfupdaterequdsfstruct->n2smbuf;
    char *pcs_dbrdata = pcs_amfupdaterequdsfstruct->pcs_dbrdata;
 
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
-   amf_ue_t *amf_ue;
-   if (ran_ue)
+   uint8_t pcs_blockingapienabledmodifyreq = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYREQ");
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+
+   if (pcs_blockingapienabledmodifyreq)
    {
-      amf_ue = ran_ue->amf_ue;
+      amf_sess_t *sess = pcs_amfupdaterequdsfstruct->sess;
    }
    else
    {
-      return;
+      ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterequdsfstruct->pcs_amfuengapid);
+      amf_ue_t *amf_ue;
+      if (ran_ue)
+      {
+         amf_ue = ran_ue->amf_ue;
+      }
+      else
+      {
+         return;
+      }
+      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
    }
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
-   
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
    mongoc_collection_t *pcs_dbcollection;
    double pcs_n1n2done = 0;
@@ -863,12 +893,12 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       if (sess)
       {
          pcs_imsistr = sess->amf_ue->supi;
+         pcs_imsistr += 5;
       }
       else
       {
          return;
       }
-      pcs_imsistr += 5;
       if (!pcs_isproceduralstateless)
       {
          sess->pcs.pcs_dbrdata = pcs_dbrdata;
@@ -880,7 +910,7 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
          }
          //json_value_free(pcs_dbrdatajsonval);
       }
-      mongoc_collection_destroy(pcs_dbcollection);
+      //mongoc_collection_destroy(pcs_dbcollection);
       mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    }
 
@@ -898,33 +928,52 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else
    {
-      ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
+      ogs_debug("PCS Update-SM-Transaction Started with shared UDSF");
    }
+
    sess->pcs.pcs_udsfupdatereqdone = 1;
-   
    return;
-   //pthread_exit(NULL);
 }
 
 void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 {
    struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsfstruct = pcs_amfupdaterspudsf;
-   
-   ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterspudsfstruct->pcs_amfuengapid);
-   amf_ue_t *amf_ue;
-   if (ran_ue)
+
+   uint8_t pcs_blockingapienabledmodifyrsp = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYRSP");
+   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+   uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+   uint8_t pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
+
+   if (pcs_blockingapienabledmodifyrsp)
    {
-      amf_ue = ran_ue->amf_ue;
+      amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
+   }
+   else
+   {
+      ran_ue_t *ran_ue = ran_ue_find_by_amf_ue_ngap_id((uint64_t)pcs_amfupdaterspudsfstruct->pcs_amfuengapid);
+      amf_ue_t *amf_ue;
+      if (ran_ue)
+      {
+         amf_ue = ran_ue->amf_ue;
+      }
+      else
+      {
+         return;
+      }
+      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
+   }
+
+   char *pcs_imsistr;
+   if (sess)
+   {
+      pcs_imsistr = sess->amf_ue->supi;
+      pcs_imsistr += 5;
    }
    else
    {
       return;
    }
-   amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
-
-   char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
-   uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
 
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
@@ -936,18 +985,10 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    {
       pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
-   char *pcs_imsistr;
-   if (sess)
-   {
-      pcs_imsistr = sess->amf_ue->supi;
-   }
-   else
-   {
-      return;
-   }
-   pcs_imsistr += 5;
+
    int pcs_rv;
    struct pcs_amf_update pcs_updatedata = sess->pcs.pcs_updatedata;
+
    if (pcs_isproceduralstateless)
    {
       struct pcs_amf_create pcs_createdata = sess->pcs.pcs_createdata;
@@ -990,7 +1031,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          //bson_free(pcs_dbrdata);
       }
    }
-   mongoc_collection_destroy(pcs_dbcollection);
+   //mongoc_collection_destroy(pcs_dbcollection);
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
 
    if (pcs_rv != OGS_OK)
@@ -1001,8 +1042,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    {
       ogs_info("PCS Successfully uploaded Update-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
    }
+
    sess->pcs.pcs_udsfupdaterspdone = 1;
-   
    return;
-   //pthread_exit(NULL);
 }

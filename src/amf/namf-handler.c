@@ -437,11 +437,11 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         pcs_imsistr += 5;
         struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
         pcs_amfn1n2udsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        (*pcs_amfn1n2udsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
         (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
         pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
         pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
-        pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
+        pcs_amfn1n2udsf->pcs_dbrdata = read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr);
+        pcs_amfn1n2udsf->sess = sess;
         pcs_amf_n1n2_udsf((void*) pcs_amfn1n2udsf);
     }
     else if (!pcs_fsmdata->pcs_dbcommenabled)

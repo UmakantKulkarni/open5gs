@@ -1588,65 +1588,30 @@ void ngap_handle_pdu_session_resource_setup_response(
 
         if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
         {
-            double pcs_n1n2done = 0;
-            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
-            {
-                pcs_n1n2done = sess->pcs.pcs_n1n2done;
-            }
-            else if (!pcs_fsmdata->pcs_isproceduralstateless)
-            {
-                mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-                char *pcs_imsistr = sess->amf_ue->supi;
-                pcs_imsistr += 5;
-                if (!pcs_fsmdata->pcs_isproceduralstateless)
-                {
-                    char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-                    sess->pcs.pcs_dbrdata = pcs_dbrdata;
-                    JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
-                    if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
-                    {
-                        JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
-                        pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
-                    }
-                    json_value_free(pcs_dbrdatajsonval);
-                }
-            }
-            
-            if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
-            {
-                if ((int)pcs_n1n2done)
-                {
-                    struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(param.n2smbuf);
-                    sess->pcs.pcs_updatedata = pcs_updatedata;
-                    sess->pcs.pcs_udsfupdatereqdone = 1;
-                }
-                else
-                {
-                    ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
-                }
-            }
-            else
-            {
-                ogs_debug("PCS Update-SM-Transaction Stated with shared UDSF");
-            }
+            char *pcs_imsistr = sess->amf_ue->supi;
+            pcs_imsistr += 5;
+            struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
+            pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
+            pcs_amfupdaterequdsf->pcs_dbrdata = read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr);
+            pcs_amfupdaterequdsf->sess = sess;
+            pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
         }
         else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledmodifyreq)
         {
             if (sess->pcs.pcs_udsfn1n2done)
             {
-                ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
                 char *pcs_imsistr = sess->amf_ue->supi;
                 pcs_imsistr += 5;
-                //pthread_t pcs_thread1;
                 struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
                 pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
                 (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
                 (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
                 pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
                 pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
-                //pcs_amf_update_req_udsf(pcs_amfupdaterequdsf);
+                //pthread_t pcs_thread1;
                 //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                mt_add_job(pcs_threadpool, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
                 ogs_info("PCS Started Update-Req UDSF thread");
             }
             else
