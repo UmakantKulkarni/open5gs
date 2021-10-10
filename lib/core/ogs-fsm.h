@@ -47,7 +47,7 @@ typedef struct _pcs_fsm_struct_t {
     mongoc_collection_t *pcs_dbcollection;
     mongoc_client_pool_t *pcs_mongopool;
     uint8_t pcs_dbcommenabled;
-    uint8_t pcs_updateapienabledcreate;
+    uint8_t pcs_upsertapienabledcreate;
     uint8_t pcs_updateapienabledn1n2;
     uint8_t pcs_updateapienabledmodify;
     uint8_t pcs_blockingapienabledcreate;
@@ -56,6 +56,8 @@ typedef struct _pcs_fsm_struct_t {
     uint8_t pcs_blockingapienabledmodifyrsp;
     uint8_t pcs_isfullystateless;
     uint8_t pcs_isproceduralstateless;
+    uint8_t pcs_replaceapienabledn1n2;
+    uint8_t pcs_replaceapienabledmodify;
     char *pcs_dbcollectioname;
     ThreadPool *pcs_threadpool;
 } pcs_fsm_struct_t;

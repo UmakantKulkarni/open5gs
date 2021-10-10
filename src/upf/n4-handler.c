@@ -602,7 +602,14 @@ void upf_n4_handle_session_modification_request(
                     {
                         char *pcs_updatedoc;
                         asprintf(&pcs_updatedoc, ", \"pcs-pfcp-update-done\": 1, \"FARs\": %s}", pcs_fars);
-                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);
+                        if (pcs_fsmdata->pcs_replaceapienabledmodifyrsp)
+                        {
+                            pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);   
+                        }
+                        else
+                        {
+                            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);
+                        }
                     }
                 }
                 
