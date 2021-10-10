@@ -635,9 +635,10 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
+   amf_sess_t *sess;
    if (pcs_blockingapienabledcreate)
    {
-      amf_sess_t *sess = pcs_amfcreateudsfstruct->sess;
+      sess = pcs_amfcreateudsfstruct->sess;
    }
    else
    {
@@ -652,7 +653,7 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
          return;
       }
 
-      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
+      sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
    }
 
    char *pcs_imsistr;
@@ -724,9 +725,10 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
    uint8_t pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
    uint8_t pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
 
+   amf_sess_t *sess;
    if (pcs_blockingapienabledn1n2)
    {
-      amf_sess_t *sess = pcs_amfn1n2udsfstruct->sess;
+      sess = pcs_amfn1n2udsfstruct->sess;
    }
    else
    {
@@ -740,7 +742,7 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       {
          return;
       }
-      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
+      sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
    }
 
    char *pcs_imsistr;
@@ -853,9 +855,10 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
+   amf_sess_t *sess;
    if (pcs_blockingapienabledmodifyreq)
    {
-      amf_sess_t *sess = pcs_amfupdaterequdsfstruct->sess;
+      sess = pcs_amfupdaterequdsfstruct->sess;
    }
    else
    {
@@ -869,10 +872,9 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
       {
          return;
       }
-      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
+      sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterequdsfstruct->pcs_pdusessionid);
    }
 
-   mongoc_collection_t *pcs_dbcollection;
    double pcs_n1n2done = 0;
    if (pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_dbcollectioname, "amf") == 0)
    {
@@ -880,15 +882,6 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else if (!pcs_isproceduralstateless)
    {
-      mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-      if (pcs_mongoclient == NULL)
-      {
-         pcs_dbcollection = pcs_amfupdaterequdsfstruct->pcs_dbcollection;
-      }
-      else
-      {
-         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
-      }
       char *pcs_imsistr;
       if (sess)
       {
@@ -910,8 +903,6 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
          }
          //json_value_free(pcs_dbrdatajsonval);
       }
-      //mongoc_collection_destroy(pcs_dbcollection);
-      mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    }
 
    if (strcmp(pcs_dbcollectioname, "amf") == 0)
@@ -945,9 +936,10 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
    uint8_t pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
 
+   amf_sess_t *sess;
    if (pcs_blockingapienabledmodifyrsp)
    {
-      amf_sess_t *sess = pcs_amfupdaterspudsfstruct->sess;
+      sess = pcs_amfupdaterspudsfstruct->sess;
    }
    else
    {
@@ -961,7 +953,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       {
          return;
       }
-      amf_sess_t *sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
+      sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
    }
 
    char *pcs_imsistr;
@@ -1027,7 +1019,14 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          char *pcs_updatedoc;
          asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
 
-         pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+         if (pcs_replaceapienabledn1n2)
+         {
+            pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);   
+         }
+         else
+         {
+            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+         }
          //bson_free(pcs_dbrdata);
       }
    }
