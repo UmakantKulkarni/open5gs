@@ -766,7 +766,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
         pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         pcs_amfupdaterspudsf->sess = sess;
-        pcs_amf_update_rsp_udsf((void*) pcs_amfupdaterspudsf)
+        pcs_amf_update_rsp_udsf((void*) pcs_amfupdaterspudsf);
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
     {
