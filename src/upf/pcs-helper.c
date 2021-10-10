@@ -722,7 +722,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
    uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
    uint8_t pcs_blockingapienabledmodifyrsp = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYRSP");
-   uint8_t pcs_replaceapienabledmodifyrsp = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFYRSP");
+   uint8_t pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
    
    upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfupdateudsfstruct->pcs_upfn4seid);
    char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
@@ -810,7 +810,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
             {
                char *pcs_updatedoc;
                asprintf(&pcs_updatedoc, ", \"pcs-pfcp-update-done\": 1, \"FARs\": %s}", pcs_fars);
-               if (pcs_replaceapienabledmodifyrsp)
+               if (pcs_replaceapienabledmodify)
                {
                   pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);   
                }

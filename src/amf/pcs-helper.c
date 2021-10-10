@@ -943,7 +943,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
    uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
-   uint8_t pcs_replaceapienabledmodifyrsp = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFYRSP");
+   uint8_t pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
 
    amf_sess_t *sess;
    if (pcs_blockingapienabledmodifyrsp)
@@ -1028,7 +1028,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          char *pcs_updatedoc;
          asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
 
-         if (pcs_replaceapienabledmodifyrsp)
+         if (pcs_replaceapienabledmodify)
          {
             pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);   
          }
