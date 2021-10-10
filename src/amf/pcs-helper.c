@@ -827,13 +827,10 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
          {
             free(pcs_n1n2data.pcs_nasqosrulestr);
             free(pcs_n1n2data.pcs_nasqosflowstr);
-            free(pcs_n1n2data.pcs_nasepcostr);*/
+            free(pcs_n1n2data.pcs_nasepcostr);
 
             ogs_free(pcs_n1n2data.pcs_upfn3ip);
             ogs_free(pcs_n1n2data.pcs_pduaddress);
-            ogs_free(pcs_n1n2data.pcs_ie);
-            ogs_free(pcs_n1n2data.pcs_gtptunnel);
-            ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);
          }
       }
       else
@@ -1011,12 +1008,9 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          free(pcs_createdata.pcs_amfueplmnid);
          free(pcs_n1n2data.pcs_nasqosrulestr);
          free(pcs_n1n2data.pcs_nasqosflowstr);
-         free(pcs_n1n2data.pcs_nasepcostr);*/
+         free(pcs_n1n2data.pcs_nasepcostr);
          ogs_free(pcs_n1n2data.pcs_upfn3ip);
          ogs_free(pcs_n1n2data.pcs_pduaddress);
-         ogs_free(pcs_n1n2data.pcs_ie);
-         ogs_free(pcs_n1n2data.pcs_gtptunnel);
-         ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);
          free(pcs_docjson);
       }
    }

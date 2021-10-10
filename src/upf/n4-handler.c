@@ -205,7 +205,7 @@ void upf_n4_handle_session_establishment_request(
         mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
         if (pcs_mongoclient == NULL)
         {
-            pcs_dbcollection = pcs_upfcreateudsfstruct->pcs_dbcollection;
+            pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         }
         else
         {

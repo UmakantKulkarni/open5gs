@@ -7,10 +7,6 @@
 #include <arpa/inet.h>
 #include "parson.h"
 
-extern mongoc_client_pool_t *PCS_MONGO_POOL;
-
-const int PCS_REPEAT_COUNTER = 100000;
-
 int pcs_set_int_from_env(const char *pcs_env_var)
 {
    int pcs_enval = 0;
@@ -636,7 +632,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
    char *pcs_upfdbid, *pcs_dbrdata;
    asprintf(&pcs_upfdbid, "%ld", pcs_n4createdata.pcs_smfn4seid);
 
-   if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+   if (strcmp(pcs_dbcollectioname, "upf") == 0)
    {
       pcs_dbrdata = read_data_from_db(pcs_dbcollection, "_id", pcs_upfdbid, -1);
    }
@@ -803,7 +799,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
             free(pcs_pfcpie);
             free(pcs_fars);
          }
-         
+
       }
       else
       {
