@@ -486,10 +486,7 @@ void smf_5gc_n4_handle_session_modification_response(
                     ogs_pkbuf_free(param.n2smbuf);
                     ogs_free(pcs_n1n2data.pcs_upfn3ip);
                     ogs_free(pcs_n1n2data.pcs_pduaddress);
-                    ogs_free(pcs_n1n2data.pcs_ie);
-                    ogs_free(pcs_n1n2data.pcs_gtptunnel);
-                    ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/    
-                    free(pcs_docjson);
+                    free(pcs_docjson);*/
                 }
                 else
                 {
@@ -506,7 +503,14 @@ void smf_5gc_n4_handle_session_modification_response(
                         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
                         char *pcs_updatedoc;
                         asprintf(&pcs_updatedoc, ", \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld }, \"pcs-pfcp-update-done\": 1, \"FARs\": %s}", pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid, pcs_fars);
-                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                        if (pcs_fsmdata->pcs_replaceapienabledmodify)
+                        {
+                            pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                        }
+                        else
+                        {
+                            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                        }
                         bson_free(pcs_dbrdata);
                     }
                 }

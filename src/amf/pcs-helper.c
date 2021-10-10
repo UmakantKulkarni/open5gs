@@ -104,7 +104,6 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = NULL;
 
    if (strcmp(pcs_dbop, "create") == 0)
    {
@@ -117,7 +116,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
-      query = BCON_NEW("_id", pcs_docid);
+      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
@@ -125,9 +124,25 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
          ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
       }
       ogs_debug("PCS Updated data to mongo by AMF");
+
+      bson_destroy(query);
+   }
+   else if (strcmp(pcs_dbop, "upsert") == 0)
+   {
+      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *opts = BCON_NEW ("upsert", BCON_BOOL (true));
+   
+      if (!mongoc_collection_update_one(collection, query, bson_doc, opts, NULL, &error))
+      {
+         rc = 1;
+         ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
+      }
+      ogs_debug("PCS Updated data to mongo by AMF");
+
+      bson_destroy(query);
+      bson_destroy(opts);
    }
 
-   bson_destroy(query);
    bson_destroy(bson_doc);
 
    return rc;
@@ -137,7 +152,7 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", pcs_docid);
+   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -166,7 +181,7 @@ int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *p
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", pcs_docid);
+   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -193,7 +208,7 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
-   query = BCON_NEW("_id", pcs_docid);
+   query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
    cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
    int i = 0;
 
@@ -632,6 +647,7 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    char *pcs_dbrdata = pcs_amfcreateudsfstruct->pcs_dbrdata;
 
    uint8_t pcs_blockingapienabledcreate = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
+   uint8_t pcs_upsertapienabledcreate = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
 
@@ -687,7 +703,14 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
 
       bson_error_t error;
       bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-      pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+      if (pcs_upsertapienabledcreate)
+      {
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_imsistr, bson_doc);
+      }
+      else
+      {
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+      }
       if (pcs_blockingapienabledcreate)
       {
          ogs_free(pcs_createdata.pcs_snssaisd);

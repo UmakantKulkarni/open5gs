@@ -103,7 +103,6 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = NULL;
 
    if (strcmp(pcs_dbop, "create") == 0)
    {
@@ -116,7 +115,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
-      query = BCON_NEW("_id", pcs_docid);
+      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
@@ -124,9 +123,25 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
          ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
       }
       ogs_debug("PCS Updated data to mongo by SMF");
+
+      bson_destroy(query);
+   }
+   else if (strcmp(pcs_dbop, "upsert") == 0)
+   {
+      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *opts = BCON_NEW ("upsert", BCON_BOOL (true));
+   
+      if (!mongoc_collection_update_one(collection, query, bson_doc, opts, NULL, &error))
+      {
+         rc = 1;
+         ogs_error("PCS mongoc_collection_update_one with upsert failed %s\n", error.message);
+      }
+      ogs_debug("PCS Updated data to mongo by SMF");
+
+      bson_destroy(query);
+      bson_destroy(opts);
    }
 
-   bson_destroy(query);
    bson_destroy(bson_doc);
 
    return rc;
@@ -136,7 +151,7 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", pcs_docid);
+   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -161,6 +176,30 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    return rc;
 }
 
+int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+{
+   int rc = 0;
+   bson_error_t error;
+   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+
+   pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
+   pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
+   ogs_debug("Final Data after delete-create operation is %s", pcs_dbnewdata);
+   bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_dbnewdata, -1, &error);
+
+   if (!mongoc_collection_replace_one(collection, query, bson_doc, NULL, NULL, &error))
+   {
+      rc = 1;
+      ogs_error("PCS mongoc_collection_replace_one failed during delete-create process %s\n", error.message);
+   }
+
+   bson_destroy(query);
+   bson_destroy(bson_doc);
+   free(pcs_dbnewdata);
+
+   return rc;
+}
+
 char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
 {
    mongoc_cursor_t *cursor;
@@ -168,7 +207,7 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
-   query = BCON_NEW("_id", pcs_docid);
+   query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
    cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
    int i = 0;
 

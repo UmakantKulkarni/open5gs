@@ -300,7 +300,14 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
 
             bson_error_t error;
             bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-            pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+            if (pcs_fsmdata->pcs_upsertapienabledcreate)
+            {
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_imsistr, bson_doc);
+            }
+            else
+            {
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+            }
             ogs_free(pcs_createdata.pcs_snssaisd);
             free(pcs_docjson);
 
