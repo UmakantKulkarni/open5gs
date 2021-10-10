@@ -231,7 +231,7 @@ void smf_5gc_n4_handle_session_establishment_response(
             }
             else
             {
-                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
             }
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
@@ -419,7 +419,7 @@ void smf_5gc_n4_handle_session_modification_response(
                 }
                 else
                 {
-                    pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+                    pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
                 }
                 char *pcs_pfcpie, *pcs_fars, *pcs_var, *pcs_temp;
                 char pcs_comma[] = ",";

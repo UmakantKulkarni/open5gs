@@ -177,7 +177,7 @@ static void smf_main(void *data)
 
         PCS_MONGO_POOL = mongoc_client_pool_new (uri);
         mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
-        amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
+        smf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
 
         /*
         * Create a new client instance

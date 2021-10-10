@@ -219,7 +219,7 @@ bool smf_nsmf_handle_create_sm_context(
         }
         else
         {
-            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
         }
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
@@ -649,7 +649,7 @@ bool smf_nsmf_handle_update_sm_context(
             }
             else
             {
-                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
             }
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
