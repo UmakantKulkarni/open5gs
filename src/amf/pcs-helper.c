@@ -7,6 +7,23 @@
 #include <arpa/inet.h>
 #include "parson.h"
 
+mongoc_collection_t *pcs_get_mongo_collection(pcs_fsm_struct_t *pcs_fsmdata)
+{
+   mongoc_collection_t *pcs_dbcollection;
+   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+   if (pcs_mongoclient == NULL)
+   {
+         pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+   }
+   else
+   {
+         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+   }
+   
+   return pcs_dbcollection;
+
+}
+
 int pcs_set_int_from_env(const char *pcs_env_var)
 {
    int pcs_enval = 0;

@@ -1593,7 +1593,9 @@ void ngap_handle_pdu_session_resource_setup_response(
             struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
             pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
-            pcs_amfupdaterequdsf->pcs_dbrdata = read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr);
+            mongoc_collection_t *pcs_dbcollection = pcs_get_mongo_collection(pcs_fsmdata);
+            pcs_amfupdaterequdsf->pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
             pcs_amfupdaterequdsf->sess = sess;
             pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
         }
@@ -1608,7 +1610,9 @@ void ngap_handle_pdu_session_resource_setup_response(
                 (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
                 (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
                 pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
-                pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, pcs_imsistr));
+                mongoc_collection_t *pcs_dbcollection = pcs_get_mongo_collection(pcs_fsmdata);
+                pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_dbcollection, pcs_imsistr));
+                mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
                 //pthread_t pcs_thread1;
                 //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
                 mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);

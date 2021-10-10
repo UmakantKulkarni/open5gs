@@ -51,6 +51,7 @@ extern "C"
         amf_sess_t *sess;
     };
 
+    mongoc_collection_t *pcs_get_mongo_collection(pcs_fsm_struct_t *pcs_fsmdata)
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);
