@@ -689,22 +689,41 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 
    if (strlen(pcs_dbrdata) <= 19 && strcmp(pcs_dbcollectioname, "upf") == 0)
    {
-      char *pcs_docjson;
       int pcs_rv;
       pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
       pcs_n4createdata.pcs_smfnodeip = ogs_ipv4_to_string(sess->pfcp_node->addr.sin.sin_addr.s_addr);
 
-      asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, 1, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
-
       bson_error_t error;
-      bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+
       if (pcs_upsertapienabledcreate)
       {
+         bson_t *bson_pdr_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_pdrs, -1, &error);
+         bson_t *bson_far_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_fars, -1, &error);
+         bson_t *bson_qer_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_qers, -1, &error);
+         bson_t *bson_doc = BCON_NEW("$set", "{", "_id",  BCON_UTF8(pcs_upfdbid), "pcs-pfcp-est-done", BCON_INT32(1), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(1), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_UTF8(pcs_n4createdata.pcs_bars), "}");
+
          pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_upfdbid, bson_doc);
+
+         if (pcs_blockingapienabledcreate)
+         {
+            bson_destroy(bson_pdr_ary);
+            bson_destroy(bson_far_ary);
+            bson_destroy(bson_qer_ary);
+         }
       }
       else
       {
+         char *pcs_docjson;
+         asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, 1, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+
+         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
+
          pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_upfdbid, bson_doc);
+
+         if (pcs_blockingapienabledcreate)
+         {
+            free(pcs_docjson);
+         }
       }
       if (pcs_rv != OGS_OK)
       {
@@ -712,6 +731,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       }
       else
       {
+         sess->pcs.pcs_udsfcreatedone = 1;
          ogs_info("PCS Successfully inserted N4 Session Establishment data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
       }
 
@@ -722,7 +742,6 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
          free(pcs_upfdbid);
          free(pcs_n4createdata.pcs_pdrs);
          free(pcs_n4createdata.pcs_fars);
-         free(pcs_docjson);
       }
    }
    else if (strcmp(pcs_dbcollectioname, "upf") != 0)
@@ -826,7 +845,10 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
 
                bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-pfcp-update-done", BCON_INT32(1), "FARs", BCON_ARRAY(bson_doc_ary), "}");
                pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_upfdbid, bson_doc);
-               bson_destroy(bson_doc_ary);
+               if (pcs_blockingapienabledmodifyrsp)
+               {
+                  bson_destroy(bson_doc_ary);
+               }
             }
             else
             {

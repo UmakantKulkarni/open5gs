@@ -698,34 +698,41 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
    {
       struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
       int pcs_rv;
-      char *pcs_docjson;
-      asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
-
+   
       bson_error_t error;
-      bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
       if (pcs_upsertapienabledcreate)
       {
+         bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_UTF8(pcs_imsistr), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "ue-access-type", BCON_INT32(pcs_createdata.pcs_amfueaccesstype), "allowed_pdu_session_status", BCON_INT32(pcs_createdata.pcs_amfueallowedpdusessionstatus), "pei", BCON_UTF8(pcs_createdata.pcs_amfuepei), "dnn", BCON_UTF8(pcs_createdata.pcs_amfsessdnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", BCON_UTF8(pcs_createdata.pcs_amfueplmnid), "amf-id", BCON_UTF8(pcs_createdata.pcs_amfueamfid), "tac", BCON_UTF8(pcs_createdata.pcs_amfuetac), "ue-location-timestamp", BCON_INT64((long)pcs_createdata.pcs_amfuelocts), "ran-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_ranuengapid), "amf-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_amfuengapid), "gnb-id", BCON_INT32(pcs_createdata.pcs_ranuegnbid), "rat_type", BCON_UTF8(pcs_createdata.pcs_ranuerattype), "}"); 
          pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_imsistr, bson_doc);
       }
       else
       {
+         char *pcs_docjson;
+         asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
+         bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
          pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+         if (pcs_blockingapienabledcreate)
+         {
+            free(pcs_docjson);
+         }
       }
-      if (pcs_blockingapienabledcreate)
-      {
-         ogs_free(pcs_createdata.pcs_snssaisd);
-         ogs_free(pcs_createdata.pcs_amfueamfid);
-         ogs_free(pcs_createdata.pcs_amfuetac);
-         free(pcs_createdata.pcs_amfueplmnid);
-         free(pcs_docjson);
-      }
+      
       if (pcs_rv != OGS_OK)
       {
          ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
       }
       else
       {
+         sess->pcs.pcs_udsfcreatedone = 1;
          ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->amf_ue->supi);
+      }
+
+      if (pcs_blockingapienabledcreate)
+      {
+         ogs_free(pcs_createdata.pcs_snssaisd);
+         ogs_free(pcs_createdata.pcs_amfueamfid);
+         ogs_free(pcs_createdata.pcs_amfuetac);
+         free(pcs_createdata.pcs_amfueplmnid);
       }
    }
    else if (!pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") != 0)
@@ -843,6 +850,7 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
          }
          else
          {
+            sess->pcs.pcs_udsfn1n2done = 1;
             ogs_info("PCS Successfully updated n1-n2 data to MongoDB for supi [%s]", sess->amf_ue->supi);
          }
 
