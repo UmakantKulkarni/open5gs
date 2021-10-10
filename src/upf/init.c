@@ -139,12 +139,12 @@ static void upf_main(void *data)
             ogs_error("PCS failed to parse URI: %s. Error message is: %s ", uri_string, error.message);
         }
 
+        PCS_MONGO_POOL = mongoc_client_pool_new (uri);
+        mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
+        upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
+
         if (!upf_sm.pcs_fsmdata.pcs_blockingapienabledcreate || !upf_sm.pcs_fsmdata.pcs_blockingapienabledn1n2 || !upf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyreq || !upf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp)
         {
-            PCS_MONGO_POOL = mongoc_client_pool_new (uri);
-            mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
-            upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
-
             long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
             ogs_info("PCS Number of Processors is %ld", pcs_numprocessors);
             PCS_THREADPOOL = mt_create_pool((uint64_t)pcs_numprocessors);

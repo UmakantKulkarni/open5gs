@@ -606,11 +606,20 @@ struct pcs_upf_n4_create pcs_get_upf_n4_create_data(upf_sess_t *sess)
 void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 {
    struct pcs_upf_create_udsf_s *pcs_upfcreateudsfstruct = pcs_upfcreateudsf;
-   char *pcs_dbrdata = pcs_upfcreateudsfstruct->pcs_dbrdata;
-   upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfcreateudsfstruct->pcs_upfn4seid);
 
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-   uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+   uint8_t pcs_blockingapienabledcreate = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
+   
+   upf_sess_t *sess;
+   if (pcs_blockingapienabledcreate)
+   {
+      sess = pcs_upfcreateudsfstruct->sess;
+   }
+   else
+   {
+      sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfcreateudsfstruct->pcs_upfn4seid);
+   }
+
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    if (pcs_mongoclient == NULL)
@@ -624,10 +633,19 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 
    struct pcs_upf_n4_create pcs_n4createdata;
    pcs_n4createdata.pcs_smfn4seid = sess->smf_n4_seid;
-   char *pcs_upfdbid;
+   char *pcs_upfdbid, *pcs_dbrdata;
    asprintf(&pcs_upfdbid, "%ld", pcs_n4createdata.pcs_smfn4seid);
 
-   if (strlen(pcs_dbrdata) <= 19 && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") == 0)
+   if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+   {
+      pcs_dbrdata = read_data_from_db(pcs_dbcollection, "_id", pcs_upfdbid, -1);
+   }
+   else
+   {
+      pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, pcs_n4createdata.pcs_smfn4seid);
+   }
+
+   if (strlen(pcs_dbrdata) <= 19 && strcmp(pcs_dbcollectioname, "upf") == 0)
    {
       char *pcs_docjson;
       int pcs_rv;
@@ -649,33 +667,39 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
          ogs_info("PCS Successfully inserted N4 Session Establishment data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
       }
 
-      ogs_free(pcs_n4createdata.pcs_upfnodeip);
-      ogs_free(pcs_n4createdata.pcs_smfnodeip);
-      free(pcs_upfdbid);
-      free(pcs_n4createdata.pcs_pdrs);
-      free(pcs_n4createdata.pcs_fars);
-      free(pcs_docjson);
+      if (pcs_blockingapienabledcreate)
+      {
+         ogs_free(pcs_n4createdata.pcs_upfnodeip);
+         ogs_free(pcs_n4createdata.pcs_smfnodeip);
+         free(pcs_upfdbid);
+         free(pcs_n4createdata.pcs_pdrs);
+         free(pcs_n4createdata.pcs_fars);
+         free(pcs_docjson);
+      }
    }
-   else if (!pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") != 0)
+   else if (strcmp(pcs_dbcollectioname, "upf") != 0)
    {
       ogs_info("PCS Successfully completed N4 Session Establishment transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
    }
 
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+
    sess->pcs.pcs_udsfcreatedone = 1;
    return;
-   //pthread_exit(NULL);
 }
 
 void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
 {
    struct pcs_upf_create_udsf_s *pcs_upfupdateudsfstruct = pcs_upfupdateudsf;
-   char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
-   upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfupdateudsfstruct->pcs_upfn4seid);
 
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
    uint8_t pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+   uint8_t pcs_blockingapienabledmodifyrsp = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYRSP");
+   
+   upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfupdateudsfstruct->pcs_upfn4seid);
+   char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
+
    mongoc_collection_t *pcs_dbcollection;
    mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
    if (pcs_mongoclient == NULL)
@@ -772,11 +796,14 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
             ogs_info("PCS Successfully inserted N4 Session Modification data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
          }
 
-         free(pcs_var);
-         free(pcs_upfdbid);
-         free(pcs_pfcpie);
-         free(pcs_fars);
-
+         if (pcs_blockingapienabledmodifyrsp)
+         {
+            free(pcs_var);
+            free(pcs_upfdbid);
+            free(pcs_pfcpie);
+            free(pcs_fars);
+         }
+         
       }
       else
       {
@@ -789,8 +816,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    }
 
    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+   
    sess->pcs.pcs_udsfupdatedone = 1;
-
    return;
-   //pthread_exit(NULL);
 }

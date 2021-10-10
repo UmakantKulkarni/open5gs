@@ -391,7 +391,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
-            //ThreadPool *pcs_threadpool = pcs_fsmdata->pcs_threadpool;
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
             struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));

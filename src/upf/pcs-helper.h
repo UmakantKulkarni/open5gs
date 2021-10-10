@@ -6,6 +6,10 @@ extern "C"
 {
 #endif
 
+    extern mongoc_client_pool_t *PCS_MONGO_POOL;
+
+    extern ThreadPool *PCS_THREADPOOL;
+
 #include "context.h"
 #include "bson.h"
 
@@ -14,6 +18,7 @@ extern "C"
         mongoc_collection_t *pcs_dbcollection;
         uint64_t *pcs_upfn4seid;
         char *pcs_dbrdata;
+        upf_sess_t *sess;
     };
 
     struct pcs_upf_update_udsf_s
@@ -21,6 +26,7 @@ extern "C"
         mongoc_collection_t *pcs_dbcollection;
         uint64_t *pcs_upfn4seid;
         char *pcs_dbrdata;
+        upf_sess_t *sess;
     };
 
     int pcs_set_int_from_env(const char *pcs_env_var);
