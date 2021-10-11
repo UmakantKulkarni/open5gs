@@ -11,7 +11,7 @@ struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata)
 {
    struct pcs_mongo_info_s pcs_mongo_info;
    pcs_mongo_info.pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-   if (pcs_mongoclient == NULL)
+   if (pcs_mongo_info.pcs_mongoclient == NULL)
    {
          pcs_mongo_info.pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
    }
