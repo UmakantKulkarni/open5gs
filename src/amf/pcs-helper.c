@@ -17,7 +17,7 @@ struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata)
    }
    else
    {
-         pcs_mongo_info.pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+         pcs_mongo_info.pcs_dbcollection = mongoc_client_get_collection(pcs_mongo_info.pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
    }
    
    return pcs_mongo_info;
