@@ -399,9 +399,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
             pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
             pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
-            mongoc_collection_t *pcs_dbcollection = pcs_get_mongo_collection(pcs_fsmdata);
-            pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_dbcollection, pcs_imsistr));
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr));
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             //pthread_t pcs_thread1;
             //pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
             mt_add_job(PCS_THREADPOOL, &pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
@@ -441,9 +441,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
         pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
         pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
-        mongoc_collection_t *pcs_dbcollection = pcs_get_mongo_collection(pcs_fsmdata);
-        pcs_amfn1n2udsf->pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+        pcs_amfn1n2udsf->pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         pcs_amfn1n2udsf->sess = sess;
         pcs_amf_n1n2_udsf((void*) pcs_amfn1n2udsf);
     }
