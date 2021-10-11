@@ -21,7 +21,6 @@ struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata)
    }
    
    return pcs_mongo_info;
-
 }
 
 int pcs_set_int_from_env(const char *pcs_env_var)

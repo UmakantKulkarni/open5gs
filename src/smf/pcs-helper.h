@@ -11,6 +11,13 @@ extern "C"
 #include "context.h"
 #include "bson.h"
 
+    struct pcs_mongo_info_s
+    {
+        mongoc_client_t *pcs_mongoclient;
+        mongoc_collection_t *pcs_dbcollection;
+    };
+
+    struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata);
     int pcs_set_int_from_env(const char *pcs_env_var);
     char *pcs_combine_strings(char *pcs_input_a, char *pcs_input_b);
     int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc);

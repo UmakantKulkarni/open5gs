@@ -211,19 +211,12 @@ bool smf_nsmf_handle_create_sm_context(
 
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        mongoc_collection_t *pcs_dbcollection;
-        mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-        if (pcs_mongoclient == NULL)
-        {
-            pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        }
-        else
-        {
-            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
-        }
+        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+        mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
         char *pcs_imsistr = sess->smf_ue->supi;
         pcs_imsistr += 5;
         char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         if (strlen(pcs_dbrdata) <= 29)
         { 
             struct pcs_smf_create pcs_createdata = pcs_get_smf_create_data(sess, SmContextCreateData);
@@ -641,19 +634,12 @@ bool smf_nsmf_handle_update_sm_context(
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection;
-            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-            if (pcs_mongoclient == NULL)
-            {
-                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            }
-            else
-            {
-                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
-            }
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
             char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             sess->pcs.pcs_dbrdata = pcs_dbrdata;
             JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
             if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)

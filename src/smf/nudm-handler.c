@@ -281,18 +281,10 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection;
-            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-            if (pcs_mongoclient == NULL)
-            {
-                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            }
-            else
-            {
-                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
-            }
-            int pcs_rv;
-            
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
+
+            int pcs_rv;            
             struct pcs_smf_create pcs_createdata = sess->pcs.pcs_createdata;
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
@@ -312,6 +304,7 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
                 ogs_free(pcs_createdata.pcs_snssaisd);
                 free(pcs_docjson);
             }
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
 
             if (pcs_rv != OGS_OK)
             {

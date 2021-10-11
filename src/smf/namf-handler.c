@@ -167,16 +167,8 @@ bool smf_namf_comm_handler_n1_n2_message_transfer(
         }
         else
         {
-            mongoc_collection_t *pcs_dbcollection;
-            mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-            if (pcs_mongoclient == NULL)
-            {
-                pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            }
-            else
-            {
-                pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
-            }
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
             int pcs_rv;
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
@@ -220,7 +212,7 @@ bool smf_namf_comm_handler_n1_n2_message_transfer(
                 }
                 bson_free(pcs_dbrdata);
             }
-            
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             if (pcs_rv != OGS_OK)
             {
                 ogs_error("PCS Error while uploading n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
@@ -245,6 +237,7 @@ bool smf_namf_comm_handler_n1_n2_message_transfer(
             ogs_free(pcs_n1n2data.pcs_ie);
             ogs_free(pcs_n1n2data.pcs_gtptunnel);
             ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
+            
         }
     }
     else

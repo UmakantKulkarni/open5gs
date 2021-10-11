@@ -201,16 +201,8 @@ void upf_n4_handle_session_establishment_request(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && pcs_fsmdata->pcs_isproceduralstateless)
     {
-        mongoc_collection_t *pcs_dbcollection;
-        mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-        if (pcs_mongoclient == NULL)
-        {
-            pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-        }
-        else
-        {
-            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
-        }
+        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+        mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
         char *pcs_upfdbid, *pcs_dbrdata;
         asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
@@ -221,6 +213,7 @@ void upf_n4_handle_session_establishment_request(
         {
             pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid);
         }
+        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
             if (strlen(pcs_dbrdata) <= 19)
@@ -500,7 +493,8 @@ void upf_n4_handle_session_modification_request(
 
     if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
     {
-        mongoc_collection_t *pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+        mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
         char *pcs_upfdbid, *pcs_dbrdata;
         double pcs_pfcpestdone = 0;
@@ -649,11 +643,14 @@ void upf_n4_handle_session_modification_request(
         {
             ogs_info("PCS Successfully completed N4 Session Modification transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
         }
+        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
             char *pcs_upfdbid;
             asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
@@ -661,12 +658,13 @@ void upf_n4_handle_session_modification_request(
             (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
             if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
             {
-                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "_id", pcs_upfdbid, -1));
+                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_dbcollection, "_id", pcs_upfdbid, -1));
             }
             else
             {
-                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_fsmdata->pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid));
+                pcs_upfupdateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid));
             }
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             //pthread_t pcs_thread1;
             //pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
             mt_add_job(PCS_THREADPOOL, &pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
