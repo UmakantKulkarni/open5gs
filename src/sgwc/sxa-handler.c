@@ -622,7 +622,7 @@ void sgwc_sxa_handle_session_modification_response(
             ogs_assert(gtp_req);
 
             /* Remove S5U-F-TEID */
-            gtp_req->bearer_contexts.s5_s8_u_sgw_f_teid.presence = 0;
+            gtp_req->bearer_contexts.s4_u_sgsn_f_teid.presence = 0;
 
             /* Send Data Plane(UL) : SGW-S1U */
             memset(&sgw_s1u_teid, 0, sizeof(ogs_gtp_f_teid_t));
@@ -902,7 +902,7 @@ void sgwc_sxa_handle_session_modification_response(
                 indication = gtp_req->indication_flags.data;
             }
 
-            if (indication && indication->hi) {
+            if (indication && indication->handover_indication) {
                 recv_message->h.type = OGS_GTP_MODIFY_BEARER_REQUEST_TYPE;
                 recv_message->h.teid = sess->pgw_s5c_teid;
 
