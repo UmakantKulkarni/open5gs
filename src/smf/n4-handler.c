@@ -288,6 +288,15 @@ void smf_5gc_n4_handle_session_establishment_response(
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
 
+            if (pcs_rv != OGS_OK)
+            {
+                ogs_error("PCS Error while uploading N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+            else
+            {
+                ogs_info("PCS Successfully uploading N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
+            }
+
             ogs_free(pcs_n4createdata.pcs_upfnodeip);
             ogs_free(pcs_n4createdata.pcs_smfnodeip);
             free(pcs_n4createdata.pcs_pdrs);
