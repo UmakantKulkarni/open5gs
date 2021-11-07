@@ -1662,6 +1662,7 @@ ogs_tlv_desc_t ogs_pfcp_tlv_desc_update_forwarding_parameters =
         &ogs_pfcp_tlv_desc_pfcpsmreq_flags,
         &ogs_pfcp_tlv_desc_traffic_endpoint_id,
         &ogs_pfcp_tlv_desc__interface_type,
+        &ogs_pfcp_tlv_desc_framed_route,
         NULL,
     }
 };

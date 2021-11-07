@@ -1586,7 +1586,7 @@ void ngap_handle_pdu_session_resource_setup_response(
         param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
         ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
 
-        if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
+        if (pcs_fsmdata->pcs_dbcommenabled)
         {
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
@@ -1594,34 +1594,32 @@ void ngap_handle_pdu_session_resource_setup_response(
             pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_amfupdaterequdsf->pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+            char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            pcs_amfupdaterequdsf->sess = sess;
-            pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
-        }
-        else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledmodifyreq)
-        {
-            if (sess->pcs.pcs_udsfn1n2done)
+            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+            pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+
+            if (pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
             {
-                char *pcs_imsistr = sess->amf_ue->supi;
-                pcs_imsistr += 5;
-                struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
-                pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-                (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-                (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
-                pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
-                struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr));
-                mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-                //pthread_t pcs_thread1;
-                //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                ogs_info("PCS Started Update-Req UDSF thread");
+                pcs_amfupdaterequdsf->sess = sess;
+                pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
             }
-            else
+            else if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
             {
-                ogs_error("pcs_udsfn1n2edone thread is not complete");
-                sess->pcs.pcs_udsfupdatereqdone = 0;
+                if (sess->pcs.pcs_udsfn1n2done)
+                {
+                    (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+                    (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
+                    //pthread_t pcs_thread1;
+                    //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                    mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                    ogs_info("PCS Started Update-Req UDSF thread");
+                }
+                else
+                {
+                    ogs_error("pcs_udsfn1n2edone thread is not complete");
+                    sess->pcs.pcs_udsfupdatereqdone = 0;
+                }
             }
         }
 

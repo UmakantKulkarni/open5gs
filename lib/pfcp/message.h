@@ -706,6 +706,7 @@ typedef struct ogs_pfcp_tlv_update_forwarding_parameters_s {
     ogs_pfcp_tlv_pfcpsmreq_flags_t pfcpsmreq_flags;
     ogs_pfcp_tlv_traffic_endpoint_id_t linked_traffic_endpoint_id;
     ogs_pfcp_tlv__interface_type_t destination_interface_type;
+    ogs_pfcp_tlv_framed_route_t framed_route;
 } ogs_pfcp_tlv_update_forwarding_parameters_t;
 
 typedef struct ogs_pfcp_tlv_update_duplicating_parameters_s {

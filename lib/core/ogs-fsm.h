@@ -58,6 +58,7 @@ typedef struct _pcs_fsm_struct_t {
     uint8_t pcs_isproceduralstateless;
     uint8_t pcs_replaceapienabledn1n2;
     uint8_t pcs_replaceapienabledmodify;
+    uint8_t pcs_enablesingleread;
     char *pcs_dbcollectioname;
     ThreadPool *pcs_threadpool;
 } pcs_fsm_struct_t;

@@ -89,6 +89,7 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
 
 static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
 {
+    pcs_fsm_struct_t *pcs_fsmdata = &s->pcs_fsmdata;
     int rv, xact_count = 0;
 
     amf_ue_t *amf_ue = NULL;
@@ -343,7 +344,7 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
             }
 
             gmm_handle_ul_nas_transport(
-                    amf_ue, &nas_message->gmm.ul_nas_transport);
+                    amf_ue, &nas_message->gmm.ul_nas_transport, pcs_fsmdata);
             break;
 
         case OGS_NAS_5GS_REGISTRATION_COMPLETE:

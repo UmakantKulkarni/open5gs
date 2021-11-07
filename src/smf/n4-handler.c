@@ -212,23 +212,19 @@ void smf_5gc_n4_handle_session_establishment_response(
                         sess);
     ogs_assert(param.n2smbuf);
 
-    smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
-
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         double pcs_createdone = 0;
+        char *pcs_dbrdata;
+        struct pcs_smf_n1n2 pcs_n1n2data;
+        struct pcs_smf_n4_create pcs_n4createdata;
         if (pcs_fsmdata->pcs_isproceduralstateless)
         {
             pcs_createdone = sess->pcs.pcs_createdone;
         }
         else
         {
-            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            char *pcs_imsistr = sess->smf_ue->supi;
-            pcs_imsistr += 5;
-            char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            sess->pcs.pcs_dbrdata = pcs_dbrdata;
+            pcs_dbrdata = sess->pcs.pcs_dbrdata;
             JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
             if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
             {
@@ -239,18 +235,70 @@ void smf_5gc_n4_handle_session_establishment_response(
         }
         if ((int)pcs_createdone)
         {
-            struct pcs_smf_n1n2 pcs_n1n2data = pcs_get_smf_n1n2_data(sess, param.n1smbuf, param.n2smbuf);
-            struct pcs_smf_n4_create pcs_n4createdata = pcs_get_smf_n4_create_data(sess);
+            pcs_n1n2data = pcs_get_smf_n1n2_data(sess, param.n1smbuf, param.n2smbuf);
+            pcs_n4createdata = pcs_get_smf_n4_create_data(sess);
             pcs_n4createdata.pfcp_cause_value = pfcp_cause_value;
             pcs_n4createdata.pcs_upfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
             sess->pcs.pcs_n1n2data = pcs_n1n2data;
-            sess->pcs.pcs_n4createdata = pcs_n4createdata;
         }
         else
         {
             ogs_error("PCS n1-n2 request got triggered without processing Create-SM-Context request");
         }
+        if (!pcs_fsmdata->pcs_isproceduralstateless)
+        {
+            if (pcs_fsmdata->pcs_updateapienabledn1n2)
+            {
+                bson_error_t error;
+                bson_t *bson_pdr_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_pdrs, -1, &error);
+                bson_t *bson_far_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_fars, -1, &error);
+                bson_t *bson_qer_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_qers, -1, &error);
+                bson_t *bson_bar_doc = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_bars, -1, &error);
+
+                bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-pfcp-est-done", BCON_INT32(1), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(pcs_n4createdata.pfcp_cause_value), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_DOCUMENT(bson_bar_doc), "}");
+
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+                bson_destroy(bson_pdr_ary);
+                bson_destroy(bson_far_ary);
+                bson_destroy(bson_qer_ary);
+                bson_destroy(bson_bar_doc);
+            }
+            else
+            {
+                char *pcs_updatedoc;
+                asprintf(&pcs_updatedoc, ", \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s }", pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pfcp_cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+                if (pcs_fsmdata->pcs_replaceapienabledn1n2)
+                {
+                    pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                }
+                else
+                {
+                    pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+                }
+                bson_free(pcs_dbrdata);
+            }
+
+            ogs_free(pcs_n4createdata.pcs_upfnodeip);
+            ogs_free(pcs_n4createdata.pcs_smfnodeip);
+            free(pcs_n4createdata.pcs_pdrs);
+            free(pcs_n4createdata.pcs_fars);
+
+            //Read for n1-n2 start
+            char *pcs_imsistr = sess->smf_ue->supi;
+            pcs_imsistr += 5;
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+        }
+        else
+        {
+            sess->pcs.pcs_n4createdata = pcs_n4createdata;
+        }
+        sess->pcs.pcs_n4createdone = 1;
     }
+
+    smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
 
 }
 

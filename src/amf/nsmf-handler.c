@@ -45,15 +45,11 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             sess->pcs.pcs_udsfn1n2done = 0;
             sess->pcs.pcs_udsfupdatereqdone = 0;
             sess->pcs.pcs_udsfupdaterspdone = 0;
-            char *pcs_imsistr = sess->amf_ue->supi;
-            pcs_imsistr += 5;
             struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
             pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_amfcreateudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
             (*pcs_amfcreateudsf).pcs_pdusessionid = (long *) (long)sess->psi;
-            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_amfcreateudsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr));
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            pcs_amfcreateudsf->pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
             //pthread_t pcs_thread1;
             //pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
             mt_add_job(PCS_THREADPOOL, &pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
@@ -182,11 +178,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
 
     if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate)
     {
-        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-        char *pcs_imsistr = sess->amf_ue->supi;
-        pcs_imsistr += 5;
-        char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
-        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+        char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
         if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
         {
             sess->pcs.pcs_udsfcreatedone = 0;

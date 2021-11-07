@@ -18,6 +18,8 @@
  */
 
 #include "nsmf-build.h"
+#include "pcs-helper.h"
+#include "mongoc.h"
 
 ogs_sbi_request_t *amf_nsmf_pdusession_build_create_sm_context(
         amf_sess_t *sess, void *data)
@@ -122,6 +124,11 @@ ogs_sbi_request_t *amf_nsmf_pdusession_build_create_sm_context(
     pcf_nf_instance = OGS_SBI_NF_INSTANCE(&amf_ue->sbi, OpenAPI_nf_type_PCF);
     ogs_expect_or_return_val(pcf_nf_instance, NULL);
     SmContextCreateData.pcf_id = pcf_nf_instance->id;
+
+    if (pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+    {
+        SmContextCreateData.supported_features = ogs_strdup(sess->pcs.pcs_dbrdata);
+    }
 
     message.SmContextCreateData = &SmContextCreateData;
 
@@ -266,6 +273,11 @@ ogs_sbi_request_t *amf_nsmf_pdusession_build_update_sm_context(
         SmContextUpdateData.release = param->release;
     }
     SmContextUpdateData.cause = param->cause;
+
+    if (pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+    {
+        SmContextUpdateData.supported_features = ogs_strdup(sess->pcs.pcs_dbrdata);
+    }
 
     request = ogs_sbi_build_request(&message);
     ogs_expect(request);

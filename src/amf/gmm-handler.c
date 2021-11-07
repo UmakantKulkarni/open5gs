@@ -24,6 +24,7 @@
 #include "sbi-path.h"
 
 #include "gmm-handler.h"
+#include "pcs-helper.h"
 
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __gmm_log_domain
@@ -879,7 +880,7 @@ int gmm_handle_security_mode_complete(amf_ue_t *amf_ue,
 }
 
 int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
-        ogs_nas_5gs_ul_nas_transport_t *ul_nas_transport)
+        ogs_nas_5gs_ul_nas_transport_t *ul_nas_transport, pcs_fsm_struct_t *pcs_fsmdata)
 {
     ogs_slice_data_t *selected_slice = NULL;
     amf_sess_t *sess = NULL;
@@ -1054,6 +1055,15 @@ int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
                 }
 
                 if (nf_instance) {
+                    if (pcs_fsmdata->pcs_dbcommenabled)
+                    {
+                        char *pcs_imsistr = amf_ue->supi;
+                        pcs_imsistr += 5;
+                        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+                        char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+                        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                        sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+                    }
                     ogs_assert(true ==
                         amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
                             sess, AMF_CREATE_SM_CONTEXT_NO_STATE, NULL,

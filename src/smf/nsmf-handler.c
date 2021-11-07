@@ -211,12 +211,20 @@ bool smf_nsmf_handle_create_sm_context(
 
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-        mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-        char *pcs_imsistr = sess->smf_ue->supi;
-        pcs_imsistr += 5;
-        char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+        char *pcs_dbrdata;
+        if (pcs_fsmdata->pcs_enablesingleread)
+        {
+            pcs_dbrdata = SmContextCreateData->supported_features;
+        }
+        else
+        {
+            pcs_imsistr = sess->smf_ue->supi;
+            pcs_imsistr += 5;
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
+            pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+        }        
         if (strlen(pcs_dbrdata) <= 29)
         { 
             struct pcs_smf_create pcs_createdata = pcs_get_smf_create_data(sess, SmContextCreateData);
@@ -361,6 +369,53 @@ bool smf_nsmf_handle_update_sm_context(
          */
         n2smbuf = ogs_pkbuf_copy(n2smbuf);
         ogs_assert(n2smbuf);
+
+        if (pcs_fsmdata->pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
+        {
+            double pcs_n1n2done = 0, pcs_pfcpestdone = 0;
+            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && sess->pcs.pcs_n4createdone)
+            {
+                pcs_n1n2done = sess->pcs.pcs_n1n2done;
+                pcs_pfcpestdone = sess->pcs.pcs_n4createdone;
+            }
+            else
+            {
+                char *pcs_dbrdata;
+                if (pcs_fsmdata->pcs_enablesingleread)
+                {
+                    pcs_dbrdata = SmContextUpdateData->supported_features;
+                }
+                else
+                {
+                    char *pcs_imsistr = sess->smf_ue->supi;
+                    pcs_imsistr += 5;
+                    struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+                    mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
+                    pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+                    mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                }
+                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+                JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
+                if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
+                {
+                    JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
+                    pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
+                    pcs_pfcpestdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-pfcp-est-done");
+                }
+                json_value_free(pcs_dbrdatajsonval);
+            }
+
+            if ((int)pcs_n1n2done && (int)pcs_pfcpestdone)
+            {
+                struct pcs_smf_update pcs_updatedata = pcs_get_smf_update_data(n2smbuf);
+                sess->pcs.pcs_updatedata = pcs_updatedata;
+            }
+            else
+            {
+                ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
+            }
+        }
+
         ngap_send_to_n2sm(
                 sess, stream, SmContextUpdateData->n2_sm_info_type, n2smbuf);
 
@@ -622,44 +677,6 @@ bool smf_nsmf_handle_update_sm_context(
                 OGS_SBI_HTTP_STATUS_BAD_REQUEST,
                 "No UpdateData", smf_ue->supi, NULL, NULL);
         return false;
-    }
-
-    if (pcs_fsmdata->pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
-    {
-        double pcs_n1n2done = 0, pcs_pfcpestdone = 0;
-        if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && sess->pcs.pcs_n4createdone)
-        {
-            pcs_n1n2done = sess->pcs.pcs_n1n2done;
-            pcs_pfcpestdone = sess->pcs.pcs_n4createdone;
-        }
-        else
-        {
-            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-            char *pcs_imsistr = sess->smf_ue->supi;
-            pcs_imsistr += 5;
-            char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            sess->pcs.pcs_dbrdata = pcs_dbrdata;
-            JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
-            if (json_value_get_type(pcs_dbrdatajsonval) == JSONObject)
-            {
-                JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
-                pcs_n1n2done = json_object_get_number(pcs_dbrdatajsonobj, "pcs-n1n2-done");
-                pcs_pfcpestdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-pfcp-est-done");
-            }
-            json_value_free(pcs_dbrdatajsonval);
-        }
-
-        if ((int)pcs_n1n2done && (int)pcs_pfcpestdone)
-        {
-            struct pcs_smf_update pcs_updatedata = pcs_get_smf_update_data(n2smbuf);
-            sess->pcs.pcs_updatedata = pcs_updatedata;
-        }
-        else
-        {
-            ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
-        }
     }
 
     return true;

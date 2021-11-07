@@ -504,6 +504,16 @@ bool smf_npcf_smpolicycontrol_handle_create(
     cp2up_pdr->precedence = OGS_PFCP_CP2UP_PDR_PRECEDENCE;
     up2cp_pdr->precedence = OGS_PFCP_UP2CP_PDR_PRECEDENCE;
 
+    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
+    {
+        char *pcs_imsistr = smf_ue->supi;
+        pcs_imsistr += 5;
+        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+        char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+        sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+    }
+
     ogs_assert(OGS_OK ==
         smf_5gc_pfcp_send_session_establishment_request(sess, stream));
 

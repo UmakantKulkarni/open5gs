@@ -69,6 +69,13 @@ ogs_pkbuf_t *smf_n4_build_session_establishment_request(
     i = 0;
     ogs_list_for_each(&sess->pfcp.pdr_list, pdr) {
         ogs_pfcp_build_create_pdr(&req->create_pdr[i], i, pdr);
+        if (i == 0)
+        {
+            char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
+            req->create_pdr[i].pdi.framed_route.presence = 1;
+            req->create_pdr[i].pdi.framed_route.data = pcs_dbrdata;
+            req->create_pdr[i].pdi.framed_route.len = strlen(pcs_dbrdata);
+        }
         i++;
     }
 
@@ -190,6 +197,14 @@ ogs_pkbuf_t *smf_n4_build_session_modification_request(
                     ogs_pfcp_build_update_far_activate(
                             &req->update_far[num_of_update_far],
                             num_of_update_far, far);
+                    
+                    if (num_of_update_far == 0)
+                    {
+                        char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
+                        req->update_far[num_of_update_far].update_forwarding_parameters.framed_route.presence = 1;
+                        req->update_far[num_of_update_far].update_forwarding_parameters.framed_route.data = pcs_dbrdata;
+                        req->update_far[num_of_update_far].update_forwarding_parameters.framed_route.len = strlen(pcs_dbrdata);
+                    }
 
                     /* Clear all FAR flags */
                     far->smreq_flags.value = 0;

@@ -51,7 +51,7 @@ int gmm_handle_security_mode_complete(amf_ue_t *amf_ue,
         ogs_nas_5gs_security_mode_complete_t *security_mode_complete);
 
 int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
-        ogs_nas_5gs_ul_nas_transport_t *ul_nas_transport);
+        ogs_nas_5gs_ul_nas_transport_t *ul_nas_transport, pcs_fsm_struct_t *pcs_fsmdata);
 
 #if 0
 int gmm_handle_tau_request(amf_ue_t *amf_ue,
