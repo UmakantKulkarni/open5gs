@@ -111,6 +111,7 @@ static void upf_main(void *data)
     upf_sm.pcs_fsmdata.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
     upf_sm.pcs_fsmdata.pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
     upf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+    upf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;

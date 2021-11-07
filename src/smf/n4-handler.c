@@ -271,7 +271,7 @@ void smf_5gc_n4_handle_session_establishment_response(
             else
             {
                 char *pcs_updatedoc;
-                asprintf(&pcs_updatedoc, ", \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s }", pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pfcp_cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+                asprintf(&pcs_updatedoc, ", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s }", pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pfcp_cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
                 if (pcs_fsmdata->pcs_replaceapienabledn1n2)
                 {
                     pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
@@ -290,11 +290,11 @@ void smf_5gc_n4_handle_session_establishment_response(
 
             if (pcs_rv != OGS_OK)
             {
-                ogs_error("PCS Error while uploading N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                ogs_error("PCS Error while uploaded N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
             else
             {
-                ogs_info("PCS Successfully uploading N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                ogs_info("PCS Successfully uploaded N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
 
             ogs_free(pcs_n4createdata.pcs_upfnodeip);

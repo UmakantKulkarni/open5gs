@@ -667,6 +667,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_blockingapienabledcreate = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
    uint8_t pcs_upsertapienabledcreate = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
+   uint8_t pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
    
    upf_sess_t *sess;
    if (pcs_blockingapienabledcreate)
@@ -678,15 +679,19 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfcreateudsfstruct->pcs_upfn4seid);
    }
 
+   mongoc_client_t *pcs_mongoclient;
    mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-   if (pcs_mongoclient == NULL)
+   if (!pcs_enablesingleread)
    {
-      pcs_dbcollection = pcs_upfcreateudsfstruct->pcs_dbcollection;
-   }
-   else
-   {
-      pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+      pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+      if (pcs_mongoclient == NULL)
+      {
+         pcs_dbcollection = pcs_upfcreateudsfstruct->pcs_dbcollection;
+      }
+      else
+      {
+         pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+      }
    }
 
    struct pcs_upf_n4_create pcs_n4createdata;
@@ -700,7 +705,15 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
    }
    else
    {
-      pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, pcs_n4createdata.pcs_smfn4seid);
+      if (pcs_enablesingleread)
+      {
+         pcs_dbrdata = pcs_upfcreateudsfstruct->pcs_dbrdata;
+      }
+      else
+      {
+         pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, pcs_n4createdata.pcs_smfn4seid);
+         mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
+      }
    }
 
    if (strlen(pcs_dbrdata) <= 19 && strcmp(pcs_dbcollectioname, "upf") == 0)
@@ -741,6 +754,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
             free(pcs_docjson);
          }
       }
+      mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
       if (pcs_rv != OGS_OK)
       {
          ogs_error("PCS Error while inserting N4 Session Establishment data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
@@ -765,15 +779,13 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       ogs_info("PCS Successfully completed N4 Session Establishment transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
    }
 
-   mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
-
    sess->pcs.pcs_udsfcreatedone = 1;
    return;
 }
 
 void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
 {
-   struct pcs_upf_create_udsf_s *pcs_upfupdateudsfstruct = pcs_upfupdateudsf;
+   struct pcs_upf_update_udsf_s *pcs_upfupdateudsfstruct = pcs_upfupdateudsf;
 
    char *pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
    uint8_t pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
@@ -783,17 +795,6 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    
    upf_sess_t *sess = upf_sess_find_by_up_seid((uint64_t)pcs_upfupdateudsfstruct->pcs_upfn4seid);
    char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
-
-   mongoc_collection_t *pcs_dbcollection;
-   mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
-   if (pcs_mongoclient == NULL)
-   {
-      pcs_dbcollection = pcs_upfupdateudsfstruct->pcs_dbcollection;
-   }
-   else
-   {
-      pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
-   }
 
    uint64_t pcs_smfn4seid = sess->smf_n4_seid;
    char *pcs_upfdbid;
@@ -852,6 +853,17 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
          }
          pcs_fars = pcs_combine_strings(pcs_fars, pcs_squarebrace);
 
+         mongoc_collection_t *pcs_dbcollection;
+         mongoc_client_t *pcs_mongoclient = mongoc_client_pool_try_pop(PCS_MONGO_POOL);
+         if (pcs_mongoclient == NULL)
+         {
+            pcs_dbcollection = pcs_upfupdateudsfstruct->pcs_dbcollection;
+         }
+         else
+         {
+            pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
+         }
+
          if (!pcs_isproceduralstateless)
          {
             if (pcs_updateapienabledmodify)
@@ -880,6 +892,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
                }
             }
          }
+         mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
 
          if (pcs_rv != OGS_OK)
          {
@@ -897,7 +910,6 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
             free(pcs_pfcpie);
             free(pcs_fars);
          }
-
       }
       else
       {
@@ -906,10 +918,11 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    }
    else
    {
-      ogs_info("PCS Successfully completed N4 Session Modification transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+      if ((int)pcs_pfcpestdone)
+      {
+         ogs_info("PCS Successfully completed N4 Session Modification transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
+      }
    }
-
-   mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
    
    sess->pcs.pcs_udsfupdatedone = 1;
    return;
