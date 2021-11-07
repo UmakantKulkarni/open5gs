@@ -22,6 +22,7 @@
 #include "sbi-path.h"
 #include "pfcp-path.h"
 #include "nas-path.h"
+#include "pcs-helper.h"
 
 bool smf_npcf_smpolicycontrol_handle_create(
         smf_sess_t *sess, ogs_sbi_stream_t *stream, int state,

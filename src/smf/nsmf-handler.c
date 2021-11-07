@@ -218,7 +218,7 @@ bool smf_nsmf_handle_create_sm_context(
         }
         else
         {
-            pcs_imsistr = sess->smf_ue->supi;
+            char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;

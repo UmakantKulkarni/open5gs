@@ -247,6 +247,11 @@ void smf_5gc_n4_handle_session_establishment_response(
         }
         if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
+            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+            mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
+            int pcs_rv;
+            char *pcs_imsistr = sess->smf_ue->supi;
+            pcs_imsistr += 5;
             if (pcs_fsmdata->pcs_updateapienabledn1n2)
             {
                 bson_error_t error;
@@ -278,18 +283,15 @@ void smf_5gc_n4_handle_session_establishment_response(
                 bson_free(pcs_dbrdata);
             }
 
+            //Read for n1-n2 start
+            char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+
             ogs_free(pcs_n4createdata.pcs_upfnodeip);
             ogs_free(pcs_n4createdata.pcs_smfnodeip);
             free(pcs_n4createdata.pcs_pdrs);
-            free(pcs_n4createdata.pcs_fars);
-
-            //Read for n1-n2 start
-            char *pcs_imsistr = sess->smf_ue->supi;
-            pcs_imsistr += 5;
-            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+            free(pcs_n4createdata.pcs_fars);            
         }
         else
         {
