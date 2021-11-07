@@ -179,7 +179,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate)
     {
         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
-        if (strlen(pcs_dbrdata) <= 29 && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+        if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29) && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
         {
             sess->pcs.pcs_udsfcreatedone = 0;
             sess->pcs.pcs_udsfn1n2done = 0;
@@ -195,7 +195,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         {
             ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
         }
-        else if (strlen(pcs_dbrdata) <= 29 && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+        else if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29) && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
         {
             struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
             sess->pcs.pcs_createdone = 1;

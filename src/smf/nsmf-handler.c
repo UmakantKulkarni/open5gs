@@ -225,7 +225,7 @@ bool smf_nsmf_handle_create_sm_context(
             pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         }        
-        if (strlen(pcs_dbrdata) <= 29)
+        if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29)
         { 
             struct pcs_smf_create pcs_createdata = pcs_get_smf_create_data(sess, SmContextCreateData);
             sess->pcs.pcs_createdata = pcs_createdata;
