@@ -19,7 +19,6 @@
 
 #include "nsmf-build.h"
 #include "pcs-helper.h"
-#include "mongoc.h"
 
 ogs_sbi_request_t *amf_nsmf_pdusession_build_create_sm_context(
         amf_sess_t *sess, void *data)
