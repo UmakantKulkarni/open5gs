@@ -290,7 +290,7 @@ void smf_5gc_n4_handle_session_establishment_response(
 
             if (pcs_rv != OGS_OK)
             {
-                ogs_error("PCS Error while uploaded N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
+                ogs_error("PCS Error while uploading N4 Create data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
             else
             {
