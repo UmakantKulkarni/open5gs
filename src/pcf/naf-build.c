@@ -17,23 +17,26 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SMF_NAMF_HANDLER_H
-#define SMF_NAMF_HANDLER_H
+#include "naf-build.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+ogs_sbi_request_t *pcf_naf_callback_build_policyauthorization_terminate(
+        pcf_app_t *app_session, void *data)
+{
+    ogs_sbi_message_t message;
+    ogs_sbi_request_t *request = NULL;
+    
+    ogs_assert(app_session);
 
-#include "context.h"
+    memset(&message, 0, sizeof(message));
+    message.h.method = (char *)OGS_SBI_HTTP_METHOD_POST;
+    message.h.uri = ogs_mstrcatf(
+            app_session->notif_uri, "/%s", OGS_SBI_RESOURCE_NAME_TERMINATE);
+    ogs_assert(message.h.uri);
 
-bool smf_namf_comm_handle_n1_n2_message_transfer(
-        smf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata);
+    request = ogs_sbi_build_request(&message);
+    ogs_assert(request);
 
-bool smf_namf_comm_handle_n1_n2_message_transfer_failure_notify(
-        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg);
+    ogs_free(message.h.uri);
 
-#ifdef __cplusplus
+    return request;
 }
-#endif
-
-#endif /* SMF_NAMF_HANDLER_H */

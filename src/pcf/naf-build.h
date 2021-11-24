@@ -17,23 +17,20 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef SMF_NAMF_HANDLER_H
-#define SMF_NAMF_HANDLER_H
+#ifndef PCF_NAF_BUILD_H
+#define PCF_NAF_BUILD_H
+
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include "context.h"
-
-bool smf_namf_comm_handle_n1_n2_message_transfer(
-        smf_sess_t *sess, int state, ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata);
-
-bool smf_namf_comm_handle_n1_n2_message_transfer_failure_notify(
-        ogs_sbi_stream_t *stream, ogs_sbi_message_t *recvmsg);
+ogs_sbi_request_t *pcf_naf_callback_build_policyauthorization_terminate(
+        pcf_app_t *app_session, void *data);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* SMF_NAMF_HANDLER_H */
+#endif /* PCF_NAF_BUILD_H */
