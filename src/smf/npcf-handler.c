@@ -271,7 +271,7 @@ static void update_authorized_pcc_rule_and_qos(
 
 bool smf_npcf_smpolicycontrol_handle_create(
         smf_sess_t *sess, ogs_sbi_stream_t *stream, int state,
-        ogs_sbi_message_t *recvmsg)
+        ogs_sbi_message_t *recvmsg, pcs_fsm_struct_t *pcs_fsmdata)
 {
     int rv;
     char buf1[OGS_ADDRSTRLEN];
