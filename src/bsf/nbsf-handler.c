@@ -101,7 +101,7 @@ bool bsf_nbsf_management_handle_pcf_binding(
                 bsf_sess_set_ipv6prefix(sess, RecvPcfBinding->ipv6_prefix);
 
             if (RecvPcfBinding->pcf_fqdn) {
-                ogs_fqdn_parse(fqdn,
+                ogs_fqdn_parse_bsf(fqdn,
                         RecvPcfBinding->pcf_fqdn,
                         strlen(RecvPcfBinding->pcf_fqdn));
 
