@@ -449,7 +449,6 @@ typedef struct ogs_session_s {
 } ogs_session_t;
 
 int ogs_fqdn_build(char *dst, char *src, int len);
-int ogs_fqdn_parse_bsf(char *dst, char *src, int len);
 int ogs_fqdn_parse(char *dst, char *src, int len);
 
 /**************************************************
