@@ -716,7 +716,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       }
    }
 
-   if (strlen(pcs_dbrdata) <= 19 && strcmp(pcs_dbcollectioname, "upf") == 0)
+   if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19) && strcmp(pcs_dbcollectioname, "upf") == 0)
    {
       int pcs_rv;
       pcs_n4createdata = pcs_get_upf_n4_create_data(sess);

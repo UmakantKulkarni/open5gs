@@ -224,7 +224,7 @@ void upf_n4_handle_session_establishment_request(
         mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
-            if (strlen(pcs_dbrdata) <= 19)
+            if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19)
             {
                 struct pcs_upf_n4_create pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
                 pcs_n4createdata.pcs_smfnodeip = ogs_strdup(ogs_ipv4_to_string(sess->pfcp_node->addr.sin.sin_addr.s_addr));

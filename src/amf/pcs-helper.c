@@ -710,7 +710,7 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       pcs_dbcollection = mongoc_client_get_collection(pcs_mongoclient, "pcs_db", pcs_dbcollectioname);
    }
 
-   if (strlen(pcs_dbrdata) <= 29 && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") == 0)
+   if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29) && !pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "amf") == 0)
    {
       struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
       int pcs_rv;
