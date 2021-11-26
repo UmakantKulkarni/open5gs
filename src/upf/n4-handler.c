@@ -215,7 +215,7 @@ void upf_n4_handle_session_establishment_request(
         upf_pfcp_send_session_establishment_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") == 0)
+    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
     {
         sess->pcs.pcs_udsfcreatedone = 0;
         sess->pcs.pcs_udsfupdatedone = 0;
