@@ -197,7 +197,7 @@ void upf_n4_handle_session_establishment_request(
         }
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_isproceduralstateless && cause_value && strcmp(pcs_dbcollectioname, "upf") == 0)
+    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_isproceduralstateless && cause_value && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
     {
         sess->pcs.pcs_udsfcreatedone = 0;
         sess->pcs.pcs_udsfupdatedone = 0;
@@ -233,7 +233,7 @@ void upf_n4_handle_session_establishment_request(
     {
         struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
         mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-        char *pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata)
+        char *pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19)
         {
             struct pcs_upf_n4_create pcs_n4createdata = pcs_get_upf_n4_create_data(sess);
@@ -680,7 +680,6 @@ void upf_n4_handle_session_modification_request(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
-            struct pcs_mongo_info_s pcs_mongo_info;
             char *pcs_upfdbid;
             asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
