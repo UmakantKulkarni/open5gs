@@ -143,7 +143,7 @@ static void upf_main(void *data)
         mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
         upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
 
-        if (!upf_sm.pcs_fsmdata.pcs_blockingapienabledcreate || !upf_sm.pcs_fsmdata.pcs_blockingapienabledn1n2 || !upf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyreq || !upf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp)
+        if (!upf_sm.pcs_fsmdata.pcs_blockingapienabledcreate || !upf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp)
         {
             long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
             ogs_info("PCS Number of Processors is %ld", pcs_numprocessors);

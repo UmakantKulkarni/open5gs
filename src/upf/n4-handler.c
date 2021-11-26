@@ -537,6 +537,7 @@ void upf_n4_handle_session_modification_request(
         }
         else if (pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
+            pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             pcs_pfcpestdone = sess->pcs.pcs_n4createdone;
             if ((int)pcs_pfcpestdone)
             {
