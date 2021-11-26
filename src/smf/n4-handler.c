@@ -213,6 +213,8 @@ void smf_5gc_n4_handle_session_establishment_response(
                         sess);
     ogs_assert(param.n2smbuf);
 
+    smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
+
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         double pcs_createdone = 0;
@@ -253,6 +255,8 @@ void smf_5gc_n4_handle_session_establishment_response(
             int pcs_rv;
             char *pcs_imsistr = sess->smf_ue->supi;
             pcs_imsistr += 5;
+            char *pcs_updatedoc;
+            asprintf(&pcs_updatedoc, ", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s }", pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pfcp_cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
             if (pcs_fsmdata->pcs_updateapienabledn1n2)
             {
                 bson_error_t error;
@@ -271,8 +275,6 @@ void smf_5gc_n4_handle_session_establishment_response(
             }
             else
             {
-                char *pcs_updatedoc;
-                asprintf(&pcs_updatedoc, ", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s }", pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pfcp_cause_value, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
                 if (pcs_fsmdata->pcs_replaceapienabledn1n2)
                 {
                     pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
@@ -285,9 +287,11 @@ void smf_5gc_n4_handle_session_establishment_response(
             }
 
             //Read for n1-n2 start
-            char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            //char *pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+            pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
+            pcs_updatedoc = pcs_combine_strings(pcs_dbrdata, pcs_updatedoc);
+            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_updatedoc);
 
             if (pcs_rv != OGS_OK)
             {
@@ -309,8 +313,6 @@ void smf_5gc_n4_handle_session_establishment_response(
         }
         sess->pcs.pcs_n4createdone = 1;
     }
-
-    smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
 
 }
 
