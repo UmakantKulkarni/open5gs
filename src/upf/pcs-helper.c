@@ -698,23 +698,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
    pcs_n4createdata.pcs_smfn4seid = sess->smf_n4_seid;
    char *pcs_upfdbid, *pcs_dbrdata;
    asprintf(&pcs_upfdbid, "%ld", pcs_n4createdata.pcs_smfn4seid);
-
-   if (strcmp(pcs_dbcollectioname, "upf") == 0)
-   {
-      pcs_dbrdata = read_data_from_db(pcs_dbcollection, "_id", pcs_upfdbid, -1);
-   }
-   else
-   {
-      if (pcs_enablesingleread)
-      {
-         pcs_dbrdata = pcs_upfcreateudsfstruct->pcs_dbrdata;
-      }
-      else
-      {
-         pcs_dbrdata = read_data_from_db(pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, pcs_n4createdata.pcs_smfn4seid);
-         mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongoclient);
-      }
-   }
+   pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
 
    if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19) && strcmp(pcs_dbcollectioname, "upf") == 0)
    {

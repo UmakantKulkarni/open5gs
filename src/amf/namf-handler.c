@@ -106,6 +106,15 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
     }
 
+    if ((pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2) || (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0) || (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2))
+    {
+        char *pcs_imsistr = sess->amf_ue->supi;
+        pcs_imsistr += 5;
+        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+        char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+        sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+    }
+
     n1MessageContainer = N1N2MessageTransferReqData->n1_message_container;
     if (n1MessageContainer) {
         n1MessageContent = n1MessageContainer->n1_message_content;
@@ -416,6 +425,8 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_assert_if_reached();
     }
 
+    
+
     if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2)
     {
         if (sess->pcs.pcs_udsfcreatedone)
@@ -428,9 +439,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
             pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
             pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
-            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr));
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
             //pthread_t pcs_thread1;
             //pthread_create(&pcs_thread1, NULL, pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
             mt_add_job(PCS_THREADPOOL, &pcs_amf_n1n2_udsf, (void*) pcs_amfn1n2udsf);
@@ -470,9 +479,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;
         pcs_amfn1n2udsf->n1buf = ogs_pkbuf_copy(n1buf);
         pcs_amfn1n2udsf->n2buf = ogs_pkbuf_copy(n2buf);
-        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-        pcs_amfn1n2udsf->pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
-        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+        pcs_amfn1n2udsf->pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
         pcs_amfn1n2udsf->sess = sess;
         pcs_amf_n1n2_udsf((void*) pcs_amfn1n2udsf);
     }

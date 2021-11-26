@@ -73,7 +73,8 @@ typedef struct upf_sess_s {
         uint8_t pcs_n4updatedone;
         struct pcs_upf_n4_create pcs_n4createdata;
         uint8_t pcs_udsfcreatedone;
-        uint8_t pcs_udsfupdatedone;        
+        uint8_t pcs_udsfupdatedone;
+        char *pcs_dbrdata;
     } pcs;
 
     ogs_lnode_t     lnode;

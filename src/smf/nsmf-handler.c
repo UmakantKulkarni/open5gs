@@ -207,7 +207,6 @@ bool smf_nsmf_handle_create_sm_context(
      */
     n1smbuf = ogs_pkbuf_copy(n1smbuf);
     ogs_assert(n1smbuf);
-    nas_5gs_send_to_gsm(sess, stream, n1smbuf);
 
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
@@ -235,6 +234,8 @@ bool smf_nsmf_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->smf_ue->supi);
         }
     }
+
+    nas_5gs_send_to_gsm(sess, stream, n1smbuf);
 
     return true;
 }
