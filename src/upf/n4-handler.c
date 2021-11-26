@@ -225,11 +225,11 @@ void upf_n4_handle_session_establishment_request(
         pcs_upfcreateudsf->sess = sess;
         pcs_upf_create_udsf((void*) pcs_upfcreateudsf);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_dbcollectioname, "upf") != 0)
+    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") != 0)
     {
         ogs_info("PCS Successfully completed N4 Session Establishment transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") == 0)
+    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
     {
         char *pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19)
