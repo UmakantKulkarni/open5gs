@@ -231,8 +231,6 @@ void upf_n4_handle_session_establishment_request(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_dbcollectioname, "upf") == 0)
     {
-        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-        mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
         char *pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19)
         {
