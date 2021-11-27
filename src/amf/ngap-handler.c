@@ -1636,7 +1636,13 @@ void ngap_handle_pdu_session_resource_setup_response(
         param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
         ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
 
-        if (pcs_fsmdata->pcs_dbcommenabled)
+        if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless)
+        {
+            struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(ogs_pkbuf_copy(param.n2smbuf));
+            sess->pcs.pcs_updatedata = pcs_updatedata;
+            sess->pcs.pcs_udsfupdatereqdone = 1;
+        }
+        else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
         {
             char *pcs_imsistr = sess->amf_ue->supi;
             pcs_imsistr += 5;
