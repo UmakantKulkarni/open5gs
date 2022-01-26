@@ -433,8 +433,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_assert_if_reached();
     }
 
-    
-
     if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2)
     {
         if (sess->pcs.pcs_udsfcreatedone)
@@ -474,11 +472,15 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         sess->pcs.pcs_n1n2data = pcs_n1n2data;
         ogs_info("PCS Successfully completed Procedural Stateless n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
     {
         ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2)
+    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    {
+        ogs_info("PCS Successfully completed Procedural n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2 && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
     {
         char *pcs_imsistr = sess->amf_ue->supi;
         pcs_imsistr += 5;

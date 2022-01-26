@@ -1658,7 +1658,16 @@ void ngap_handle_pdu_session_resource_setup_response(
                 sess->pcs.pcs_updatedata = pcs_updatedata;
                 sess->pcs.pcs_udsfupdatereqdone = 1;
             }
-            else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
+            else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+            {
+                char *pcs_imsistr = amf_ue->supi;
+                pcs_imsistr += 5;
+                struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+                char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+                mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+            }
+            else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
             {
                 char *pcs_imsistr = sess->amf_ue->supi;
                 pcs_imsistr += 5;

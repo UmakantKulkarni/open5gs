@@ -187,35 +187,41 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate)
+    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
     {
-        char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
-        if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29) && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
-        {
-            sess->pcs.pcs_udsfcreatedone = 0;
-            sess->pcs.pcs_udsfn1n2done = 0;
-            sess->pcs.pcs_udsfupdatereqdone = 0;
-            sess->pcs.pcs_udsfupdaterspdone = 0;
-            struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
-            pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            pcs_amfcreateudsf->pcs_dbrdata = pcs_dbrdata;
-            pcs_amfcreateudsf->sess = sess;
-            pcs_amf_create_udsf((void*) pcs_amfcreateudsf);
-        }
-        else if (!pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+        if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
             ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
         }
-        else if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29) && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
-        {
-            struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
-            sess->pcs.pcs_createdone = 1;
-            sess->pcs.pcs_createdata = pcs_createdata;
-            ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
-        }
-        else if (pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+        else
         {
             ogs_info("PCS Successfully completed Procedural Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
+        }
+    }
+    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+    {
+        char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
+        if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29)
+        {
+            if (!pcs_fsmdata->pcs_isproceduralstateless)
+            {
+                sess->pcs.pcs_udsfcreatedone = 0;
+                sess->pcs.pcs_udsfn1n2done = 0;
+                sess->pcs.pcs_udsfupdatereqdone = 0;
+                sess->pcs.pcs_udsfupdaterspdone = 0;
+                struct pcs_amf_create_udsf_s *pcs_amfcreateudsf = malloc(sizeof(struct pcs_amf_create_udsf_s));
+                pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                pcs_amfcreateudsf->pcs_dbrdata = pcs_dbrdata;
+                pcs_amfcreateudsf->sess = sess;
+                pcs_amf_create_udsf((void*) pcs_amfcreateudsf);
+            }        
+            else
+            {
+                struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
+                sess->pcs.pcs_createdone = 1;
+                sess->pcs.pcs_createdata = pcs_createdata;
+                ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
+            }
         }
         else
         {
