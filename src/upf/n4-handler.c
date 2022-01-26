@@ -58,9 +58,9 @@ void upf_n4_handle_session_establishment_request(
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
         char *pcs_upfdbid, *pcs_dbrdata;
-        asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
+            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", pcs_upfdbid, -1);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
@@ -73,6 +73,7 @@ void upf_n4_handle_session_establishment_request(
             }
             else
             {
+                asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
                 pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
@@ -303,9 +304,9 @@ void upf_n4_handle_session_modification_request(
     if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
     {
         char *pcs_upfdbid, *pcs_dbrdata;
-        asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
+            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", pcs_upfdbid, -1);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
@@ -318,6 +319,7 @@ void upf_n4_handle_session_modification_request(
             }
             else
             {
+                asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
                 pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);

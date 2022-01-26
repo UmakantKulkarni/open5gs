@@ -119,7 +119,7 @@ static void upf_main(void *data)
     mongoc_collection_t *collection;
     if (upf_sm.pcs_fsmdata.pcs_dbcommenabled)
     {
-        const char *uri_string = "mongodb://mongodb-svc:27017";
+        const char *uri_string = getenv("DB_URI");
         bson_error_t error;
         bson_t *command, reply;
         char *str;

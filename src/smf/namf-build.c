@@ -20,6 +20,7 @@
 #include "namf-build.h"
 #include "gsm-build.h"
 #include "ngap-build.h"
+#include "pcs-helper.h"
 
 ogs_sbi_request_t *smf_namf_comm_build_n1_n2_message_transfer(
         smf_sess_t *sess, smf_n1_n2_message_transfer_param_t *param)
@@ -65,6 +66,11 @@ ogs_sbi_request_t *smf_namf_comm_build_n1_n2_message_transfer(
     memset(&N1N2MessageTransferReqData, 0, sizeof(N1N2MessageTransferReqData));
     N1N2MessageTransferReqData.is_pdu_session_id = true;
     N1N2MessageTransferReqData.pdu_session_id = sess->psi;
+
+    if (pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+    {
+        N1N2MessageTransferReqData.supported_features = ogs_strdup(sess->pcs.pcs_dbrdata);
+    }
 
     if (param->n1smbuf) {
         N1N2MessageTransferReqData.n1_message_container = &n1MessageContainer;

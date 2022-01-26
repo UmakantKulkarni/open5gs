@@ -129,7 +129,7 @@ static void amf_main(void *data)
     mongoc_collection_t *collection;
     if (amf_sm.pcs_fsmdata.pcs_dbcommenabled)
     {
-        const char *uri_string = "mongodb://mongodb-svc:27017/?waitQueueTimeoutMS=1000";
+        const char *uri_string = getenv("DB_URI");
         bson_error_t error;
         bson_t *command, reply;
         char *str;

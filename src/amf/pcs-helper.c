@@ -221,11 +221,13 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
+   bson_t *opts;
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
    query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
-   cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
+   opts = BCON_NEW ("limit", BCON_INT64 (1));
+   cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
    int i = 0;
 
    while (mongoc_cursor_next(cursor, &doc))
@@ -239,8 +241,10 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    {
       asprintf(&pcs_dbrdata, "{ \"_id\" : \"%s\" }", pcs_docid);
    }
-   bson_destroy(query);
+   
    mongoc_cursor_destroy(cursor);
+   bson_destroy(query);
+   bson_destroy (opts);
 
    return pcs_dbrdata;
 }
@@ -1086,10 +1090,10 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
          {
             pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
          }
-         if (pcs_blockingapienabledmodifyrsp)
+         /* if (pcs_blockingapienabledmodifyrsp)
          {
             bson_free(pcs_dbrdata);
-         }
+         } */
       }
    }
    //mongoc_collection_destroy(pcs_dbcollection);

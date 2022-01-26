@@ -193,7 +193,7 @@ bool smf_namf_comm_handle_n1_n2_message_transfer(
                 {
                     pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
                 }
-                bson_free(pcs_dbrdata);
+                //bson_free(pcs_dbrdata);
             }
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             if (pcs_rv != OGS_OK)

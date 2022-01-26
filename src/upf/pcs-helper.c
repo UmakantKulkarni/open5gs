@@ -221,6 +221,7 @@ char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey,
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
+   bson_t *opts;
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
@@ -234,7 +235,8 @@ char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey,
       BSON_APPEND_DOUBLE(query, pcs_dockey, pcs_docseid);
    }
 
-   cursor = mongoc_collection_find_with_opts(collection, query, NULL, NULL);
+   opts = BCON_NEW ("limit", BCON_INT64 (1));
+   cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
    int i = 0;
 
    while (mongoc_cursor_next(cursor, &doc))
@@ -255,8 +257,10 @@ char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey,
          asprintf(&pcs_dbrdata, "{ \"%s\" : %ld }", pcs_dockey, pcs_docseid);
       }
    }
-   bson_destroy(query);
+   
    mongoc_cursor_destroy(cursor);
+   bson_destroy(query);
+   bson_destroy (opts);
 
    return pcs_dbrdata;
 }
@@ -713,7 +717,8 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
          bson_t *bson_pdr_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_pdrs, -1, &error);
          bson_t *bson_far_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_fars, -1, &error);
          bson_t *bson_qer_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_qers, -1, &error);
-         bson_t *bson_doc = BCON_NEW("$set", "{", "_id",  BCON_UTF8(pcs_upfdbid), "pcs-pfcp-est-done", BCON_INT32(1), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(1), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_UTF8(pcs_n4createdata.pcs_bars), "}");
+         bson_t *bson_bar_doc = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_bars, -1, &error);
+         bson_t *bson_doc = BCON_NEW("$set", "{", "_id",  BCON_UTF8(pcs_upfdbid), "pcs-pfcp-est-done", BCON_INT32(1), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(1), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_DOCUMENT(bson_bar_doc), "}");
 
          pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_upfdbid, bson_doc);
 
