@@ -91,8 +91,15 @@ int ngap_handle_pdu_session_resource_setup_response_transfer(
         goto cleanup;
     }
 
-    ogs_asn_BIT_STRING_to_ip(
+    rv = ogs_asn_BIT_STRING_to_ip(
             &gTPTunnel->transportLayerAddress, &gnb_n3_ip);
+    if (rv != OGS_OK) {
+        ogs_error("[%s:%d] No transportLayerAddress", smf_ue->supi, sess->psi);
+        smf_sbi_send_sm_context_update_error(stream,
+                OGS_SBI_HTTP_STATUS_BAD_REQUEST,
+                "No transportLayerAddress", smf_ue->supi, NULL, NULL);
+        goto cleanup;
+    }
     ogs_asn_OCTET_STRING_to_uint32(&gTPTunnel->gTP_TEID, &gnb_n3_teid);
 
     /* Need to Update? */
@@ -152,6 +159,102 @@ int ngap_handle_pdu_session_resource_setup_response_transfer(
 cleanup:
     ogs_asn_free(
             &asn_DEF_NGAP_PDUSessionResourceSetupResponseTransfer, &message);
+    return rv;
+}
+
+int ngap_handle_pdu_session_resource_setup_unsuccessful_transfer(
+        smf_sess_t *sess, ogs_sbi_stream_t *stream, ogs_pkbuf_t *pkbuf)
+{
+    smf_ue_t *smf_ue = NULL;
+    int rv;
+
+    NGAP_PDUSessionResourceSetupUnsuccessfulTransfer_t message;
+    NGAP_Cause_t *Cause = NULL;
+
+    ogs_assert(pkbuf);
+    ogs_assert(stream);
+
+    ogs_assert(sess);
+    smf_ue = sess->smf_ue;
+    ogs_assert(smf_ue);
+
+    ogs_debug("PDUSessionResourceSetupUnsuccessfulTransfer");
+
+    rv = ogs_asn_decode(
+            &asn_DEF_NGAP_PDUSessionResourceSetupUnsuccessfulTransfer,
+            &message, sizeof(message), pkbuf);
+    if (rv != OGS_OK) {
+        ogs_error("[%s:%d] Cannot decode NGAP message",
+                smf_ue->supi, sess->psi);
+        smf_sbi_send_sm_context_update_error(stream,
+                OGS_SBI_HTTP_STATUS_BAD_REQUEST,
+                "No N2 SM Info Type", smf_ue->supi, NULL, NULL);
+        goto cleanup;
+    }
+
+    rv = OGS_ERROR;
+
+    Cause = &message.cause;
+
+    if (Cause->present == NGAP_Cause_PR_radioNetwork &&
+        Cause->choice.radioNetwork ==
+            NGAP_CauseRadioNetwork_multiple_PDU_session_ID_instances) {
+        ogs_warn("    Cause[Group:%d Cause:%d]",
+                Cause->present, (int)Cause->choice.radioNetwork);
+    } else {
+        ogs_error("    Cause[Group:%d Cause:%d]",
+                Cause->present, (int)Cause->choice.radioNetwork);
+    }
+
+    /*
+     * TS23.502
+     * 4.2.3 Service Request procedures
+     * 4.2.3.2 UE Triggered Service Request
+     *
+     * 15. ...
+     * If a PDU Session is rejected by the serving NG-RAN
+     * with an indication that the PDU Session was rejected
+     * because User Plane Security Enforcement is not supported
+     * in the serving NG-RAN and the User Plane Enforcement Policy
+     * indicates "Required" as described in clause 5.10.3
+     * of TS 23.501 [2], the SMF shall trigger the release
+     * of this PDU Session.
+     *
+     * In all other cases of PDU Session rejection,
+     * the SMF can decide whether to release the PDU Session
+     * or to deactivate the UP connection of this PDU Session.
+     *
+     *
+     * TS29.502
+     *
+     * 5.2.2.3.2
+     * Activation and Deactivation of the User Plane connection
+     * of a PDU session
+     * 5.2.2.3.2.2
+     * Activation of User Plane connectivity of a PDU session
+     *
+     * 3. ...
+     * N2 SM information received from the 5G-AN
+     * (see PDU Session Resource Setup Unsuccessful Transfer IE
+     * in clause 9.3.4.16 of 3GPP TS 38.413 [9]),
+     * including the Cause of the failure, if resources failed
+     * to be established for the PDU session.
+     *
+     * Upon receipt of this request, the SMF shall:
+     * - consider that the activation of the User Plane connection
+     *   has failed and set the upCnxState attribute to DEACTIVATED"
+     *   otherwise.
+     */
+
+    ogs_assert(OGS_OK ==
+        smf_5gc_pfcp_send_session_modification_request(
+            sess, stream,
+            OGS_PFCP_MODIFY_DL_ONLY|OGS_PFCP_MODIFY_DEACTIVATE, 0));
+
+    rv = OGS_OK;
+cleanup:
+    ogs_asn_free(
+        &asn_DEF_NGAP_PDUSessionResourceSetupUnsuccessfulTransfer, &message);
     return rv;
 }
 
@@ -310,7 +413,15 @@ int ngap_handle_path_switch_request_transfer(
         goto cleanup;
     }
 
-    ogs_asn_BIT_STRING_to_ip(&gTPTunnel->transportLayerAddress, &gnb_n3_ip);
+    rv = ogs_asn_BIT_STRING_to_ip(
+            &gTPTunnel->transportLayerAddress, &gnb_n3_ip);
+    if (rv != OGS_OK) {
+        ogs_error("[%s:%d] No transportLayerAddress", smf_ue->supi, sess->psi);
+        smf_sbi_send_sm_context_update_error(stream,
+                OGS_SBI_HTTP_STATUS_BAD_REQUEST,
+                "No transportLayerAddress", smf_ue->supi, NULL, NULL);
+        goto cleanup;
+    }
     ogs_asn_OCTET_STRING_to_uint32(&gTPTunnel->gTP_TEID, &gnb_n3_teid);
 
     /* Need to Update? */
@@ -482,8 +593,15 @@ int ngap_handle_handover_request_ack(
         goto cleanup;
     }
 
-    ogs_asn_BIT_STRING_to_ip(&gTPTunnel->transportLayerAddress,
+    rv = ogs_asn_BIT_STRING_to_ip(&gTPTunnel->transportLayerAddress,
             &sess->handover.gnb_n3_ip);
+    if (rv != OGS_OK) {
+        ogs_error("[%s:%d] No transportLayerAddress", smf_ue->supi, sess->psi);
+        smf_sbi_send_sm_context_update_error(stream,
+                OGS_SBI_HTTP_STATUS_BAD_REQUEST,
+                "No transportLayerAddress", smf_ue->supi, NULL, NULL);
+        goto cleanup;
+    }
     ogs_asn_OCTET_STRING_to_uint32(&gTPTunnel->gTP_TEID,
             &sess->handover.gnb_n3_teid);
 
@@ -534,8 +652,16 @@ int ngap_handle_handover_request_ack(
             goto cleanup;
         }
 
-        ogs_asn_BIT_STRING_to_ip(&gTPTunnel->transportLayerAddress,
+        rv = ogs_asn_BIT_STRING_to_ip(&gTPTunnel->transportLayerAddress,
                 &sess->handover.gnb_dl_ip);
+        if (rv != OGS_OK) {
+            ogs_error("[%s:%d] No transportLayerAddress",
+                    smf_ue->supi, sess->psi);
+            smf_sbi_send_sm_context_update_error(stream,
+                    OGS_SBI_HTTP_STATUS_BAD_REQUEST,
+                    "No transportLayerAddress", smf_ue->supi, NULL, NULL);
+            goto cleanup;
+        }
         ogs_asn_OCTET_STRING_to_uint32(&gTPTunnel->gTP_TEID,
                 &sess->handover.gnb_dl_teid);
 

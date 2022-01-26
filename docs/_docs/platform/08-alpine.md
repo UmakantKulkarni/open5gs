@@ -35,7 +35,7 @@ You are now ready to set the IP address on TUN device.
 
 ```bash
 $ sudo ip addr add 10.45.0.1/16 dev ogstun
-$ sudo ip addr add 2001:230:cafe::1/48 dev ogstun
+$ sudo ip addr add 2001:db8:cafe::1/48 dev ogstun
 ```
 
 Make sure it is set up properly.
@@ -53,7 +53,7 @@ $ ip link show
 
 Install the depedencies for building the source code.
 ```bash
-$ sudo apk add alpine-sdk bison flex git meson bash sudo linux-headers bsd-compat-headers yaml-dev lksctp-tools-dev gnutls-dev libgcrypt-dev libidn-dev mongo-c-driver-dev libmicrohttpd-dev curl-dev nghttp2-dev
+$ sudo apk add alpine-sdk bison flex git meson bash sudo linux-headers bsd-compat-headers yaml-dev lksctp-tools-dev gnutls-dev libgcrypt-dev libidn-dev mongo-c-driver-dev libmicrohttpd-dev curl-dev nghttp2-dev talloc-dev
 ```
 
 Git clone.

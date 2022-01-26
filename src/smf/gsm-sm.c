@@ -191,15 +191,8 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
                                     smf_ue->supi, sess->psi,
                                     sbi_message->res_status);
                             ogs_assert(strerror);
-
                             ogs_error("%s", strerror);
-                            if (stream)
-                                ogs_assert(true ==
-                                    ogs_sbi_server_send_error(stream,
-                                        sbi_message->res_status,
-                                        sbi_message, strerror, NULL));
                             ogs_free(strerror);
-                            break;
                         }
 
                         smf_npcf_smpolicycontrol_handle_delete(
@@ -374,6 +367,16 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
             }
             break;
 
+        case OpenAPI_n2_sm_info_type_PDU_RES_SETUP_FAIL:
+            rv = ngap_handle_pdu_session_resource_setup_unsuccessful_transfer(
+                    sess, stream, pkbuf);
+            if (rv != OGS_OK) {
+                ogs_error("[%s:%d] Cannot handle NGAP message",
+                        smf_ue->supi, sess->psi);
+                OGS_FSM_TRAN(s, smf_gsm_state_exception);
+            }
+            break;
+
         case OpenAPI_n2_sm_info_type_PDU_RES_MOD_RSP:
             rv = ngap_handle_pdu_session_resource_modify_response_transfer(
                     sess, stream, pkbuf);
@@ -387,9 +390,26 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
         case OpenAPI_n2_sm_info_type_PDU_RES_REL_RSP:
             ngap_state = sess->ngap_state.pdu_session_resource_release;
 
-            if (ngap_state == SMF_NGAP_STATE_DELETE_TRIGGER_UE_REQUESTED ||
+            if (ngap_state == SMF_NGAP_STATE_NONE) {
+                strerror = ogs_msprintf(
+                        "[%s:%d] No PDUSessionResourceReleaseRequest",
+                        smf_ue->supi, sess->psi);
+                ogs_assert(strerror);
+
+                ogs_error("%s", strerror);
+                ogs_assert(true ==
+                    ogs_sbi_server_send_error(stream,
+                        OGS_SBI_HTTP_STATUS_BAD_REQUEST, NULL, strerror, NULL));
+                ogs_free(strerror);
+
+                OGS_FSM_TRAN(s, smf_gsm_state_exception);
+
+            } else if (
+                ngap_state == SMF_NGAP_STATE_DELETE_TRIGGER_UE_REQUESTED ||
                 ngap_state == SMF_NGAP_STATE_DELETE_TRIGGER_PCF_INITIATED) {
+
                 ogs_assert(true == ogs_sbi_send_http_status_no_content(stream));
+
             } else if (ngap_state ==
                     SMF_NGAP_STATE_ERROR_INDICATION_RECEIVED_FROM_5G_AN) {
                 smf_n1_n2_message_transfer_param_t param;

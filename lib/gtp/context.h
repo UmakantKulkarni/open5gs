@@ -49,6 +49,8 @@ typedef struct ogs_gtp_context_s {
 
     ogs_list_t      gtpu_peer_list; /* GTPU Node List */
     ogs_list_t      gtpu_resource_list; /* UP IP Resource List */
+
+    ogs_sockaddr_t *link_local_addr;
 } ogs_gtp_context_t;
 
 #define OGS_SETUP_GTP_NODE(__cTX, __gNODE) \
@@ -71,8 +73,8 @@ typedef struct ogs_gtp_node_s {
 
     ogs_ip_t        ip;             /* F-TEID IP Address Duplicate Check */
 
-    ogs_list_t      local_list;    
-    ogs_list_t      remote_list;   
+    ogs_list_t      local_list;
+    ogs_list_t      remote_list;
 } ogs_gtp_node_t;
 
 typedef struct ogs_gtpu_resource_s {

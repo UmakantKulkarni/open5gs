@@ -191,7 +191,7 @@ void sgwc_s11_handle_create_session_request(
     /* Add Session */
     ogs_assert(0 < ogs_fqdn_parse(apn,
             req->access_point_name.data,
-            ogs_min(req->access_point_name.len, OGS_MAX_APN_LEN+1)));
+            ogs_min(req->access_point_name.len, OGS_MAX_APN_LEN)));
     sess = sgwc_sess_find_by_ebi(sgwc_ue,
             req->bearer_contexts_to_be_created.eps_bearer_id.u8);
     if (sess) {
@@ -213,7 +213,7 @@ void sgwc_s11_handle_create_session_request(
     ogs_debug("    TAI[PLMN_ID:%06x,TAC:%d]",
             ogs_plmn_id_hexdump(&sgwc_ue->e_tai.plmn_id),
             sgwc_ue->e_tai.tac);
-    ogs_debug("    E_CGI[PLMN_ID:%06x,CELL_ID:%d]",
+    ogs_debug("    E_CGI[PLMN_ID:%06x,CELL_ID:0x%x]",
             ogs_plmn_id_hexdump(&sgwc_ue->e_cgi.plmn_id),
             sgwc_ue->e_cgi.cell_id);
 
@@ -368,7 +368,7 @@ void sgwc_s11_handle_modify_bearer_request(
         ogs_debug("    TAI[PLMN_ID:%06x,TAC:%d]",
                 ogs_plmn_id_hexdump(&sgwc_ue->e_tai.plmn_id),
                 sgwc_ue->e_tai.tac);
-        ogs_debug("    E_CGI[PLMN_ID:%06x,CELL_ID:%d]",
+        ogs_debug("    E_CGI[PLMN_ID:%06x,CELL_ID:0x%x]",
                 ogs_plmn_id_hexdump(&sgwc_ue->e_cgi.plmn_id),
                 sgwc_ue->e_cgi.cell_id);
     }
@@ -639,7 +639,7 @@ void sgwc_s11_handle_create_bearer_response(
     ogs_debug("    TAI[PLMN_ID:%06x,TAC:%d]",
             ogs_plmn_id_hexdump(&sgwc_ue->e_tai.plmn_id),
             sgwc_ue->e_tai.tac);
-    ogs_debug("    E_CGI[PLMN_ID:%06x,CELL_ID:%d]",
+    ogs_debug("    E_CGI[PLMN_ID:%06x,CELL_ID:0x%x]",
             ogs_plmn_id_hexdump(&sgwc_ue->e_cgi.plmn_id),
             sgwc_ue->e_cgi.cell_id);
 

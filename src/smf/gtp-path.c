@@ -186,6 +186,12 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
         ogs_log_hexdump(OGS_LOG_ERROR, pkbuf->data, pkbuf->len);
         goto cleanup;
     }
+    if (gtp_h->type != OGS_GTPU_MSGTYPE_END_MARKER &&
+        pkbuf->len <= len) {
+        ogs_error("[DROP] Small GTPU packet(type:%d len:%d)", gtp_h->type, len);
+        ogs_log_hexdump(OGS_LOG_ERROR, pkbuf->data, pkbuf->len);
+        goto cleanup;
+    }
     ogs_assert(ogs_pkbuf_pull(pkbuf, len));
 
     if (gtp_h->type == OGS_GTPU_MSGTYPE_GPDU) {
@@ -234,7 +240,7 @@ int smf_gtp_open(void)
     ogs_list_for_each(&ogs_gtp_self()->gtpc_list, node) {
         sock = ogs_gtp_server(node);
         if (!sock) return OGS_ERROR;
-        
+
         node->poll = ogs_pollset_add(ogs_app()->pollset,
                 OGS_POLLIN, sock->fd, _gtpv2_c_recv_cb, sock);
         ogs_assert(node->poll);
@@ -266,11 +272,21 @@ int smf_gtp_open(void)
 
     OGS_SETUP_GTPU_SERVER;
 
+    /* Fetch link-local address for router advertisement */
+    if (ogs_gtp_self()->link_local_addr)
+        ogs_freeaddrinfo(ogs_gtp_self()->link_local_addr);
+    if (ogs_gtp_self()->gtpu_addr6)
+        ogs_gtp_self()->link_local_addr =
+            ogs_link_local_addr_by_sa(ogs_gtp_self()->gtpu_addr6);
+
     return OGS_OK;
 }
 
 void smf_gtp_close(void)
 {
+    if (ogs_gtp_self()->link_local_addr)
+        ogs_freeaddrinfo(ogs_gtp_self()->link_local_addr);
+
     ogs_socknode_remove_all(&ogs_gtp_self()->gtpc_list);
     ogs_socknode_remove_all(&ogs_gtp_self()->gtpc_list6);
 
@@ -388,11 +404,14 @@ static bool check_if_router_solicit(ogs_pkbuf_t *pkbuf)
 
 static void send_router_advertisement(smf_sess_t *sess, uint8_t *ip6_dst)
 {
+    int rv;
+
     ogs_pkbuf_t *pkbuf = NULL;
 
     ogs_pfcp_pdr_t *pdr = NULL;
     ogs_pfcp_ue_ip_t *ue_ip = NULL;
     ogs_pfcp_subnet_t *subnet = NULL;
+    char ipstr[OGS_ADDRSTRLEN];
 
     ogs_ipsubnet_t src_ipsub;
     uint16_t plen = 0;
@@ -408,6 +427,20 @@ static void send_router_advertisement(smf_sess_t *sess, uint8_t *ip6_dst)
     subnet = ue_ip->subnet;
     ogs_assert(subnet);
 
+    /* Fetch link-local address for router advertisement */
+    if (ogs_gtp_self()->link_local_addr) {
+        OGS_ADDR(ogs_gtp_self()->link_local_addr, ipstr);
+        rv = ogs_ipsubnet(&src_ipsub, ipstr, NULL);
+        ogs_expect_or_return(rv == OGS_OK);
+    } else {
+        /* For the case of loopback used for GTPU link-local address is not
+         * available, hence set the source IP to fe80::1
+        */
+        memset(src_ipsub.sub, 0, sizeof(src_ipsub.sub));
+        src_ipsub.sub[0] = htobe32(0xfe800000);
+        src_ipsub.sub[3] = htobe32(0x00000001);
+    }
+
     ogs_debug("      Build Router Advertisement");
 
     pkbuf = ogs_pkbuf_alloc(NULL, OGS_GTPV1U_5GC_HEADER_LEN+200);
@@ -422,10 +455,6 @@ static void send_router_advertisement(smf_sess_t *sess, uint8_t *ip6_dst)
     advert_h = (struct nd_router_advert *)((uint8_t *)ip6_h + sizeof *ip6_h);
     prefix = (struct nd_opt_prefix_info *)
         ((uint8_t*)advert_h + sizeof *advert_h);
-
-    memcpy(src_ipsub.sub, subnet->gw.sub, sizeof(src_ipsub.sub));
-    src_ipsub.sub[0] =
-        htobe32((be32toh(src_ipsub.sub[0]) & 0x0000ffff) | 0xfe800000);
 
     advert_h->nd_ra_type = ND_ROUTER_ADVERT;
     advert_h->nd_ra_code = 0;

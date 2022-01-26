@@ -159,8 +159,6 @@ static int hss_ogs_diam_s6a_air_cb( struct msg **msg, struct avp *avp,
     ogs_assert(ret == 0);
     memcpy(&visited_plmn_id, hdr->avp_value->os.data, hdr->avp_value->os.len);
 
-    hss_s6a_set_visited_plmn_id(imsi_bcd, &visited_plmn_id);
-
     milenage_generate(opc, auth_info.amf, auth_info.k,
         ogs_uint64_to_buffer(auth_info.sqn, OGS_SQN_LEN, sqn), auth_info.rand,
         autn, ik, ck, ak, xres, &xres_len);
@@ -279,7 +277,6 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
     union avp_value val;
 
     char imsi_bcd[OGS_MAX_IMSI_BCD_LEN+1];
-    ogs_s_nssai_t s_nssai;
 
     int rv;
     uint32_t result_code = 0;
@@ -321,8 +318,6 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
     ret = fd_msg_avp_hdr(avp, &hdr);
     ogs_assert(ret == 0);
     memcpy(&visited_plmn_id, hdr->avp_value->os.data, hdr->avp_value->os.len);
-
-    hss_s6a_set_visited_plmn_id(imsi_bcd, &visited_plmn_id);
 
 	/* Set the Origin-Host, Origin-Realm, andResult-Code AVPs */
 	ret = fd_msg_rescode_set(ans, (char*)"DIAMETER_SUCCESS", NULL, NULL, 1);
@@ -467,13 +462,10 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
         ret = fd_msg_avp_add(avp, MSG_BRW_LAST_CHILD, avp_rau_tau_timer);
         ogs_assert(ret == 0);
 
-        /* For EPC, we'll use SST:1 */
-        s_nssai.sst = 1;
-        s_nssai.sd.v = OGS_S_NSSAI_NO_SD_VALUE;
+        /* For EPC, we'll use first Slice in Subscription */
+        if (subscription_data.num_of_slice)
+            slice_data = &subscription_data.slice[0];
 
-        slice_data = ogs_slice_find_by_s_nssai(
-                subscription_data.slice, subscription_data.num_of_slice,
-                &s_nssai);
         if (!slice_data) {
             ogs_error("[%s] Cannot find S-NSSAI", imsi_bcd);
             result_code = OGS_DIAM_S6A_ERROR_UNKNOWN_EPS_SUBSCRIPTION;

@@ -19,7 +19,8 @@
 
 #include "test-common.h"
 
-ogs_pkbuf_t *testesm_build_pdn_connectivity_request(test_sess_t *sess)
+ogs_pkbuf_t *testesm_build_pdn_connectivity_request(
+        test_sess_t *sess, bool integrity_protected)
 {
     ogs_nas_eps_message_t message;
     ogs_nas_eps_pdn_connectivity_request_t *pdn_connectivity_request =
@@ -53,8 +54,7 @@ ogs_pkbuf_t *testesm_build_pdn_connectivity_request(test_sess_t *sess)
     ogs_assert(test_ue);
 
     memset(&message, 0, sizeof(message));
-
-    if (sess->pdn_connectivity_param.integrity_protected) {
+    if (integrity_protected) {
         message.h.security_header_type =
             OGS_NAS_SECURITY_HEADER_INTEGRITY_PROTECTED;
         message.h.protocol_discriminator = OGS_NAS_PROTOCOL_DISCRIMINATOR_EMM;
@@ -89,7 +89,7 @@ ogs_pkbuf_t *testesm_build_pdn_connectivity_request(test_sess_t *sess)
         memcpy(protocol_configuration_options->buffer, ue_pco, sizeof(ue_pco));
     }
 
-    if (sess->pdn_connectivity_param.integrity_protected)
+    if (integrity_protected)
         return test_nas_eps_security_encode(test_ue, &message);
     else
         return ogs_nas_eps_plain_encode(&message);
@@ -459,7 +459,7 @@ ogs_pkbuf_t *testesm_build_bearer_resource_modification_request(
         tft.pf[0].identifier = 4;
         tft.pf[0].precedence = 0x0f;
 
-        rv = ogs_ipsubnet(&ipsubnet, "2001:230:cafe::9", "120");
+        rv = ogs_ipsubnet(&ipsubnet, "2001:db8:cafe::9", "120");
         ogs_assert(rv == OGS_OK);
 #if 1
         tft.pf[0].content.length = 18;

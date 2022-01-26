@@ -309,7 +309,7 @@ void ngap_handle_ng_setup_request(amf_gnb_t *gnb, ogs_ngap_message_t *message)
         ogs_warn("NG-Setup failure:");
         ogs_warn("    Cannot find Served TAI. Check 'amf.tai' configuration");
         group = NGAP_Cause_PR_misc;
-        cause = NGAP_CauseMisc_unknown_PLMN;
+        cause = NGAP_CauseMisc_unknown_PLMN_or_SNPN;
 
         ogs_assert(OGS_OK ==
             ngap_send_ng_setup_failure(gnb, group, cause));
@@ -1404,6 +1404,15 @@ void ngap_handle_ue_context_release_action(ran_ue_t *ran_ue)
             ran_ue->ran_ue_ngap_id, (long long)ran_ue->amf_ue_ngap_id);
     if (amf_ue) {
         ogs_info("    SUCI[%s]", amf_ue->suci ? amf_ue->suci : "Unknown");
+
+        /*
+         * An assert occurs when a NAS message retransmission occurs.
+         *
+         * Because there is no `ran_ue` context.
+         * 
+         * Therefore, before removing `ran_ue`, all Timers must be stopped
+         * to prevent retransmission of NAS messages.
+         */
         CLEAR_AMF_UE_ALL_TIMERS(amf_ue);
     }
 
@@ -1477,6 +1486,10 @@ void ngap_handle_pdu_session_resource_setup_response(
     NGAP_AMF_UE_NGAP_ID_t *AMF_UE_NGAP_ID = NULL;
     NGAP_PDUSessionResourceSetupListSURes_t *PDUSessionList = NULL;
     NGAP_PDUSessionResourceSetupItemSURes_t *PDUSessionItem = NULL;
+    NGAP_PDUSessionResourceFailedToSetupListSURes_t
+        *PDUSessionFailedList = NULL;
+    NGAP_PDUSessionResourceFailedToSetupItemSURes_t
+        *PDUSessionFailedItem = NULL;
     OCTET_STRING_t *transfer = NULL;
 
     ogs_assert(gnb);
@@ -1504,6 +1517,10 @@ void ngap_handle_pdu_session_resource_setup_response(
         case NGAP_ProtocolIE_ID_id_PDUSessionResourceSetupListSURes:
             PDUSessionList =
                 &ie->value.choice.PDUSessionResourceSetupListSURes;
+            break;
+        case NGAP_ProtocolIE_ID_id_PDUSessionResourceFailedToSetupListSURes:
+            PDUSessionFailedList =
+                &ie->value.choice.PDUSessionResourceFailedToSetupListSURes;
             break;
         default:
             break;
@@ -1557,135 +1574,258 @@ void ngap_handle_pdu_session_resource_setup_response(
         return;
     }
 
-    if (!PDUSessionList) {
-        ogs_error("No PDUSessionResourceSetupListSURes");
+    if (PDUSessionList) {
+        for (i = 0; i < PDUSessionList->list.count; i++) {
+            amf_sess_t *sess = NULL;
+            PDUSessionItem = (NGAP_PDUSessionResourceSetupItemSURes_t *)
+                PDUSessionList->list.array[i];
+
+            if (!PDUSessionItem) {
+                ogs_error("No PDUSessionResourceSetupItemSURes");
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_protocol,
+                        NGAP_CauseProtocol_semantic_error));
+                return;
+            }
+
+            transfer = &PDUSessionItem->pDUSessionResourceSetupResponseTransfer;
+            if (!transfer) {
+                ogs_error("No PDUSessionResourceSetupResponseTransfer");
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_protocol,
+                        NGAP_CauseProtocol_semantic_error));
+                return;
+            }
+
+            if (PDUSessionItem->pDUSessionID ==
+                    OGS_NAS_PDU_SESSION_IDENTITY_UNASSIGNED) {
+                ogs_error("PDU Session Identity is unassigned");
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_protocol,
+                        NGAP_CauseProtocol_semantic_error));
+                return;
+            }
+
+            sess = amf_sess_find_by_psi(amf_ue, PDUSessionItem->pDUSessionID);
+            if (!sess) {
+                ogs_error("Cannot find PDU Session ID [%d]",
+                        (int)PDUSessionItem->pDUSessionID);
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(amf_ue,
+                        NGAP_Cause_PR_radioNetwork,
+                        NGAP_CauseRadioNetwork_unknown_PDU_session_ID));
+                return;
+            }
+
+            if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledn1n2)
+            {
+                int pcs_loop = 0;
+                while(sess->pcs.pcs_udsfn1n2done == 0 && pcs_loop < 10000) {
+                    usleep(5);
+                    pcs_loop = pcs_loop + 1;
+                    if (sess->pcs.pcs_udsfn1n2done)
+                    {
+                        ogs_info("PCS Finally n1n2 is done %d", pcs_loop);
+                    }
+                }
+            }
+
+            if (!SESSION_CONTEXT_IN_SMF(sess)) {
+                ogs_error("Session Context is not in SMF [%d]",
+                        (int)PDUSessionItem->pDUSessionID);
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(amf_ue,
+                        NGAP_Cause_PR_radioNetwork,
+                        NGAP_CauseRadioNetwork_unknown_PDU_session_ID));
+                return;
+            }
+
+            memset(&param, 0, sizeof(param));
+            param.n2smbuf = ogs_pkbuf_alloc(NULL, OGS_MAX_SDU_LEN);
+            ogs_assert(param.n2smbuf);
+            param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
+            ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
+
+            if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless)
+            {
+                struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(ogs_pkbuf_copy(param.n2smbuf));
+                sess->pcs.pcs_updatedata = pcs_updatedata;
+                sess->pcs.pcs_udsfupdatereqdone = 1;
+            }
+            else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
+            {
+                char *pcs_imsistr = sess->amf_ue->supi;
+                pcs_imsistr += 5;
+                struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
+                pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+                pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
+                struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+                char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+                mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+                pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+
+                if (pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
+                {
+                    pcs_amfupdaterequdsf->sess = sess;
+                    pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
+                }
+                else if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
+                {
+                    if (sess->pcs.pcs_udsfn1n2done)
+                    {
+                        (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+                        (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
+                        //pthread_t pcs_thread1;
+                        //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                        mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
+                        ogs_info("PCS Started Update-Req UDSF thread");
+                    }
+                    else
+                    {
+                        ogs_error("pcs_udsfn1n2edone thread is not complete");
+                        sess->pcs.pcs_udsfupdatereqdone = 0;
+                    }
+                }
+            }
+
+            ogs_assert(true ==
+                amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
+                    sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
+                    amf_nsmf_pdusession_build_update_sm_context));
+
+            ogs_pkbuf_free(param.n2smbuf);
+        }
+    } else if (PDUSessionFailedList) {
+        for (i = 0; i < PDUSessionFailedList->list.count; i++) {
+            amf_sess_t *sess = NULL;
+            PDUSessionFailedItem =
+                (NGAP_PDUSessionResourceFailedToSetupItemSURes_t *)
+                PDUSessionFailedList->list.array[i];
+
+            if (!PDUSessionFailedItem) {
+                ogs_error("No PDUSessionResourceFailedToSetupItemSURes");
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_protocol,
+                        NGAP_CauseProtocol_semantic_error));
+                return;
+            }
+
+            transfer =
+                &PDUSessionFailedItem->
+                    pDUSessionResourceSetupUnsuccessfulTransfer;
+            if (!transfer) {
+                ogs_error("No PDUSessionResourceSetupUnsuccessfulTransfer");
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_protocol,
+                        NGAP_CauseProtocol_semantic_error));
+                return;
+            }
+
+            if (PDUSessionFailedItem->pDUSessionID ==
+                    OGS_NAS_PDU_SESSION_IDENTITY_UNASSIGNED) {
+                ogs_error("PDU Session Identity is unassigned");
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_protocol,
+                        NGAP_CauseProtocol_semantic_error));
+                return;
+            }
+
+            sess = amf_sess_find_by_psi(
+                    amf_ue, PDUSessionFailedItem->pDUSessionID);
+            if (!sess) {
+                ogs_error("Cannot find PDU Session ID [%d]",
+                        (int)PDUSessionFailedItem->pDUSessionID);
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(
+                        amf_ue,
+                        NGAP_Cause_PR_radioNetwork,
+                        NGAP_CauseRadioNetwork_unknown_PDU_session_ID));
+                return;
+            }
+
+            if (!SESSION_CONTEXT_IN_SMF(sess)) {
+                ogs_error("Session Context is not in SMF [%d]",
+                        (int)PDUSessionFailedItem->pDUSessionID);
+                ogs_assert(OGS_OK ==
+                    ngap_send_error_indication2(amf_ue,
+                        NGAP_Cause_PR_radioNetwork,
+                        NGAP_CauseRadioNetwork_unknown_PDU_session_ID));
+                return;
+            }
+
+            /*
+             * TS23.502
+             * 4.2.3 Service Request procedures
+             * 4.2.3.2 UE Triggered Service Request
+             *
+             * 15. ...
+             * If a PDU Session is rejected by the serving NG-RAN
+             * with an indication that the PDU Session was rejected
+             * because User Plane Security Enforcement is not supported
+             * in the serving NG-RAN and the User Plane Enforcement Policy
+             * indicates "Required" as described in clause 5.10.3
+             * of TS 23.501 [2], the SMF shall trigger the release
+             * of this PDU Session.
+             *
+             * In all other cases of PDU Session rejection,
+             * the SMF can decide whether to release the PDU Session
+             * or to deactivate the UP connection of this PDU Session.
+             *
+             *
+             * TS29.502
+             *
+             * 5.2.2.3.2
+             * Activation and Deactivation of the User Plane connection
+             * of a PDU session
+             * 5.2.2.3.2.2
+             * Activation of User Plane connectivity of a PDU session
+             *
+             * 3. ...
+             * N2 SM information received from the 5G-AN
+             * (see PDU Session Resource Setup Unsuccessful Transfer IE
+             * in clause 9.3.4.16 of 3GPP TS 38.413 [9]),
+             * including the Cause of the failure, if resources failed
+             * to be established for the PDU session.
+             *
+             * Upon receipt of this request, the SMF shall:
+             * - consider that the activation of the User Plane connection
+             *   has failed and set the upCnxState attribute to DEACTIVATED"
+             *   otherwise.
+             */
+            memset(&param, 0, sizeof(param));
+            param.n2smbuf = ogs_pkbuf_alloc(NULL, OGS_MAX_SDU_LEN);
+            ogs_assert(param.n2smbuf);
+            param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_FAIL;
+            ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
+
+            amf_ue->deactivation.group = NGAP_Cause_PR_nas;
+            amf_ue->deactivation.cause = NGAP_CauseNas_normal_release;
+
+            ogs_assert(true ==
+                amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
+                    sess, AMF_UPDATE_SM_CONTEXT_SETUP_FAIL, &param,
+                    amf_nsmf_pdusession_build_update_sm_context));
+
+            ogs_pkbuf_free(param.n2smbuf);
+        }
+    } else {
+        ogs_error("No PDUSessionResourceList");
         ogs_assert(OGS_OK ==
             ngap_send_error_indication2(amf_ue,
                 NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
-        return;
-    }
-
-    for (i = 0; i < PDUSessionList->list.count; i++) {
-        amf_sess_t *sess = NULL;
-        PDUSessionItem = (NGAP_PDUSessionResourceSetupItemSURes_t *)
-            PDUSessionList->list.array[i];
-
-        if (!PDUSessionItem) {
-            ogs_error("No PDUSessionResourceSetupItemSURes");
-            ogs_assert(OGS_OK ==
-                ngap_send_error_indication2(amf_ue,
-                    NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
-            return;
-        }
-
-        transfer = &PDUSessionItem->pDUSessionResourceSetupResponseTransfer;
-        if (!transfer) {
-            ogs_error("No PDUSessionResourceSetupResponseTransfer");
-            ogs_assert(OGS_OK ==
-                ngap_send_error_indication2(amf_ue,
-                    NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
-            return;
-        }
-
-        if (PDUSessionItem->pDUSessionID ==
-                OGS_NAS_PDU_SESSION_IDENTITY_UNASSIGNED) {
-            ogs_error("PDU Session Identity is unassigned");
-            ogs_assert(OGS_OK ==
-                ngap_send_error_indication2(amf_ue,
-                    NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
-            return;
-        }
-
-        sess = amf_sess_find_by_psi(amf_ue, PDUSessionItem->pDUSessionID);
-        if (!sess) {
-            ogs_error("Cannot find PDU Session ID [%d]",
-                    (int)PDUSessionItem->pDUSessionID);
-            ogs_assert(OGS_OK ==
-                ngap_send_error_indication2(amf_ue,
-                    NGAP_Cause_PR_radioNetwork,
-                    NGAP_CauseRadioNetwork_unknown_PDU_session_ID));
-            return;
-        }
-
-        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledn1n2)
-        {
-            int pcs_loop = 0;
-            while(sess->pcs.pcs_udsfn1n2done == 0 && pcs_loop < 10000) {
-                usleep(5);
-                pcs_loop = pcs_loop + 1;
-                if (sess->pcs.pcs_udsfn1n2done)
-                {
-                    ogs_info("PCS Finally n1n2 is done %d", pcs_loop);
-                }
-            }
-        }
-
-        if (!SESSION_CONTEXT_IN_SMF(sess)) {
-            ogs_error("Session Context is not in SMF [%d]",
-                    (int)PDUSessionItem->pDUSessionID);
-            ogs_assert(OGS_OK ==
-                ngap_send_error_indication2(amf_ue,
-                    NGAP_Cause_PR_radioNetwork,
-                    NGAP_CauseRadioNetwork_unknown_PDU_session_ID));
-            return;
-        }
-
-        memset(&param, 0, sizeof(param));
-        param.n2smbuf = ogs_pkbuf_alloc(NULL, OGS_MAX_SDU_LEN);
-        ogs_assert(param.n2smbuf);
-        param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
-        ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
-
-        if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless)
-        {
-            struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(ogs_pkbuf_copy(param.n2smbuf));
-            sess->pcs.pcs_updatedata = pcs_updatedata;
-            sess->pcs.pcs_udsfupdatereqdone = 1;
-        }
-        else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
-        {
-            char *pcs_imsistr = sess->amf_ue->supi;
-            pcs_imsistr += 5;
-            struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
-            pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-            pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
-            struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
-            mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
-            pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(pcs_dbrdata);
-
-            if (pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
-            {
-                pcs_amfupdaterequdsf->sess = sess;
-                pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
-            }
-            else if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
-            {
-                if (sess->pcs.pcs_udsfn1n2done)
-                {
-                    (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-                    (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
-                    //pthread_t pcs_thread1;
-                    //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                    mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                    ogs_info("PCS Started Update-Req UDSF thread");
-                }
-                else
-                {
-                    ogs_error("pcs_udsfn1n2edone thread is not complete");
-                    sess->pcs.pcs_udsfupdatereqdone = 0;
-                }
-            }
-        }
-
-        ogs_assert(true ==
-            amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
-                sess, AMF_UPDATE_SM_CONTEXT_ACTIVATED, &param,
-                amf_nsmf_pdusession_build_update_sm_context));
-
-        
-        ogs_pkbuf_free(param.n2smbuf);
     }
 }
 
@@ -3713,7 +3853,7 @@ void ngap_handle_ran_configuration_update(
             ogs_warn("    Cannot find Served TAI. "
                         "Check 'amf.tai' configuration");
             group = NGAP_Cause_PR_misc;
-            cause = NGAP_CauseMisc_unknown_PLMN;
+            cause = NGAP_CauseMisc_unknown_PLMN_or_SNPN;
 
             ogs_assert(OGS_OK ==
                 ngap_send_ran_configuration_update_failure(gnb, group, cause));
@@ -3850,6 +3990,13 @@ void ngap_handle_ng_reset(
 
         partOfNG_Interface = ResetType->choice.partOfNG_Interface;
         ogs_assert(partOfNG_Interface);
+
+        if (gnb->ng_reset_ack)
+            ogs_pkbuf_free(gnb->ng_reset_ack);
+
+        gnb->ng_reset_ack = ogs_ngap_build_ng_reset_ack(partOfNG_Interface);
+        ogs_expect_or_return(gnb->ng_reset_ack);
+
         for (i = 0; i < partOfNG_Interface->list.count; i++) {
             NGAP_UE_associatedLogicalNG_connectionItem_t *item = NULL;
             uint64_t amf_ue_ngap_id;
@@ -3861,24 +4008,14 @@ void ngap_handle_ng_reset(
                         partOfNG_Interface->list.array[i];
             if (!item) {
                 ogs_error("No ResetType");
-                ogs_assert(OGS_OK ==
-                    ngap_send_error_indication(
-                        gnb, NULL, NULL,
-                        NGAP_Cause_PR_protocol,
-                        NGAP_CauseProtocol_semantic_error));
-                return;
+                continue;
             }
 
             if (item->aMF_UE_NGAP_ID) {
                 if (asn_INTEGER2ulong(item->aMF_UE_NGAP_ID,
                             (unsigned long *)&amf_ue_ngap_id) != 0) {
                     ogs_error("Invalid AMF_UE_NGAP_ID");
-                    ogs_assert(OGS_OK ==
-                        ngap_send_error_indication(
-                            gnb, NULL, NULL,
-                            NGAP_Cause_PR_protocol,
-                            NGAP_CauseProtocol_semantic_error));
-                    return;
+                    continue;
                 }
 
                 ran_ue = ran_ue_find_by_amf_ue_ngap_id(amf_ue_ngap_id);
@@ -3886,12 +4023,7 @@ void ngap_handle_ng_reset(
                 if (!ran_ue) {
                     ogs_error("No RAN UE Context : AMF_UE_NGAP_ID[%lld]",
                             (long long)amf_ue_ngap_id);
-                    ogs_assert(OGS_OK ==
-                        ngap_send_error_indication(
-                            gnb, NULL, &amf_ue_ngap_id,
-                            NGAP_Cause_PR_radioNetwork,
-                            NGAP_CauseRadioNetwork_unknown_local_UE_NGAP_ID));
-                    return;
+                    continue;
                 }
 
             } else if (item->rAN_UE_NGAP_ID) {
@@ -3902,21 +4034,11 @@ void ngap_handle_ng_reset(
                 if (!ran_ue) {
                     ogs_error("No RAN UE Context : RAN_UE_NGAP_ID[%d]",
                             (int)*item->rAN_UE_NGAP_ID);
-                    ogs_assert(OGS_OK ==
-                        ngap_send_error_indication(
-                            gnb, NULL, NULL,
-                            NGAP_Cause_PR_radioNetwork,
-                            NGAP_CauseRadioNetwork_unknown_local_UE_NGAP_ID));
-                    return;
+                    continue;
                 }
             } else {
                 ogs_error("No UE NGAP ID");
-                ogs_assert(OGS_OK ==
-                    ngap_send_error_indication(
-                        gnb, NULL, NULL,
-                        NGAP_Cause_PR_protocol,
-                        NGAP_CauseProtocol_semantic_error));
-                return;
+                continue;
             }
 
             ogs_assert(ran_ue);
@@ -3933,12 +4055,6 @@ void ngap_handle_ng_reset(
                 NGAP_CauseRadioNetwork_failure_in_radio_interface_procedure);
         }
 
-        if (gnb->ng_reset_ack)
-            ogs_pkbuf_free(gnb->ng_reset_ack);
-
-        gnb->ng_reset_ack = ogs_ngap_build_ng_reset_ack(partOfNG_Interface);
-        ogs_expect_or_return(gnb->ng_reset_ack);
-
         ogs_list_for_each(&gnb->ran_ue_list, iter) {
             if (iter->part_of_ng_reset_requested == true) {
                 /* The GNB_UE context
@@ -3951,6 +4067,7 @@ void ngap_handle_ng_reset(
         /* All GNB_UE context
          * where PartOfNG_interface was requested
          * REMOVED */
+        ogs_assert(gnb->ng_reset_ack);
         ngap_send_to_gnb(gnb, gnb->ng_reset_ack, NGAP_NON_UE_SIGNALLING);
 
         /* Clear NG-Reset Ack Buffer */

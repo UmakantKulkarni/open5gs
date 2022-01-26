@@ -334,6 +334,13 @@ struct amf_ue_s {
 
     /* PCF sends the RESPONSE
      * of [POST] /npcf-am-polocy-control/v1/policies */
+#define PCF_AM_POLICY_ASSOCIATED(__aMF) \
+    ((__aMF) && ((__aMF)->policy_association_id))
+
+#define PCF_AM_POLICY_CLEAR(__aMF) \
+    OGS_MEM_CLEAR((__aMF)->policy_association_id);
+#define PCF_AM_POLICY_STORE(__aMF, __iD) \
+    OGS_STRING_DUP((__aMF)->policy_association_id, __iD);
     char *policy_association_id;
 
     /* 5GMM Capability */
@@ -782,6 +789,25 @@ void source_ue_associate_target_ue(ran_ue_t *source_ue, ran_ue_t *target_ue);
 void source_ue_deassociate_target_ue(ran_ue_t *ran_ue);
 
 amf_sess_t *amf_sess_add(amf_ue_t *amf_ue, uint8_t psi);
+
+/*
+ * If there is SBI transaction,
+ * we will not remove session context at this point.
+ */
+#define AMF_SESS_CLEAR(__sESS) \
+    do { \
+        ogs_sbi_object_t *sbi_object = NULL; \
+        ogs_assert(__sESS); \
+        sbi_object = &sess->sbi; \
+        ogs_assert(sbi_object); \
+        \
+        if (ogs_list_count(&sbi_object->xact_list)) { \
+            ogs_error("SBI running [%d]", \
+                    ogs_list_count(&sbi_object->xact_list)); \
+        } else { \
+            amf_sess_remove(__sESS); \
+        } \
+    } while(0)
 void amf_sess_remove(amf_sess_t *sess);
 void amf_sess_remove_all(amf_ue_t *amf_ue);
 amf_sess_t *amf_sess_find_by_psi(amf_ue_t *amf_ue, uint8_t psi);
@@ -827,7 +853,7 @@ uint8_t amf_selected_enc_algorithm(amf_ue_t *amf_ue);
 
 void amf_clear_subscribed_info(amf_ue_t *amf_ue);
 
-void amf_update_allowed_nssai(amf_ue_t *amf_ue);
+bool amf_update_allowed_nssai(amf_ue_t *amf_ue);
 
 #ifdef __cplusplus
 }

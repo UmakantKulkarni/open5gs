@@ -76,7 +76,7 @@ Enable IP forwarding & Masquerading
 $ sudo sysctl -w net.inet.ip.forwarding=1
 $ sudo sysctl -w net.inet6.ip6.forwarding=1
 $ sudo sh -c "echo 'nat on {en0} from 10.45.0.0/16 to any -> {en0}' > /etc/pf.anchors/org.open5gs"
-$ sudo sh -c "echo 'nat on {en0} from 2001:230:cafe::1/48 to any -> {en0}' > /etc/pf.anchors/org.open5gs"
+$ sudo sh -c "echo 'nat on {en0} from 2001:db8:cafe::1/48 to any -> {en0}' > /etc/pf.anchors/org.open5gs"
 $ sudo pfctl -e -f /etc/pf.anchors/org.open5gs
 ```
 
@@ -89,7 +89,7 @@ $ sudo pfctl -e -f /etc/pf.anchors/org.open5gs
 
 Install the depedencies for building the source code.
 ```bash
-$ brew install mongo-c-driver gnutls libgcrypt libidn libyaml libmicrohttpd nghttp2 pkg-config libusrsctp libtins
+$ brew install mongo-c-driver gnutls libgcrypt libidn libyaml libmicrohttpd nghttp2 pkg-config libusrsctp libtins talloc
 ```
 
 Install Bison and Create soft link.

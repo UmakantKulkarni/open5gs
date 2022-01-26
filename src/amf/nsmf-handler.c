@@ -62,6 +62,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 nas_5gs_send_back_gsm_message(sess,
                     OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                     AMF_NAS_BACKOFF_TIME));
+
             return OGS_ERROR;
         }
 
@@ -76,6 +77,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 nas_5gs_send_back_gsm_message(sess,
                     OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                     AMF_NAS_BACKOFF_TIME));
+
             return OGS_ERROR;
         }
 
@@ -88,6 +90,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 nas_5gs_send_back_gsm_message(sess,
                     OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                     AMF_NAS_BACKOFF_TIME));
+
             return OGS_ERROR;
         }
 
@@ -117,6 +120,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                     nas_5gs_send_back_gsm_message(sess,
                         OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                         AMF_NAS_BACKOFF_TIME));
+
                 return OGS_ERROR;
             }
         }
@@ -140,6 +144,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 nas_5gs_send_back_gsm_message(sess,
                     OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                     AMF_NAS_BACKOFF_TIME));
+
             return OGS_ERROR;
         }
         if (!SmContextCreateError->error) {
@@ -148,6 +153,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 nas_5gs_send_back_gsm_message(sess,
                     OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                     AMF_NAS_BACKOFF_TIME));
+
             return OGS_ERROR;
         }
 
@@ -160,19 +166,24 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                  * NOTE : The pkbuf created in the SBI message will be removed
                  *        from ogs_sbi_message_free(), so it must be copied.
                  */
+                ogs_warn("[%d:%d] PDU session establishment reject",
+                        sess->psi, sess->pti);
                 n1smbuf = ogs_pkbuf_copy(n1smbuf);
                 ogs_assert(n1smbuf);
                 ogs_assert(OGS_OK ==
                     nas_5gs_send_gsm_reject(sess,
                         OGS_NAS_PAYLOAD_CONTAINER_N1_SM_INFORMATION, n1smbuf));
+
                 return OGS_ERROR;
             }
         }
 
+        ogs_error("[%d:%d] 5GMM was not forwarded", sess->psi, sess->pti);
         ogs_assert(OGS_OK ==
             nas_5gs_send_back_gsm_message(sess,
                 OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                 AMF_NAS_BACKOFF_TIME));
+
         return OGS_ERROR;
     }
 
@@ -307,6 +318,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                             amf_ue->supi, sess->psi);
                     nas_5gs_send_gmm_reject(amf_ue,
                             OGS_5GMM_CAUSE_5GS_SERVICES_NOT_ALLOWED);
+
                     return OGS_ERROR;
                 }
 
@@ -320,12 +332,19 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         SESSION_SYNC_DONE(amf_ue,
                             AMF_UPDATE_SM_CONTEXT_REGISTRATION_REQUEST)) {
 
-                        CLEAR_AMF_UE_TIMER(amf_ue->t3550);
-                        ogs_assert(OGS_OK ==
-                            nas_5gs_send_registration_accept(amf_ue));
+                        if (!PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
+                            ogs_assert(true ==
+                                amf_ue_sbi_discover_and_send(
+                                    OpenAPI_nf_type_PCF, amf_ue, NULL,
+                                    amf_npcf_am_policy_control_build_create));
+                        } else {
+                            CLEAR_AMF_UE_TIMER(amf_ue->t3550);
+                            ogs_assert(OGS_OK ==
+                                nas_5gs_send_registration_accept(amf_ue));
 
-                        AMF_UE_CLEAR_N2_TRANSFER(
-                                amf_ue, pdu_session_resource_setup_request);
+                            AMF_UE_CLEAR_N2_TRANSFER(
+                                    amf_ue, pdu_session_resource_setup_request);
+                        }
                     }
                 } else if (state == AMF_UPDATE_SM_CONTEXT_SERVICE_REQUEST) {
                     AMF_SESS_STORE_N2_TRANSFER(
@@ -367,6 +386,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         nas_5gs_send_back_gsm_message(sess,
                             OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                             AMF_NAS_BACKOFF_TIME));
+
                     return OGS_ERROR;
                 }
 
@@ -377,6 +397,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         nas_5gs_send_back_gsm_message(sess,
                             OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                             AMF_NAS_BACKOFF_TIME));
+
                     return OGS_ERROR;
                 }
 
@@ -404,6 +425,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         nas_5gs_send_back_gsm_message(sess,
                             OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                             AMF_NAS_BACKOFF_TIME));
+
                     return OGS_ERROR;
                 }
 
@@ -414,6 +436,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         nas_5gs_send_back_gsm_message(sess,
                             OGS_5GMM_CAUSE_PAYLOAD_WAS_NOT_FORWARDED,
                             AMF_NAS_BACKOFF_TIME));
+
                     return OGS_ERROR;
                 }
 
@@ -440,6 +463,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         ngap_send_error_indication2(amf_ue,
                             NGAP_Cause_PR_protocol,
                             NGAP_CauseProtocol_semantic_error));
+
                     return OGS_ERROR;
                 }
 
@@ -463,6 +487,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         ngap_send_error_indication2(amf_ue,
                             NGAP_Cause_PR_protocol,
                             NGAP_CauseProtocol_semantic_error));
+
                     return OGS_ERROR;
                 }
 
@@ -502,6 +527,61 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                  * 3. PFCP Session Modifcation Request (Apply: FORWARD)
                  * 4. PFCP Session Modifcation Response
                  */
+            } else if (state == AMF_UPDATE_SM_CONTEXT_SETUP_FAIL) {
+                /*
+                 * TS23.502
+                 * 4.2.3 Service Request procedures
+                 * 4.2.3.2 UE Triggered Service Request
+                 *
+                 * 15. ...
+                 * If a PDU Session is rejected by the serving NG-RAN
+                 * with an indication that the PDU Session was rejected
+                 * because User Plane Security Enforcement is not supported
+                 * in the serving NG-RAN and the User Plane Enforcement Policy
+                 * indicates "Required" as described in clause 5.10.3
+                 * of TS 23.501 [2], the SMF shall trigger the release
+                 * of this PDU Session.
+                 *
+                 * In all other cases of PDU Session rejection,
+                 * the SMF can decide whether to release the PDU Session
+                 * or to deactivate the UP connection of this PDU Session.
+                 *
+                 *
+                 * TS29.502
+                 *
+                 * 5.2.2.3.2
+                 * Activation and Deactivation of the User Plane connection
+                 * of a PDU session
+                 * 5.2.2.3.2.2
+                 * Activation of User Plane connectivity of a PDU session
+                 *
+                 * 3. ...
+                 * N2 SM information received from the 5G-AN
+                 * (see PDU Session Resource Setup Unsuccessful Transfer IE
+                 * in clause 9.3.4.16 of 3GPP TS 38.413 [9]),
+                 * including the Cause of the failure, if resources failed
+                 * to be established for the PDU session.
+                 *
+                 * Upon receipt of this request, the SMF shall:
+                 * - consider that the activation of the User Plane connection
+                 *   has failed and set the upCnxState attribute to DEACTIVATED"
+                 *   otherwise.
+                 *
+                 * 1. PDUSessionResourceSetupResponse(Unsuccessful)
+                 * 2. /nsmf-pdusession/v1/sm-contexts/{smContextRef}/modify
+                 * 3. PFCP Session Modifcation Request (Apply:Buff & NOCP)
+                 * 4. PFCP Session Modifcation Response
+                 * 5. UEContextReleaseCommand
+                 * 6. UEContextReleaseComplete
+                 */
+                ogs_warn("PDUSessionResourceSetupResponse(Unsuccessful)");
+                ogs_assert(amf_ue->deactivation.group);
+
+                ogs_assert(OGS_OK ==
+                    ngap_send_amf_ue_context_release_command(amf_ue,
+                        amf_ue->deactivation.group,
+                        amf_ue->deactivation.cause,
+                        NGAP_UE_CTX_REL_NG_REMOVE_AND_UNLINK, 0));
 
             } else if (state == AMF_UPDATE_SM_CONTEXT_MODIFIED) {
                 /*
@@ -680,6 +760,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                         /* All GNB_UE context
                          * where PartOfNG_interface was requested
                          * REMOVED */
+                        ogs_assert(gnb->ng_reset_ack);
                         ngap_send_to_gnb(
                                 gnb, gnb->ng_reset_ack, NGAP_NON_UE_SIGNALLING);
 
@@ -733,6 +814,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             ogs_assert(OGS_OK ==
                 ngap_send_error_indication2(amf_ue,
                     NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
+
             return OGS_ERROR;
         }
         if (!SmContextUpdateError->error) {
@@ -741,6 +823,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             ogs_assert(OGS_OK ==
                 ngap_send_error_indication2(amf_ue,
                     NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
+
             return OGS_ERROR;
         }
 
@@ -753,11 +836,15 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                  * NOTE : The pkbuf created in the SBI message will be removed
                  *        from ogs_sbi_message_free(), so it must be copied.
                  */
+                ogs_error("[%d:%d] PDU session establishment reject",
+                        sess->psi, sess->pti);
+
                 n1smbuf = ogs_pkbuf_copy(n1smbuf);
                 ogs_assert(n1smbuf);
                 ogs_assert(OGS_OK ==
                     nas_5gs_send_gsm_reject(sess,
                         OGS_NAS_PAYLOAD_CONTAINER_N1_SM_INFORMATION, n1smbuf));
+
                 return OGS_ERROR;
             }
         }
@@ -769,6 +856,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             ogs_assert(OGS_OK ==
                 ngap_send_error_indication2(amf_ue,
                     NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
+
             return OGS_ERROR;
         }
 
@@ -780,12 +868,13 @@ int amf_nsmf_pdusession_handle_update_sm_context(
             ogs_assert(OGS_OK ==
                 ngap_send_error_indication2(amf_ue,
                     NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
+
             return OGS_ERROR;
         }
 #endif
 
-        ogs_error("[%d:%d] HTTP response error [%d]",
-                sess->psi, sess->pti, recvmsg->res_status);
+        ogs_error("[%d:%d] Error Indication", sess->psi, sess->pti);
+
         ogs_assert(OGS_OK ==
             ngap_send_error_indication2(amf_ue,
                 NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
@@ -831,11 +920,19 @@ int amf_nsmf_pdusession_handle_release_sm_context(amf_sess_t *sess, int state)
         if (SESSION_SYNC_DONE(
                 amf_ue, AMF_RELEASE_SM_CONTEXT_REGISTRATION_ACCEPT) &&
             SESSION_SYNC_DONE(
-                amf_ue, AMF_UPDATE_SM_CONTEXT_REGISTRATION_REQUEST))
+                amf_ue, AMF_UPDATE_SM_CONTEXT_REGISTRATION_REQUEST)) {
 
-            CLEAR_AMF_UE_TIMER(amf_ue->t3550);
-            ogs_assert(OGS_OK ==
-                nas_5gs_send_registration_accept(amf_ue));
+            if (!PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
+                ogs_assert(true ==
+                    amf_ue_sbi_discover_and_send(
+                        OpenAPI_nf_type_PCF, amf_ue, NULL,
+                        amf_npcf_am_policy_control_build_create));
+            } else {
+                CLEAR_AMF_UE_TIMER(amf_ue->t3550);
+                ogs_assert(OGS_OK ==
+                    nas_5gs_send_registration_accept(amf_ue));
+            }
+        }
 
     } else if (state == AMF_RELEASE_SM_CONTEXT_SERVICE_ACCEPT) {
         /*
@@ -897,8 +994,10 @@ int amf_nsmf_pdusession_handle_release_sm_context(amf_sess_t *sess, int state)
                      * 7. UEContextReleaseComplete
                      */
 
-                    ogs_assert(OGS_OK ==
-                        nas_5gs_send_de_registration_accept(amf_ue));
+                    ogs_assert(true ==
+                        amf_ue_sbi_discover_and_send(
+                            OpenAPI_nf_type_PCF, amf_ue,
+                            NULL, amf_npcf_am_policy_control_build_delete));
 
                 } else if (OGS_FSM_CHECK(&amf_ue->sm, gmm_state_registered)) {
                     /*

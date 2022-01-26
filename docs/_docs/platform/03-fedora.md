@@ -39,7 +39,7 @@ Then, to support IPv6-enabled UEs, you must configure your TUN device to support
 $ sysctl -n net.ipv6.conf.ogstun.disable_ipv6
 1
 
-$ sudo -w net.ipv6.conf.ogstun.disable_ipv6=0
+$ sudo -w sysctl net.ipv6.conf.ogstun.disable_ipv6=0
 
 $ sysctl -n net.ipv6.conf.ogstun.disable_ipv6
 0
@@ -52,7 +52,7 @@ You are now ready to set the IP address on TUN device.
 
 ```bash
 $ sudo ip addr add 10.45.0.1/16 dev ogstun
-$ sudo ip addr add 2001:230:cafe::1/48 dev ogstun
+$ sudo ip addr add 2001:db8:cafe::1/48 dev ogstun
 ```
 
 Make sure it is set up properly.
@@ -70,7 +70,7 @@ $ ip link show
 
 Install the depedencies for building the source code.
 ```bash
-$ sudo dnf install python3 ninja-build gcc gcc-c++ flex bison git lksctp-tools-devel libidn-devel gnutls-devel libgcrypt-devel openssl-devel cyrus-sasl-devel libyaml-devel mongo-c-driver-devel libmicrohttpd-devel libcurl-devel libnghttp2-devel iproute
+$ sudo dnf install python3 ninja-build gcc gcc-c++ flex bison git lksctp-tools-devel libidn-devel gnutls-devel libgcrypt-devel openssl-devel cyrus-sasl-devel libyaml-devel mongo-c-driver-devel libmicrohttpd-devel libcurl-devel libnghttp2-devel libtalloc-devel iproute
 ```
 
 Install Meson

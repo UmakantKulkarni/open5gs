@@ -324,19 +324,20 @@ int ogs_fqdn_parse(char *dst, char *src, int length)
     int i = 0, j = 0;
     uint8_t len = 0;
 
-    while (i < length) {
+    while (i+1 < length) {
         len = src[i++];
-        /*if ((j + len + 1) > length) {
-            ogs_error("Invalid APN encoding[len:%d] + 1 > length[%d]",
+        if ((j + len + 1) > length) {
+            ogs_error("Invalid FQDN encoding[len:%d] + 1 > length[%d]",
                     len, length);
+            ogs_log_hexdump(OGS_LOG_ERROR, (unsigned char *)src, length);
             return 0;
-        }*/
+        }
         memcpy(&dst[j], &src[i], len);
 
         i += len;
         j += len;
         
-        if (i < length)
+        if (i+1 < length)
             dst[j++] = '.';
         else
             dst[j] = 0;
@@ -748,7 +749,7 @@ static int flow_rx_to_gx(ogs_flow_t *rx_flow, ogs_flow_t *gx_flow)
         /* 'permit in' should be changed
          * 'permit out' in Gx Diameter */
         len = strlen(rx_flow->description)+2;
-        gx_flow->description = ogs_malloc(len);
+        gx_flow->description = ogs_calloc(1, len);
         ogs_assert(gx_flow->description);
         strcpy(gx_flow->description, "permit out");
         from_str = strstr(&rx_flow->description[strlen("permit in")], "from");
