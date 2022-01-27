@@ -403,7 +403,8 @@ bool smf_nsmf_handle_update_sm_context(
                 }
                 json_value_free(pcs_dbrdatajsonval);
             }
-
+            pcs_n1n2done = 1;
+            pcs_pfcpestdone = 1;
             if ((int)pcs_n1n2done && (int)pcs_pfcpestdone)
             {
                 struct pcs_smf_update pcs_updatedata = pcs_get_smf_update_data(n2smbuf);

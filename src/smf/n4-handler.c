@@ -236,6 +236,7 @@ void smf_5gc_n4_handle_session_establishment_response(
             }
             json_value_free(pcs_dbrdatajsonval);
         }
+        pcs_createdone = 1;
         if ((int)pcs_createdone)
         {
             pcs_n1n2data = pcs_get_smf_n1n2_data(sess, param.n1smbuf, param.n2smbuf);

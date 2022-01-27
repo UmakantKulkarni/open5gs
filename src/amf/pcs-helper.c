@@ -835,6 +835,7 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       JSON_Object *pcs_dbrdatajsonobj = json_object(pcs_dbrdatajsonval);
       pcs_createdone = json_object_get_number(pcs_dbrdatajsonobj, "pcs-create-done");
    }
+   pcs_createdone = 1;
    if (strcmp(pcs_dbcollectioname, "amf") == 0)
    {
       if ((int)pcs_createdone)
@@ -960,7 +961,7 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
          }
       }
    }
-
+   pcs_n1n2done = 1;
    if (strcmp(pcs_dbcollectioname, "amf") == 0)
    {
       if ((int)pcs_n1n2done)
