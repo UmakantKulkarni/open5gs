@@ -7,6 +7,15 @@
 #include <arpa/inet.h>
 #include "parson.h"
 
+int imsi_to_dbid(char *ue_imsi)
+{
+   const char *last_four = &ue_imsi[strlen(ue_imsi)-4];
+   ogs_debug("last_four is %s \n", last_four);
+   int ue_dbid = atoi(last_four);
+
+   return ue_dbid;
+}
+
 struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata)
 {
    struct pcs_mongo_info_s pcs_mongo_info;
@@ -116,7 +125,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
    ogs_debug("PCS Conversion of Hex string %s to binary string is %s", pcs_substr, pcs_bin_str);
 }
 
-int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
+int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int pcs_docid, bson_t *bson_doc)
 {
    int rc = 0;
    bson_error_t error;
@@ -132,7 +141,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
-      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
@@ -145,7 +154,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "upsert") == 0)
    {
-      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
       bson_t *opts = BCON_NEW ("upsert", BCON_BOOL (true));
    
       if (!mongoc_collection_update_one(collection, query, bson_doc, opts, NULL, &error))
@@ -164,11 +173,11 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    return rc;
 }
 
-int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+int delete_create_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -193,11 +202,11 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    return rc;
 }
 
-int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+int replace_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -217,7 +226,7 @@ int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *p
    return rc;
 }
 
-char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
+char *read_data_from_db(mongoc_collection_t *collection, int pcs_docid)
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
@@ -225,7 +234,7 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
-   query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
    opts = BCON_NEW ("limit", BCON_INT64 (1));
    cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
    int i = 0;
@@ -234,12 +243,11 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    {
       i = i + 1;
       pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
-      ogs_debug("PCS Read Data from MongoDB for id %s is %s", pcs_docid, pcs_dbrdata);
    }
 
    if (i == 0)
    {
-      asprintf(&pcs_dbrdata, "{ \"_id\" : \"%s\" }", pcs_docid);
+      asprintf(&pcs_dbrdata, "{ \"_id\" : %d }", pcs_docid);
    }
    
    mongoc_cursor_destroy(cursor);
@@ -692,11 +700,10 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfcreateudsfstruct->pcs_pdusessionid);
    }
 
-   char *pcs_imsistr;
+   int pcs_uedbid;
    if (sess)
    {
-      pcs_imsistr = sess->amf_ue->supi;
-      pcs_imsistr += 5;
+      pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
    }
    else
    {
@@ -722,15 +729,15 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       bson_error_t error;
       if (pcs_upsertapienabledcreate)
       {
-         bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_UTF8(pcs_imsistr), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "ue-access-type", BCON_INT32(pcs_createdata.pcs_amfueaccesstype), "allowed_pdu_session_status", BCON_INT32(pcs_createdata.pcs_amfueallowedpdusessionstatus), "pei", BCON_UTF8(pcs_createdata.pcs_amfuepei), "dnn", BCON_UTF8(pcs_createdata.pcs_amfsessdnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", BCON_UTF8(pcs_createdata.pcs_amfueplmnid), "amf-id", BCON_UTF8(pcs_createdata.pcs_amfueamfid), "tac", BCON_UTF8(pcs_createdata.pcs_amfuetac), "ue-location-timestamp", BCON_INT64((long)pcs_createdata.pcs_amfuelocts), "ran-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_ranuengapid), "amf-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_amfuengapid), "gnb-id", BCON_INT32(pcs_createdata.pcs_ranuegnbid), "rat_type", BCON_UTF8(pcs_createdata.pcs_ranuerattype), "}"); 
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_imsistr, bson_doc);
+         bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_INT32(pcs_uedbid), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "ue-access-type", BCON_INT32(pcs_createdata.pcs_amfueaccesstype), "allowed_pdu_session_status", BCON_INT32(pcs_createdata.pcs_amfueallowedpdusessionstatus), "pei", BCON_UTF8(pcs_createdata.pcs_amfuepei), "dnn", BCON_UTF8(pcs_createdata.pcs_amfsessdnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", BCON_UTF8(pcs_createdata.pcs_amfueplmnid), "amf-id", BCON_UTF8(pcs_createdata.pcs_amfueamfid), "tac", BCON_UTF8(pcs_createdata.pcs_amfuetac), "ue-location-timestamp", BCON_INT64((long)pcs_createdata.pcs_amfuelocts), "ran-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_ranuengapid), "amf-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_amfuengapid), "gnb-id", BCON_INT32(pcs_createdata.pcs_ranuegnbid), "rat_type", BCON_UTF8(pcs_createdata.pcs_ranuerattype), "}"); 
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
       }
       else
       {
          char *pcs_docjson;
-         asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
+         asprintf(&pcs_docjson, "{\"_id\": %d, \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\"}", pcs_uedbid, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype);
          bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_uedbid, bson_doc);
          if (pcs_blockingapienabledcreate)
          {
             free(pcs_docjson);
@@ -798,11 +805,10 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
       sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfn1n2udsfstruct->pcs_pdusessionid);
    }
 
-   char *pcs_imsistr;
+   int pcs_uedbid;
    if (sess)
    {
-      pcs_imsistr = sess->amf_ue->supi;
-      pcs_imsistr += 5;
+      pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
    }
    else
    {
@@ -842,7 +848,7 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
             bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasepcostr, -1, &error);
             bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress),  "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
-            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+            pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
             if (pcs_blockingapienabledn1n2)
             {
                bson_destroy(bson_doc_nas_qos_rule);
@@ -856,11 +862,11 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
             asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s}", pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr);
             if (pcs_replaceapienabledn1n2)
             {
-               pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+               pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
             }
             else
             {
-               pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+               pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
             }
          }
 
@@ -939,16 +945,6 @@ void pcs_amf_update_req_udsf(void *pcs_amfupdaterequdsf)
    }
    else if (!pcs_isproceduralstateless)
    {
-      char *pcs_imsistr;
-      if (sess)
-      {
-         pcs_imsistr = sess->amf_ue->supi;
-         pcs_imsistr += 5;
-      }
-      else
-      {
-         return;
-      }
       if (!pcs_isproceduralstateless)
       {
          sess->pcs.pcs_dbrdata = pcs_dbrdata;
@@ -1016,11 +1012,10 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       sess = amf_sess_find_by_psi(amf_ue, (long)pcs_amfupdaterspudsfstruct->pcs_pdusessionid);
    }
 
-   char *pcs_imsistr;
+   int pcs_uedbid;
    if (sess)
    {
-      pcs_imsistr = sess->amf_ue->supi;
-      pcs_imsistr += 5;
+      pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
    }
    else
    {
@@ -1046,12 +1041,12 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       struct pcs_amf_create pcs_createdata = sess->pcs.pcs_createdata;
       struct pcs_amf_n1n2 pcs_n1n2data = sess->pcs.pcs_n1n2data;
       char *pcs_docjson;
-      asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr, pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
+      asprintf(&pcs_docjson, "{\"_id\": %d, \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"ue-access-type\": %d, \"allowed_pdu_session_status\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": \"%s\", \"amf-id\": \"%s\", \"tac\": \"%s\", \"ue-location-timestamp\": %ld, \"ran-ue-ngap-id\": %d, \"amf-ue-ngap-id\": %d, \"gnb-id\": %d, \"rat_type\": \"%s\", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"dnn\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s, \"pcs-update-done\": 1, \"dLQosFlowPerTNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d, \"associatedQosFlowId\": %ld } }", pcs_uedbid, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_amfueaccesstype, pcs_createdata.pcs_amfueallowedpdusessionstatus, pcs_createdata.pcs_amfuepei, pcs_createdata.pcs_amfsessdnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_amfueplmnid, pcs_createdata.pcs_amfueamfid, pcs_createdata.pcs_amfuetac, (long)pcs_createdata.pcs_amfuelocts, pcs_createdata.pcs_ranuengapid, pcs_createdata.pcs_amfuengapid, pcs_createdata.pcs_ranuegnbid, pcs_createdata.pcs_ranuerattype, pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_dnn, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr, pcs_updatedata.pcs_upfn3ip, pcs_updatedata.pcs_upfn3teid, pcs_updatedata.pcs_qosflowid);
       bson_error_t error;
       bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
       if (bson_doc)
       {
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_uedbid, bson_doc);
       	sess->pcs.pcs_updatedone = 1;
       }
       if (pcs_blockingapienabledmodifyrsp)
@@ -1074,7 +1069,7 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       {
          bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
 
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_imsistr, bson_doc);
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
       }
       else
       {
@@ -1084,11 +1079,11 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
 
          if (pcs_replaceapienabledmodify)
          {
-            pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);   
+            pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);   
          }
          else
          {
-            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_imsistr, pcs_dbrdata, pcs_updatedoc);
+            pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
          }
          /* if (pcs_blockingapienabledmodifyrsp)
          {

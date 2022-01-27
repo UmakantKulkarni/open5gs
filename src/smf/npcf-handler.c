@@ -583,10 +583,9 @@ bool smf_npcf_smpolicycontrol_handle_create(
 
     if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
     {
-        char *pcs_imsistr = smf_ue->supi;
-        pcs_imsistr += 5;
+        int pcs_uedbid = imsi_to_dbid(smf_ue->supi);
         struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-        char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+        char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
         mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
     }

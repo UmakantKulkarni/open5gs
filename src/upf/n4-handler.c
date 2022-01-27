@@ -57,12 +57,11 @@ void upf_n4_handle_session_establishment_request(
 
     if (pcs_fsmdata->pcs_dbcommenabled)
     {
-        char *pcs_upfdbid, *pcs_dbrdata;
+        char *pcs_dbrdata;
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
-            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", pcs_upfdbid, -1);
+            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", sess->smf_n4_seid, -1);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         }
         else
@@ -73,9 +72,8 @@ void upf_n4_handle_session_establishment_request(
             }
             else
             {
-                asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid);
+                pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", sess->smf_n4_seid, sess->smf_n4_seid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             }
         }
@@ -303,12 +301,11 @@ void upf_n4_handle_session_modification_request(
 
     if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
     {
-        char *pcs_upfdbid, *pcs_dbrdata;
+        char *pcs_dbrdata;
         if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
         {
-            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", pcs_upfdbid, -1);
+            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", sess->smf_n4_seid, -1);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         }
         else
@@ -319,9 +316,8 @@ void upf_n4_handle_session_modification_request(
             }
             else
             {
-                asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", pcs_upfdbid, sess->smf_n4_seid);
+                pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", sess->smf_n4_seid, sess->smf_n4_seid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             }
         }
@@ -533,9 +529,8 @@ void upf_n4_handle_session_modification_request(
     if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && pcs_fsmdata->pcs_blockingapienabledmodifyrsp && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
     {
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
-        char *pcs_upfdbid, *pcs_dbrdata;
+        char *pcs_dbrdata;
         double pcs_pfcpestdone = 0;
-        asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
         struct pcs_upf_n4_create pcs_n4createdata;
         if (!pcs_fsmdata->pcs_isproceduralstateless)
         {
@@ -604,11 +599,11 @@ void upf_n4_handle_session_modification_request(
 
             if (pcs_fsmdata->pcs_isproceduralstateless)
             {
-                asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s, \"pcs-pfcp-update-done\": 1}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.cause_value, pcs_n4createdata.pcs_pdrs, pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+                asprintf(&pcs_docjson, "{\"_id\": %ld, \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s, \"pcs-pfcp-update-done\": 1}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.cause_value, pcs_n4createdata.pcs_pdrs, pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
             
                 bson_error_t error;
                 bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_upfdbid, bson_doc);
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_smfn4seid, bson_doc);
                 free(pcs_docjson);
             }
             else
@@ -619,7 +614,7 @@ void upf_n4_handle_session_modification_request(
                     bson_t *bson_doc_ary = bson_new_from_json((const uint8_t *)pcs_fars, -1, &error);
 
                     bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-pfcp-update-done", BCON_INT32(1), "FARs", BCON_ARRAY(bson_doc_ary), "}");
-                    pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_upfdbid, bson_doc);
+                    pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_smfn4seid, bson_doc);
                     bson_destroy(bson_doc_ary);
                 }
                 else
@@ -628,11 +623,11 @@ void upf_n4_handle_session_modification_request(
                     asprintf(&pcs_updatedoc, ", \"pcs-pfcp-update-done\": 1, \"FARs\": %s}", pcs_fars);
                     if (pcs_fsmdata->pcs_replaceapienabledmodify)
                     {
-                        pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);   
+                        pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);   
                     }
                     else
                     {
-                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);
+                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);
                     }
                 }
             }
@@ -648,7 +643,6 @@ void upf_n4_handle_session_modification_request(
             }
 
             free(pcs_var);
-            free(pcs_upfdbid);
             free(pcs_pfcpie);
             free(pcs_fars);
 
@@ -674,8 +668,6 @@ void upf_n4_handle_session_modification_request(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
-            char *pcs_upfdbid;
-            asprintf(&pcs_upfdbid, "%ld", sess->smf_n4_seid);
             struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
             pcs_upfupdateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;

@@ -115,10 +115,9 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
         else
         {
-            char *pcs_imsistr = sess->amf_ue->supi;
-            pcs_imsistr += 5;
+            int pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_imsistr);
+            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
         }
         sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
     }
@@ -437,8 +436,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
-            char *pcs_imsistr = sess->amf_ue->supi;
-            pcs_imsistr += 5;
             struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
             pcs_amfn1n2udsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_amfn1n2udsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
@@ -482,8 +479,6 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2 && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
     {
-        char *pcs_imsistr = sess->amf_ue->supi;
-        pcs_imsistr += 5;
         struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
         pcs_amfn1n2udsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         (*pcs_amfn1n2udsf).pcs_pdusessionid = (long *) (long)sess->psi;

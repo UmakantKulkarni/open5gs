@@ -286,21 +286,20 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
 
             int pcs_rv;            
             struct pcs_smf_create pcs_createdata = sess->pcs.pcs_createdata;
-            char *pcs_imsistr = sess->smf_ue->supi;
-            pcs_imsistr += 5;
+            int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
 
             bson_error_t error;
             if (pcs_fsmdata->pcs_upsertapienabledcreate)
             {
-                bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_UTF8(pcs_imsistr), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "an-type", BCON_INT32(pcs_createdata.pcs_antype), "pei", BCON_UTF8(pcs_createdata.pcs_pei), "dnn", BCON_UTF8(pcs_createdata.pcs_dnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", "{", "mcc", BCON_UTF8(pcs_createdata.pcs_mnc), "mnc", BCON_UTF8(pcs_createdata.pcs_mnc), "}", "amf-id", BCON_UTF8(pcs_createdata.pcs_amfid), "tac", BCON_UTF8(pcs_createdata.pcs_tac), "cell-id", BCON_UTF8(pcs_createdata.pcs_cellid), "ue-location-timestamp", BCON_UTF8(pcs_createdata.pcs_uelocts), "ue-time-zone", BCON_UTF8(pcs_createdata.pcs_uetimezone), "sm-context-status-uri", BCON_UTF8(pcs_createdata.pcs_smcntxsttsuri), "pcf-id", BCON_UTF8(pcs_createdata.pcs_pcfid), "rat_type", BCON_UTF8(pcs_createdata.pcs_rattype), "}"); 
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_imsistr, bson_doc);
+                bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_INT32(pcs_uedbid), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "an-type", BCON_INT32(pcs_createdata.pcs_antype), "pei", BCON_UTF8(pcs_createdata.pcs_pei), "dnn", BCON_UTF8(pcs_createdata.pcs_dnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", "{", "mcc", BCON_UTF8(pcs_createdata.pcs_mnc), "mnc", BCON_UTF8(pcs_createdata.pcs_mnc), "}", "amf-id", BCON_UTF8(pcs_createdata.pcs_amfid), "tac", BCON_UTF8(pcs_createdata.pcs_tac), "cell-id", BCON_UTF8(pcs_createdata.pcs_cellid), "ue-location-timestamp", BCON_UTF8(pcs_createdata.pcs_uelocts), "ue-time-zone", BCON_UTF8(pcs_createdata.pcs_uetimezone), "sm-context-status-uri", BCON_UTF8(pcs_createdata.pcs_smcntxsttsuri), "pcf-id", BCON_UTF8(pcs_createdata.pcs_pcfid), "rat_type", BCON_UTF8(pcs_createdata.pcs_rattype), "}"); 
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
             }
             else
             {
                 char *pcs_docjson;
-                asprintf(&pcs_docjson, "{\"_id\": \"%s\", \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_imsistr, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_antype, pcs_createdata.pcs_pei, pcs_createdata.pcs_dnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_mcc, pcs_createdata.pcs_mnc, pcs_createdata.pcs_amfid, pcs_createdata.pcs_tac, pcs_createdata.pcs_cellid, pcs_createdata.pcs_uelocts, pcs_createdata.pcs_uetimezone, pcs_createdata.pcs_smcntxsttsuri, pcs_createdata.pcs_pcfid, pcs_createdata.pcs_rattype);
+                asprintf(&pcs_docjson, "{\"_id\": %d, \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_uedbid, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_antype, pcs_createdata.pcs_pei, pcs_createdata.pcs_dnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_mcc, pcs_createdata.pcs_mnc, pcs_createdata.pcs_amfid, pcs_createdata.pcs_tac, pcs_createdata.pcs_cellid, pcs_createdata.pcs_uelocts, pcs_createdata.pcs_uetimezone, pcs_createdata.pcs_smcntxsttsuri, pcs_createdata.pcs_pcfid, pcs_createdata.pcs_rattype);
                 bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_imsistr, bson_doc);
+                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_uedbid, bson_doc);
                 ogs_free(pcs_createdata.pcs_snssaisd);
                 free(pcs_docjson);
             }

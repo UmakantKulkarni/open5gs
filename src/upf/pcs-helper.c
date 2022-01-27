@@ -116,7 +116,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
    ogs_debug("PCS Conversion of Hex string %s to binary string is %s", pcs_substr, pcs_bin_str);
 }
 
-int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
+int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, uint64_t pcs_docid, bson_t *bson_doc)
 {
    int rc = 0;
    bson_error_t error;
@@ -132,7 +132,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
-      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *query = BCON_NEW("_id", BCON_INT64 (pcs_docid));
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
@@ -145,7 +145,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "upsert") == 0)
    {
-      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *query = BCON_NEW("_id", BCON_INT64 (pcs_docid));
       bson_t *opts = BCON_NEW ("upsert", BCON_BOOL (true));
    
       if (!mongoc_collection_update_one(collection, query, bson_doc, opts, NULL, &error))
@@ -164,11 +164,11 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    return rc;
 }
 
-int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+int delete_create_data_to_db(mongoc_collection_t *collection, uint64_t pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   bson_t *query = BCON_NEW("_id", BCON_INT64 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -193,11 +193,11 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    return rc;
 }
 
-int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+int replace_data_to_db(mongoc_collection_t *collection, uint64_t pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   bson_t *query = BCON_NEW("_id", BCON_INT64 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -217,15 +217,15 @@ int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *p
    return rc;
 }
 
-char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey, char *pcs_docval, long pcs_docseid)
+char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey, uint64_t pcs_docval, long pcs_docseid)
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
    bson_t *opts;
-   bson_t *query = NULL;
    char *pcs_dbrdata;
+   bson_t *query = BCON_NEW(pcs_dockey, BCON_INT64 (pcs_docval));
 
-   if (pcs_docseid == -1)
+   /* if (pcs_docseid == -1)
    {
       query = BCON_NEW(pcs_dockey, pcs_docval);
    }
@@ -233,7 +233,7 @@ char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey,
    {
       query = bson_new();
       BSON_APPEND_DOUBLE(query, pcs_dockey, pcs_docseid);
-   }
+   } */
 
    opts = BCON_NEW ("limit", BCON_INT64 (1));
    cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
@@ -243,21 +243,20 @@ char *read_data_from_db(mongoc_collection_t *collection, const char *pcs_dockey,
    {
       i = i + 1;
       pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
-      ogs_debug("PCS Read Data from MongoDB is %s", pcs_dbrdata);
    }
 
    if (i == 0)
    {
       if (pcs_docseid == -1)
       {
-         asprintf(&pcs_dbrdata, "{ \"%s\" : \"%s\" }", pcs_dockey, pcs_docval);
+         asprintf(&pcs_dbrdata, "{ \"%s\" : %ld }", pcs_dockey, pcs_docval);
       }
       else
       {
          asprintf(&pcs_dbrdata, "{ \"%s\" : %ld }", pcs_dockey, pcs_docseid);
       }
    }
-   
+
    mongoc_cursor_destroy(cursor);
    bson_destroy(query);
    bson_destroy (opts);
@@ -700,8 +699,7 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
 
    struct pcs_upf_n4_create pcs_n4createdata;
    pcs_n4createdata.pcs_smfn4seid = sess->smf_n4_seid;
-   char *pcs_upfdbid, *pcs_dbrdata;
-   asprintf(&pcs_upfdbid, "%ld", pcs_n4createdata.pcs_smfn4seid);
+   char *pcs_dbrdata;
    pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
 
    if ((pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19) && strcmp(pcs_dbcollectioname, "upf") == 0)
@@ -718,9 +716,9 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
          bson_t *bson_far_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_fars, -1, &error);
          bson_t *bson_qer_ary = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_qers, -1, &error);
          bson_t *bson_bar_doc = bson_new_from_json((const uint8_t *)pcs_n4createdata.pcs_bars, -1, &error);
-         bson_t *bson_doc = BCON_NEW("$set", "{", "_id",  BCON_UTF8(pcs_upfdbid), "pcs-pfcp-est-done", BCON_INT32(1), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(1), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_DOCUMENT(bson_bar_doc), "}");
+         bson_t *bson_doc = BCON_NEW("$set", "{", "_id",  BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "pcs-pfcp-est-done", BCON_INT32(1), "UPF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_upfnodeip), "SMF-Node-IP", BCON_UTF8(pcs_n4createdata.pcs_smfnodeip), "UPF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_upfn4seid), "SMF-N4-SEID", BCON_INT64(pcs_n4createdata.pcs_smfn4seid), "Cause", BCON_INT32(1), "PDRs", BCON_ARRAY(bson_pdr_ary), "FARs", BCON_ARRAY(bson_far_ary), "QERs", BCON_ARRAY(bson_qer_ary), "BAR", BCON_DOCUMENT(bson_bar_doc), "}");
 
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_upfdbid, bson_doc);
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_n4createdata.pcs_smfn4seid, bson_doc);
 
          if (pcs_blockingapienabledcreate)
          {
@@ -732,11 +730,11 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       else
       {
          char *pcs_docjson;
-         asprintf(&pcs_docjson, "{\"_id\": \"%ld\", \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, 1, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
+         asprintf(&pcs_docjson, "{\"_id\": %ld, \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, 1, pcs_n4createdata.pcs_pdrs, pcs_n4createdata.pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
 
          bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
 
-         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_upfdbid, bson_doc);
+         pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_n4createdata.pcs_smfn4seid, bson_doc);
 
          if (pcs_blockingapienabledcreate)
          {
@@ -758,7 +756,6 @@ void pcs_upf_create_udsf(void *pcs_upfcreateudsf)
       {
          ogs_free(pcs_n4createdata.pcs_upfnodeip);
          ogs_free(pcs_n4createdata.pcs_smfnodeip);
-         free(pcs_upfdbid);
          free(pcs_n4createdata.pcs_pdrs);
          free(pcs_n4createdata.pcs_fars);
       }
@@ -786,9 +783,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
    char *pcs_dbrdata = pcs_upfupdateudsfstruct->pcs_dbrdata;
 
    uint64_t pcs_smfn4seid = sess->smf_n4_seid;
-   char *pcs_upfdbid;
    double pcs_pfcpestdone = 0;
-   asprintf(&pcs_upfdbid, "%ld", pcs_smfn4seid);
    if (!pcs_isproceduralstateless)
    {
       JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
@@ -861,7 +856,7 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
                bson_t *bson_doc_ary = bson_new_from_json((const uint8_t *)pcs_fars, -1, &error);
 
                bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-pfcp-update-done", BCON_INT32(1), "FARs", BCON_ARRAY(bson_doc_ary), "}");
-               pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_upfdbid, bson_doc);
+               pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_smfn4seid, bson_doc);
                if (pcs_blockingapienabledmodifyrsp)
                {
                   bson_destroy(bson_doc_ary);
@@ -873,11 +868,11 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
                asprintf(&pcs_updatedoc, ", \"pcs-pfcp-update-done\": 1, \"FARs\": %s}", pcs_fars);
                if (pcs_replaceapienabledmodify)
                {
-                  pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);   
+                  pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);   
                }
                else
                {
-                  pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_upfdbid, pcs_dbrdata, pcs_updatedoc);
+                  pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);
                }
             }
          }
@@ -895,7 +890,6 @@ void pcs_upf_update_udsf(void *pcs_upfupdateudsf)
          if (pcs_blockingapienabledmodifyrsp)
          {
             free(pcs_var);
-            free(pcs_upfdbid);
             free(pcs_pfcpie);
             free(pcs_fars);
          }

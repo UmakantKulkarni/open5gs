@@ -217,11 +217,10 @@ bool smf_nsmf_handle_create_sm_context(
         }
         else
         {
-            char *pcs_imsistr = sess->smf_ue->supi;
-            pcs_imsistr += 5;
+            int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-            pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+            pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_uedbid);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
         }        
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29)
@@ -388,11 +387,10 @@ bool smf_nsmf_handle_update_sm_context(
                 }
                 else
                 {
-                    char *pcs_imsistr = sess->smf_ue->supi;
-                    pcs_imsistr += 5;
+                    int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
                     struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
                     mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-                    pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_imsistr);
+                    pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_uedbid);
                     mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
                 }
                 sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);

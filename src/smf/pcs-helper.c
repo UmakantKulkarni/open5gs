@@ -6,6 +6,15 @@
 #include "pcs-helper.h"
 #include <arpa/inet.h>
 
+int imsi_to_dbid(char *ue_imsi)
+{
+   const char *last_four = &ue_imsi[strlen(ue_imsi)-4];
+   ogs_debug("last_four is %s \n", last_four);
+   int ue_dbid = atoi(last_four);
+
+   return ue_dbid;
+}
+
 struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata)
 {
    struct pcs_mongo_info_s pcs_mongo_info;
@@ -115,7 +124,7 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
    ogs_debug("PCS Conversion of Hex string %s to binary string is %s", pcs_substr, pcs_bin_str);
 }
 
-int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, char *pcs_docid, bson_t *bson_doc)
+int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int pcs_docid, bson_t *bson_doc)
 {
    int rc = 0;
    bson_error_t error;
@@ -131,7 +140,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
-      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
       {
@@ -144,7 +153,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    }
    else if (strcmp(pcs_dbop, "upsert") == 0)
    {
-      bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+      bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
       bson_t *opts = BCON_NEW ("upsert", BCON_BOOL (true));
    
       if (!mongoc_collection_update_one(collection, query, bson_doc, opts, NULL, &error))
@@ -163,11 +172,11 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, cha
    return rc;
 }
 
-int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+int delete_create_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -192,11 +201,11 @@ int delete_create_data_to_db(mongoc_collection_t *collection, char *pcs_docid, c
    return rc;
 }
 
-int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+int replace_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
-   bson_t *query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
@@ -216,7 +225,7 @@ int replace_data_to_db(mongoc_collection_t *collection, char *pcs_docid, char *p
    return rc;
 }
 
-char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
+char *read_data_from_db(mongoc_collection_t *collection, int pcs_docid)
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
@@ -224,7 +233,7 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    bson_t *query = NULL;
    char *pcs_dbrdata;
 
-   query = BCON_NEW("_id", BCON_UTF8 (pcs_docid));
+   query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
    opts = BCON_NEW ("limit", BCON_INT64 (1));
    cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
    int i = 0;
@@ -233,14 +242,13 @@ char *read_data_from_db(mongoc_collection_t *collection, char *pcs_docid)
    {
       i = i + 1;
       pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
-      ogs_debug("PCS Read Data from MongoDB for id %s is %s", pcs_docid, pcs_dbrdata);
    }
 
    if (i == 0)
    {
-      asprintf(&pcs_dbrdata, "{ \"_id\" : \"%s\" }", pcs_docid);
+      asprintf(&pcs_dbrdata, "{ \"_id\" : %d }", pcs_docid);
    }
-   
+
    mongoc_cursor_destroy(cursor);
    bson_destroy(query);
    bson_destroy (opts);
