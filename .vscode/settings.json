@@ -15,7 +15,8 @@
         "complex": "cpp",
         "new": "cpp",
         "iterator": "cpp",
-        "cjson.h": "c"
+        "cjson.h": "c",
+        "ogs-diameter-rx.h": "c"
     },
     "editor.parameterHints.enabled": false
 }
