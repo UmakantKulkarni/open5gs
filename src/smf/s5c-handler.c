@@ -69,7 +69,7 @@ void smf_s5c_handle_create_session_request(
     ogs_assert(xact);
     ogs_assert(req);
 
-    ogs_debug("Create Session Reqeust");
+    ogs_debug("Create Session Request");
 
     cause_value = OGS_GTP_CAUSE_REQUEST_ACCEPTED;
 
@@ -210,7 +210,12 @@ void smf_s5c_handle_create_session_request(
     /* UE IP Address */
     paa = req->pdn_address_allocation.data;
     ogs_assert(paa);
-    sess->session.session_type = paa->session_type;
+
+    /* Store UE Session Type (IPv4, IPv6, IPv4v6) */
+    sess->ue_session_type = paa->session_type;
+
+    /* Initially Set Session Type from UE */
+    sess->session.session_type = sess->ue_session_type;
     rv = ogs_gtp_paa_to_ip(paa, &sess->session.ue_ip);
     ogs_assert(rv == OGS_OK);
 
@@ -417,6 +422,10 @@ void smf_s5c_handle_modify_bearer_request(
 
     ogs_debug("    SGW_S5C_TEID[0x%x] SMF_N4_TEID[0x%x]",
             sess->sgw_s5c_teid, sess->smf_n4_teid);
+
+    /* TODO: Update remote GTP-U IP addr + TEID in the UPF through PFCP, similar
+     * to what is done in smf_gn_handle_update_pdp_context_request()
+     */
 
     memset(&h, 0, sizeof(ogs_gtp_header_t));
     h.type = OGS_GTP_MODIFY_BEARER_RESPONSE_TYPE;

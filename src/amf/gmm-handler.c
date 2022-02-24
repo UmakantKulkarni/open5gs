@@ -414,7 +414,7 @@ int gmm_handle_registration_update(amf_ue_t *amf_ue,
             if ((psimask & (1 << sess->psi)) == 0) {
                 if (SESSION_CONTEXT_IN_SMF(sess))
                     amf_sbi_send_release_session(
-                            sess, AMF_RELEASE_SM_CONTEXT_REGISTRATION_ACCEPT);
+                        sess, AMF_RELEASE_SM_CONTEXT_REGISTRATION_ACCEPT);
             }
         }
     }
@@ -623,7 +623,7 @@ int gmm_handle_service_update(amf_ue_t *amf_ue,
             if ((psimask & (1 << sess->psi)) == 0) {
                 if (SESSION_CONTEXT_IN_SMF(sess))
                     amf_sbi_send_release_session(
-                            sess, AMF_RELEASE_SM_CONTEXT_SERVICE_ACCEPT);
+                        sess, AMF_RELEASE_SM_CONTEXT_SERVICE_ACCEPT);
             }
         }
     }
@@ -695,7 +695,8 @@ int gmm_handle_deregistration_request(amf_ue_t *amf_ue,
 
     ogs_info("[%s]    SUCI", amf_ue->suci);
 
-    amf_sbi_send_release_all_sessions(amf_ue, AMF_RELEASE_SM_CONTEXT_NO_STATE);
+    amf_sbi_send_release_all_sessions(
+            amf_ue, AMF_RELEASE_SM_CONTEXT_NO_STATE);
 
     if (ogs_list_count(&amf_ue->sess_list) == 0)
         ogs_assert(OGS_OK ==
