@@ -124,7 +124,7 @@ ogs_sbi_request_t *amf_nsmf_pdusession_build_create_sm_context(
     ogs_expect_or_return_val(pcf_nf_instance, NULL);
     SmContextCreateData.pcf_id = pcf_nf_instance->id;
 
-    if (pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+    if (PCS_ENABLESINGLEREAD)
     {
         SmContextCreateData.supported_features = ogs_strdup(sess->pcs.pcs_dbrdata);
     }
