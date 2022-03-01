@@ -41,6 +41,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
 
         if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate)
         {
+            clock_t pcs_clk_sd = clock();
             sess->pcs.pcs_udsfcreatedone = 0;
             sess->pcs.pcs_udsfn1n2done = 0;
             sess->pcs.pcs_udsfupdatereqdone = 0;
@@ -54,6 +55,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             //pthread_create(&pcs_thread1, NULL, pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
             mt_add_job(PCS_THREADPOOL, &pcs_amf_create_udsf, (void*) pcs_amfcreateudsf);
             ogs_info("PCS Started Create UDSF thread");
+            ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "CSCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         }
 
         if (!recvmsg->http.location) {
@@ -200,6 +202,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
     {
+        clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29)
         {
@@ -213,6 +216,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 pcs_amfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
                 pcs_amfcreateudsf->pcs_dbrdata = pcs_dbrdata;
                 pcs_amfcreateudsf->sess = sess;
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "CSCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
                 pcs_amf_create_udsf((void*) pcs_amfcreateudsf);
             }        
             else
@@ -221,6 +225,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
                 sess->pcs.pcs_createdone = 1;
                 sess->pcs.pcs_createdata = pcs_createdata;
                 ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "CSCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
             }
         }
         else
@@ -250,6 +255,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
 
         if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
         {
+            clock_t pcs_clk_sd = clock();
             if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
             {
                 int pcs_loop = 0;
@@ -290,6 +296,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                     sess->pcs.pcs_udsfupdaterspdone = 0;
                 }
             }
+            ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         }
 
         OpenAPI_sm_context_updated_data_t *SmContextUpdatedData = NULL;
@@ -890,9 +897,11 @@ int amf_nsmf_pdusession_handle_update_sm_context(
 
     if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
     {
+        clock_t pcs_clk_sd = clock();
         struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
         pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         pcs_amfupdaterspudsf->sess = sess;
+        ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         pcs_amf_update_rsp_udsf((void*) pcs_amfupdaterspudsf);
     }
     else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)

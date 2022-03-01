@@ -1654,52 +1654,41 @@ void ngap_handle_pdu_session_resource_setup_response(
 
             if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless)
             {
+                clock_t pcs_clk_sd = clock();
                 struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(ogs_pkbuf_copy(param.n2smbuf));
                 sess->pcs.pcs_updatedata = pcs_updatedata;
                 sess->pcs.pcs_udsfupdatereqdone = 1;
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
             }
             else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
             {
+                clock_t pcs_clk_sd = clock();
+                struct pcs_db_read_op_s pcs_db_read_op;
                 int pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
+                pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_db_read_op.pcs_dbrdata);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadIOTime", pcs_db_read_op.pcs_clk_io);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
             }
             else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
             {
+                clock_t pcs_clk_sd = clock();
+                struct pcs_db_read_op_s pcs_db_read_op;
                 int pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
                 struct pcs_amf_update_req_udsf_s *pcs_amfupdaterequdsf = malloc(sizeof(struct pcs_amf_update_req_udsf_s));
                 pcs_amfupdaterequdsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
                 pcs_amfupdaterequdsf->n2smbuf = ogs_pkbuf_copy(param.n2smbuf);
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                char *pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
+                pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
-                pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(pcs_dbrdata);
-
-                if (pcs_fsmdata->pcs_blockingapienabledmodifyreq) 
-                {
-                    pcs_amfupdaterequdsf->sess = sess;
-                    pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
-                }
-                else if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
-                {
-                    if (sess->pcs.pcs_udsfn1n2done)
-                    {
-                        (*pcs_amfupdaterequdsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-                        (*pcs_amfupdaterequdsf).pcs_pdusessionid = (long *) (long)sess->psi;
-                        //pthread_t pcs_thread1;
-                        //pthread_create(&pcs_thread1, NULL, pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                        mt_add_job(PCS_THREADPOOL, &pcs_amf_update_req_udsf, (void*) pcs_amfupdaterequdsf);
-                        ogs_info("PCS Started Update-Req UDSF thread");
-                    }
-                    else
-                    {
-                        ogs_error("pcs_udsfn1n2edone thread is not complete");
-                        sess->pcs.pcs_udsfupdatereqdone = 0;
-                    }
-                }
+                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_db_read_op.pcs_dbrdata);
+                pcs_amfupdaterequdsf->pcs_dbrdata = ogs_strdup(pcs_db_read_op.pcs_dbrdata);
+                pcs_amfupdaterequdsf->sess = sess;
+                pcs_amf_update_req_udsf((void*)pcs_amfupdaterequdsf);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadIOTime", pcs_db_read_op.pcs_clk_io);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
             }
 
             ogs_assert(true ==
