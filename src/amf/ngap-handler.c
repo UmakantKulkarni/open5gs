@@ -1623,7 +1623,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 return;
             }
 
-            if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledn1n2)
+            /* if (PCS_DBCOMMENABLED && !PCS_BLOCKINGAPIENABLEDN1N2)
             {
                 int pcs_loop = 0;
                 while(sess->pcs.pcs_udsfn1n2done == 0 && pcs_loop < 10000) {
@@ -1634,7 +1634,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                         ogs_info("PCS Finally n1n2 is done %d", pcs_loop);
                     }
                 }
-            }
+            } */
 
             if (!SESSION_CONTEXT_IN_SMF(sess)) {
                 ogs_error("Session Context is not in SMF [%d]",
@@ -1652,7 +1652,7 @@ void ngap_handle_pdu_session_resource_setup_response(
             param.n2SmInfoType = OpenAPI_n2_sm_info_type_PDU_RES_SETUP_RSP;
             ogs_pkbuf_put_data(param.n2smbuf, transfer->buf, transfer->size);
 
-            if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless)
+            if (PCS_DBCOMMENABLED && PCS_ISPROCEDURALSTATELESS)
             {
                 clock_t pcs_clk_sd = clock();
                 struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(ogs_pkbuf_copy(param.n2smbuf));
@@ -1660,7 +1660,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 sess->pcs.pcs_udsfupdatereqdone = 1;
                 ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
             }
-            else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+            else if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0)
             {
                 clock_t pcs_clk_sd = clock();
                 struct pcs_db_read_op_s pcs_db_read_op;
@@ -1672,7 +1672,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadIOTime", pcs_db_read_op.pcs_clk_io);
                 ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
             }
-            else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+            else if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0)
             {
                 clock_t pcs_clk_sd = clock();
                 struct pcs_db_read_op_s pcs_db_read_op;

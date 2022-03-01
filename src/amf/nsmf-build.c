@@ -273,7 +273,7 @@ ogs_sbi_request_t *amf_nsmf_pdusession_build_update_sm_context(
     }
     SmContextUpdateData.cause = param->cause;
 
-    if (pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+    if (PCS_ENABLESINGLEREAD)
     {
         SmContextUpdateData.supported_features = ogs_strdup(sess->pcs.pcs_dbrdata);
     }

@@ -39,7 +39,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         ogs_sbi_message_t message;
         ogs_sbi_header_t header;
 
-        if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate)
+        if (PCS_DBCOMMENABLED && !PCS_BLOCKINGAPIENABLEDCREATE)
         {
             clock_t pcs_clk_sd = clock();
             sess->pcs.pcs_udsfcreatedone = 0;
@@ -189,9 +189,9 @@ int amf_nsmf_pdusession_handle_create_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    if (PCS_DBCOMMENABLED && PCS_BLOCKINGAPIENABLEDCREATE && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0)
     {
-        if (!pcs_fsmdata->pcs_isproceduralstateless)
+        if (!PCS_ISPROCEDURALSTATELESS)
         {
             ogs_info("PCS Successfully completed Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
         }
@@ -200,13 +200,13 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_info("PCS Successfully completed Procedural Create transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
         }
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+    else if (PCS_DBCOMMENABLED && PCS_BLOCKINGAPIENABLEDCREATE && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0)
     {
         clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29)
         {
-            if (!pcs_fsmdata->pcs_isproceduralstateless)
+            if (!PCS_ISPROCEDURALSTATELESS)
             {
                 sess->pcs.pcs_udsfcreatedone = 0;
                 sess->pcs.pcs_udsfn1n2done = 0;
@@ -233,7 +233,7 @@ int amf_nsmf_pdusession_handle_create_sm_context(
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->amf_ue->supi);
         }
     }
-    else if (!pcs_fsmdata->pcs_dbcommenabled)
+    else if (!PCS_DBCOMMENABLED)
     {
         ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
     }
@@ -253,10 +253,10 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT ||
         recvmsg->res_status == OGS_SBI_HTTP_STATUS_OK) {
 
-        if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+        if (PCS_DBCOMMENABLED && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0)
         {
             clock_t pcs_clk_sd = clock();
-            if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
+            if (!PCS_BLOCKINGAPIENABLEDMODIFYREQ)
             {
                 int pcs_loop = 0;
                 while(sess->pcs.pcs_udsfupdatereqdone == 0 && pcs_loop < 10000) {
@@ -268,10 +268,10 @@ int amf_nsmf_pdusession_handle_update_sm_context(
                     }
                 }
             }
-            if (!pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+            if (!PCS_BLOCKINGAPIENABLEDMODIFYRSP)
             {
                 int pcs_flag = 0;
-                if (!pcs_fsmdata->pcs_blockingapienabledmodifyreq)
+                if (!PCS_BLOCKINGAPIENABLEDMODIFYREQ)
                 {
                     pcs_flag = sess->pcs.pcs_udsfupdatereqdone;
                 }
@@ -895,7 +895,7 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         return OGS_ERROR;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0 && pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+    if (PCS_DBCOMMENABLED && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0 && PCS_BLOCKINGAPIENABLEDMODIFYRSP)
     {
         clock_t pcs_clk_sd = clock();
         struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
@@ -904,11 +904,11 @@ int amf_nsmf_pdusession_handle_update_sm_context(
         ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         pcs_amf_update_rsp_udsf((void*) pcs_amfupdaterspudsf);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    else if (PCS_DBCOMMENABLED && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (!pcs_fsmdata->pcs_dbcommenabled && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
+    else if (!PCS_DBCOMMENABLED && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT)
     {
         ogs_info("PCS Successfully completed Update-SM-Context transaction for supi [%s]", sess->amf_ue->supi);
     }

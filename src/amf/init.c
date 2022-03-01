@@ -123,7 +123,7 @@ static void amf_main(void *data)
     ogs_fsm_t amf_sm;
     int rv;
 
-    amf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    /* amf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
     amf_sm.pcs_fsmdata.pcs_upsertapienabledcreate = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
     amf_sm.pcs_fsmdata.pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
     amf_sm.pcs_fsmdata.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
@@ -135,7 +135,7 @@ static void amf_main(void *data)
     amf_sm.pcs_fsmdata.pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
     amf_sm.pcs_fsmdata.pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
     amf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
-    amf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+    amf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME"); */
 
     PCS_DBCOMMENABLED = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
     PCS_UPSERTAPIENABLEDCREATE = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");

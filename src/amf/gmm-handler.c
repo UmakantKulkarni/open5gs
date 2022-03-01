@@ -1047,6 +1047,19 @@ int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
 
             ogs_info("UE SUPI[%s] DNN[%s] S_NSSAI[SST:%d SD:0x%x]",
                 amf_ue->supi, sess->dnn, sess->s_nssai.sst, sess->s_nssai.sd.v);
+            
+            if (PCS_DBCOMMENABLED)
+            {
+                clock_t pcs_clk_sd = clock();
+                struct pcs_db_read_op_s pcs_db_read_op;
+                int pcs_uedbid = imsi_to_dbid(amf_ue->supi);
+                struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
+                pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
+                mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                sess->pcs.pcs_dbrdata = ogs_strdup(pcs_db_read_op.pcs_dbrdata);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", amf_ue->supi, "CSCAmfReadIOTime", pcs_db_read_op.pcs_clk_io);
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", amf_ue->supi, "CSCAmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
+            }
 
 
             if (!SESSION_CONTEXT_IN_SMF(sess)) {
@@ -1061,18 +1074,6 @@ int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
                 }
 
                 if (nf_instance) {
-                    if (PCS_DBCOMMENABLED)
-                    {
-                        clock_t pcs_clk_sd = clock();
-                        struct pcs_db_read_op_s pcs_db_read_op;
-                        int pcs_uedbid = imsi_to_dbid(amf_ue->supi);
-                        struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                        pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
-                        mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-                        sess->pcs.pcs_dbrdata = ogs_strdup(pcs_db_read_op.pcs_dbrdata);
-                        ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", amf_ue->supi, "CSCAmfReadIOTime", pcs_db_read_op.pcs_clk_io);
-                        ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", amf_ue->supi, "CSCAmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
-                    }
                     ogs_assert(true ==
                         amf_sess_sbi_discover_and_send(OpenAPI_nf_type_SMF,
                             sess, AMF_CREATE_SM_CONTEXT_NO_STATE, NULL,

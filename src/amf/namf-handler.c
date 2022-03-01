@@ -93,7 +93,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         return OGS_ERROR;
     }
 
-    /* if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledcreate)
+    /* if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && !PCS_BLOCKINGAPIENABLEDCREATE)
     {
         int pcs_loop = 0;
         while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
@@ -106,12 +106,12 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
     } */
 
-    if ((pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2) || (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0) || (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2))
+    if ((PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && !PCS_BLOCKINGAPIENABLEDN1N2) || (PCS_DBCOMMENABLED && PCS_ISPROCEDURALSTATELESS && sess->pcs.pcs_createdone && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0) || (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && PCS_BLOCKINGAPIENABLEDN1N2))
     {
         clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata;
         struct pcs_db_read_op_s pcs_db_read_op;
-        if (pcs_fsmdata->pcs_enablesingleread)
+        if (PCS_ENABLESINGLEREAD)
         {
             pcs_dbrdata = N1N2MessageTransferReqData->supported_features;
         }
@@ -437,7 +437,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_assert_if_reached();
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && !pcs_fsmdata->pcs_blockingapienabledn1n2)
+    if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && !PCS_BLOCKINGAPIENABLEDN1N2)
     {
         clock_t pcs_clk_sd = clock();
         if (sess->pcs.pcs_udsfcreatedone)
@@ -469,7 +469,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
     if (sendmsg.http.location)
         ogs_free(sendmsg.http.location);
 
-    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+    if (PCS_DBCOMMENABLED && PCS_ISPROCEDURALSTATELESS && sess->pcs.pcs_createdone && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0)
     {
         clock_t pcs_clk_sd = clock();
         struct pcs_amf_n1n2 pcs_n1n2data = pcs_get_amf_n1n2_data(sess, ogs_pkbuf_copy(n1buf), ogs_pkbuf_copy(n2buf));
@@ -478,15 +478,15 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_info("PCS Successfully completed Procedural Stateless n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
         ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "N1N2AmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    else if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0)
     {
         ogs_info("PCS Successfully completed n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") != 0)
+    else if (PCS_DBCOMMENABLED && PCS_ISPROCEDURALSTATELESS && sess->pcs.pcs_createdone && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0)
     {
         ogs_info("PCS Successfully completed Procedural n1-n2 transaction with shared UDSF for supi [%s]", sess->amf_ue->supi);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless && pcs_fsmdata->pcs_blockingapienabledn1n2 && strcmp(pcs_fsmdata->pcs_dbcollectioname, "amf") == 0)
+    else if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && PCS_BLOCKINGAPIENABLEDN1N2 && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0)
     {
         clock_t pcs_clk_sd = clock();
         struct pcs_amf_n1n2_udsf_s *pcs_amfn1n2udsf = malloc(sizeof(struct pcs_amf_n1n2_udsf_s));
@@ -499,7 +499,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "N1N2AmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         pcs_amf_n1n2_udsf((void*) pcs_amfn1n2udsf);
     }
-    else if (!pcs_fsmdata->pcs_dbcommenabled)
+    else if (!PCS_DBCOMMENABLED)
     {
         ogs_info("PCS Successfully completed n1-n2 transaction for supi [%s]", sess->amf_ue->supi);
     }
