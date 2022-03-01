@@ -1061,7 +1061,7 @@ int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
                 }
 
                 if (nf_instance) {
-                    if (pcs_fsmdata->pcs_dbcommenabled)
+                    if (PCS_DBCOMMENABLED)
                     {
                         clock_t pcs_clk_sd = clock();
                         struct pcs_db_read_op_s pcs_db_read_op;

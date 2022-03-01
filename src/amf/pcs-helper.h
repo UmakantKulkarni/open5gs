@@ -6,8 +6,20 @@ extern "C"
 {
 #endif
 
+    extern uint8_t PCS_DBCOMMENABLED;
+    extern uint8_t PCS_UPSERTAPIENABLEDCREATE;
+    extern uint8_t PCS_UPDATEAPIENABLEDN1N2;
+    extern uint8_t PCS_UPDATEAPIENABLEDMODIFY;
+    extern uint8_t PCS_BLOCKINGAPIENABLEDCREATE;
+    extern uint8_t PCS_BLOCKINGAPIENABLEDN1N2;
+    extern uint8_t PCS_BLOCKINGAPIENABLEDMODIFYREQ;
+    extern uint8_t PCS_BLOCKINGAPIENABLEDMODIFYRSP;
+    extern uint8_t PCS_ISPROCEDURALSTATELESS;
+    extern uint8_t PCS_REPLACEAPIENABLEDN1N2;
+    extern uint8_t PCS_REPLACEAPIENABLEDMODIFY;
+    extern uint8_t PCS_ENABLESINGLEREAD;
+    extern char *PCS_DBCOLLECTIONAME;
     extern mongoc_client_pool_t *PCS_MONGO_POOL;
-
     extern ThreadPool *PCS_THREADPOOL;
 
 #include "context.h"

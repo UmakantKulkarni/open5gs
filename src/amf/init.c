@@ -27,6 +27,20 @@
 static ogs_thread_t *thread;
 static void amf_main(void *data);
 static int initialized = 0;
+
+uint8_t PCS_DBCOMMENABLED;
+uint8_t PCS_UPSERTAPIENABLEDCREATE;
+uint8_t PCS_UPDATEAPIENABLEDN1N2;
+uint8_t PCS_UPDATEAPIENABLEDMODIFY;
+uint8_t PCS_BLOCKINGAPIENABLEDCREATE;
+uint8_t PCS_BLOCKINGAPIENABLEDN1N2;
+uint8_t PCS_BLOCKINGAPIENABLEDMODIFYREQ;
+uint8_t PCS_BLOCKINGAPIENABLEDMODIFYRSP;
+uint8_t PCS_ISPROCEDURALSTATELESS;
+uint8_t PCS_REPLACEAPIENABLEDN1N2;
+uint8_t PCS_REPLACEAPIENABLEDMODIFY;
+uint8_t PCS_ENABLESINGLEREAD;
+char *PCS_DBCOLLECTIONAME;
 mongoc_client_pool_t *PCS_MONGO_POOL;
 ThreadPool *PCS_THREADPOOL;
 
@@ -122,6 +136,20 @@ static void amf_main(void *data)
     amf_sm.pcs_fsmdata.pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
     amf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
     amf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
+
+    PCS_DBCOMMENABLED = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    PCS_UPSERTAPIENABLEDCREATE = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
+    PCS_UPDATEAPIENABLEDN1N2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+    PCS_UPDATEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+    PCS_BLOCKINGAPIENABLEDCREATE = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
+    PCS_BLOCKINGAPIENABLEDN1N2 = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_N1N2");
+    PCS_BLOCKINGAPIENABLEDMODIFYREQ = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYREQ");
+    PCS_BLOCKINGAPIENABLEDMODIFYRSP = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYRSP");
+    PCS_ISPROCEDURALSTATELESS = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+    PCS_REPLACEAPIENABLEDN1N2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
+    PCS_REPLACEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
+    PCS_ENABLESINGLEREAD = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
+    PCS_DBCOLLECTIONAME = ogs_strdup(getenv("PCS_DB_COLLECTION_NAME"));
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;
