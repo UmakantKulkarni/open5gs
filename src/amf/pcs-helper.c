@@ -749,7 +749,7 @@ void pcs_amf_create_udsf(void *pcs_amfcreateudsf)
       struct pcs_amf_create pcs_createdata = pcs_get_amf_create_data(sess);
    
       bson_error_t error;
-      if (pcs_upsertapienabledcreate)
+      if (PCS_UPSERTAPIENABLEDCREATE)
       {
          bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_INT32(pcs_uedbid), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "ue-access-type", BCON_INT32(pcs_createdata.pcs_amfueaccesstype), "allowed_pdu_session_status", BCON_INT32(pcs_createdata.pcs_amfueallowedpdusessionstatus), "pei", BCON_UTF8(pcs_createdata.pcs_amfuepei), "dnn", BCON_UTF8(pcs_createdata.pcs_amfsessdnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", BCON_UTF8(pcs_createdata.pcs_amfueplmnid), "amf-id", BCON_UTF8(pcs_createdata.pcs_amfueamfid), "tac", BCON_UTF8(pcs_createdata.pcs_amfuetac), "ue-location-timestamp", BCON_INT64((long)pcs_createdata.pcs_amfuelocts), "ran-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_ranuengapid), "amf-ue-ngap-id", BCON_INT32(pcs_createdata.pcs_amfuengapid), "gnb-id", BCON_INT32(pcs_createdata.pcs_ranuegnbid), "rat_type", BCON_UTF8(pcs_createdata.pcs_ranuerattype), "}"); 
          pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
