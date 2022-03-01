@@ -120,7 +120,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             int pcs_uedbid = imsi_to_dbid(sess->amf_ue->supi);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, pcs_uedbid);
-            pcs_dbrdata = pcs_db_read_op.pcs_dbrdata
+            pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
         }
         sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
         ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "N1N2AmfReadIOTime", pcs_db_read_op.pcs_clk_io);
