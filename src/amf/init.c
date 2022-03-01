@@ -156,7 +156,7 @@ static void amf_main(void *data)
     mongoc_client_t *client;
     mongoc_database_t *database;
     mongoc_collection_t *collection;
-    if (amf_sm.pcs_fsmdata.pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
         const char *uri_string = getenv("DB_URI");
         bson_error_t error;
@@ -182,7 +182,7 @@ static void amf_main(void *data)
         mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
         amf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
 
-        if (!amf_sm.pcs_fsmdata.pcs_blockingapienabledcreate || !amf_sm.pcs_fsmdata.pcs_blockingapienabledn1n2 || !amf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyreq || !amf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp)
+        if (!PCS_BLOCKINGAPIENABLEDCREATE || !PCS_BLOCKINGAPIENABLEDN1N2 || !PCS_BLOCKINGAPIENABLEDMODIFYREQ || !PCS_BLOCKINGAPIENABLEDMODIFYRSP)
         {
             long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
             ogs_info("PCS Number of Processors is %ld", pcs_numprocessors);
@@ -209,7 +209,7 @@ static void amf_main(void *data)
         * Get a handle on the database "db_name" and collection "coll_name"
         */
         database = mongoc_client_get_database(client, "pcs_db");
-        collection = mongoc_client_get_collection(client, "pcs_db", amf_sm.pcs_fsmdata.pcs_dbcollectioname);
+        collection = mongoc_client_get_collection(client, "pcs_db", PCS_DBCOLLECTIONAME);
 
         /*
         * Do work. This example pings the database, prints the result as JSON and
@@ -276,7 +276,7 @@ static void amf_main(void *data)
     }
 done:
 
-    if (amf_sm.pcs_fsmdata.pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
         mongoc_collection_destroy(collection);
         mongoc_database_destroy(database);
