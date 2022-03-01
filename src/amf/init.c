@@ -150,6 +150,7 @@ static void amf_main(void *data)
     PCS_REPLACEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
     PCS_ENABLESINGLEREAD = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
     PCS_DBCOLLECTIONAME = ogs_strdup(getenv("PCS_DB_COLLECTION_NAME"));
+    ogs_info("PCS ENV variable PCS_DB_COLLECTION_NAME is set as %s", PCS_DBCOLLECTIONAME);
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;

@@ -45,6 +45,7 @@ int pcs_set_int_from_env(const char *pcs_env_var)
       pcs_enval = 0;
    }
 
+   ogs_info("PCS ENV variable %s is set as %d", pcs_env_var, pcs_enval);
    return pcs_enval;
 }
 
