@@ -16,13 +16,13 @@ extern "C"
     struct pcs_db_read_op_s
     {
         char *pcs_dbrdata;
-        clock_t pcs_clk_io;
+        double pcs_clk_io;
     };
 
     struct pcs_db_write_op_s
     {
         int rc;
-        clock_t pcs_clk_io;
+        double pcs_clk_io;
     };
 
     struct pcs_mongo_info_s
