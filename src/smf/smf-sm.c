@@ -206,7 +206,7 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
         case OGS_GTP1_CREATE_PDP_CONTEXT_REQUEST_TYPE:
             if (gtp1_message.h.teid == 0) {
                 ogs_expect(!sess);
-                sess = smf_sess_add_by_gtp1_message(&gtp1_message);
+                sess = smf_sess_add_by_gtp1_message(&gtp1_message, pcs_fsmdata);
                 if (sess)
                     OGS_SETUP_GTP_NODE(sess, gnode);
             }

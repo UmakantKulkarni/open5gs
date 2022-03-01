@@ -1020,7 +1020,7 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, p
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message)
+smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
 {
     smf_ue_t *smf_ue = NULL;
     smf_sess_t *sess = NULL;
@@ -1092,7 +1092,7 @@ smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message)
         smf_sess_remove(sess);
     }
 
-    sess = smf_sess_add_by_apn(smf_ue, apn, req->rat_type.u8);
+    sess = smf_sess_add_by_apn(smf_ue, apn, req->rat_type.u8, pcs_fsmdata);
     return sess;
 }
 

@@ -447,7 +447,7 @@ void smf_ue_remove_all(void);
 smf_ue_t *smf_ue_find_by_supi(char *supi);
 smf_ue_t *smf_ue_find_by_imsi(uint8_t *imsi, int imsi_len);
 
-smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message);
+smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
 smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
 smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, pcs_fsm_struct_t *pcs_fsmdata);
 
