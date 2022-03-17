@@ -530,7 +530,14 @@ struct pcs_smf_create pcs_get_smf_create_data(smf_sess_t *sess, OpenAPI_sm_conte
    pcs_createdata.pcs_dnn = ogs_strdup(SmContextCreateData->dnn);
    pcs_createdata.pcs_smcontextref = ogs_strdup(sess->sm_context_ref);
    pcs_createdata.pcs_snssaisst = sess->s_nssai.sst;
-   pcs_createdata.pcs_snssaisd = ogs_strdup(ogs_s_nssai_sd_to_string(sess->s_nssai.sd));
+   if (ogs_s_nssai_sd_to_string(sess->s_nssai.sd) == NULL)
+   {
+      pcs_createdata.pcs_snssaisd = ogs_strdup("NULL");
+   }
+   else
+   {
+      pcs_createdata.pcs_snssaisd = ogs_strdup(ogs_s_nssai_sd_to_string(sess->s_nssai.sd));
+   }
    pcs_createdata.pcs_pdusessionid = sess->psi;
    pcs_createdata.pcs_mcc = ogs_strdup(SmContextCreateData->guami->plmn_id->mcc);
    pcs_createdata.pcs_mnc = ogs_strdup(SmContextCreateData->guami->plmn_id->mnc);
