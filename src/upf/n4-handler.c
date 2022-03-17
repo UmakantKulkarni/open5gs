@@ -55,29 +55,36 @@ void upf_n4_handle_session_establishment_request(
         return;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
+        clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata;
-        if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+        struct pcs_db_read_op_s pcs_db_read_op;
+        pcs_db_read_op.pcs_clk_io = 0;
+        if (strcmp(PCS_DBCOLLECTIONAME, "upf") == 0)
         {
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", sess->smf_n4_seid, -1);
+            pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", sess->smf_n4_seid, -1);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
         }
         else
         {
-            if (pcs_fsmdata->pcs_enablesingleread)
+            if (PCS_ENABLESINGLEREAD)
             {
                 pcs_dbrdata = ogs_strdup(req->create_pdr->pdi.framed_route.data);
             }
             else
             {
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", sess->smf_n4_seid, sess->smf_n4_seid);
+                pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", sess->smf_n4_seid, sess->smf_n4_seid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
             }
         }
         sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n",  sess->smf_n4_seid, "CreateUpfReadIOTime", pcs_db_read_op.pcs_clk_io);
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n",  sess->smf_n4_seid, "CreateUpfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
     }
 
     for (i = 0; i < OGS_MAX_NUM_OF_PDR; i++) {
@@ -196,8 +203,9 @@ void upf_n4_handle_session_establishment_request(
         }
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_isproceduralstateless && cause_value && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+    if (PCS_DBCOMMENABLED && !PCS_BLOCKINGAPIENABLEDCREATE && !PCS_ISPROCEDURALSTATELESS && cause_value && strcmp(PCS_DBCOLLECTIONAME, "upf") == 0)
     {
+        clock_t pcs_clk_sd = clock();
         sess->pcs.pcs_udsfcreatedone = 0;
         sess->pcs.pcs_udsfupdatedone = 0;
         struct pcs_upf_create_udsf_s *pcs_upfcreateudsf = malloc(sizeof(struct pcs_upf_create_udsf_s));
@@ -208,28 +216,32 @@ void upf_n4_handle_session_establishment_request(
         //pthread_create(&pcs_thread1, NULL, pcs_upf_create_udsf, (void*) pcs_upfcreateudsf);
         mt_add_job(PCS_THREADPOOL, &pcs_upf_create_udsf, (void*) pcs_upfcreateudsf);
         ogs_info("PCS Started Create UDSF thread");
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n", sess->smf_n4_seid, "CreateUpfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
     }
 
     ogs_assert(OGS_OK ==
         upf_pfcp_send_session_establishment_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && !pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+    if (PCS_DBCOMMENABLED && PCS_BLOCKINGAPIENABLEDCREATE && !PCS_ISPROCEDURALSTATELESS && strcmp(PCS_DBCOLLECTIONAME, "upf") == 0)
     {
+        clock_t pcs_clk_sd = clock();
         sess->pcs.pcs_udsfcreatedone = 0;
         sess->pcs.pcs_udsfupdatedone = 0;
         struct pcs_upf_create_udsf_s *pcs_upfcreateudsf = malloc(sizeof(struct pcs_upf_create_udsf_s));
         pcs_upfcreateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
         (*pcs_upfcreateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
         pcs_upfcreateudsf->sess = sess;
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n", sess->smf_n4_seid, "CreateUpfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         pcs_upf_create_udsf((void*) pcs_upfcreateudsf);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") != 0)
+    else if (PCS_DBCOMMENABLED && PCS_BLOCKINGAPIENABLEDCREATE && strcmp(PCS_DBCOLLECTIONAME, "upf") != 0)
     {
         ogs_info("PCS Successfully completed N4 Session Establishment transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && pcs_fsmdata->pcs_blockingapienabledcreate && pcs_fsmdata->pcs_isproceduralstateless && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+    else if (PCS_DBCOMMENABLED && PCS_BLOCKINGAPIENABLEDCREATE && PCS_ISPROCEDURALSTATELESS && strcmp(PCS_DBCOLLECTIONAME, "upf") == 0)
     {
+        clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 19)
         {
@@ -243,9 +255,10 @@ void upf_n4_handle_session_establishment_request(
         else
         {
             ogs_error("PCS UE Context for UE [%ld] is already present in DB", sess->smf_n4_seid);
-        } 
+        }
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n", sess->smf_n4_seid, "CreateUpfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
     }
-    else if (!pcs_fsmdata->pcs_dbcommenabled)
+    else if (!PCS_DBCOMMENABLED)
     {
         ogs_info("PCS Successfully completed N4 Session Establishment transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
@@ -286,7 +299,7 @@ void upf_n4_handle_session_modification_request(
         return;
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledcreate)
+    if (PCS_DBCOMMENABLED && !req->update_far->bar_id.presence && !PCS_BLOCKINGAPIENABLEDCREATE)
     {
         int pcs_loop = 0;
         while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
@@ -299,29 +312,36 @@ void upf_n4_handle_session_modification_request(
         }
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !pcs_fsmdata->pcs_isproceduralstateless)
+    if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS)
     {
+        clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata;
-        if (strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+        struct pcs_db_read_op_s pcs_db_read_op;
+        pcs_db_read_op.pcs_clk_io = 0;
+        if (strcmp(PCS_DBCOLLECTIONAME, "upf") == 0)
         {
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-            pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", sess->smf_n4_seid, -1);
+            pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "_id", sess->smf_n4_seid, -1);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
         }
         else
         {
-            if (pcs_fsmdata->pcs_enablesingleread)
+            if (PCS_ENABLESINGLEREAD)
             {
                 pcs_dbrdata = ogs_strdup(req->update_far->update_forwarding_parameters.framed_route.data);
             }
             else
             {
                 struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
-                pcs_dbrdata = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", sess->smf_n4_seid, sess->smf_n4_seid);
+                pcs_db_read_op = read_data_from_db(pcs_mongo_info.pcs_dbcollection, "SMF-N4-SEID", sess->smf_n4_seid, sess->smf_n4_seid);
                 mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
             }
         }
         sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n",  sess->smf_n4_seid, "UpdateUpfReadIOTime", pcs_db_read_op.pcs_clk_io);
+        ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n",  sess->smf_n4_seid, "UpdateUpfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
     }
 
     for (i = 0; i < OGS_MAX_NUM_OF_PDR; i++) {
@@ -526,13 +546,15 @@ void upf_n4_handle_session_modification_request(
         upf_pfcp_send_session_modification_response(
             xact, sess, created_pdr, num_of_created_pdr));
 
-    if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && pcs_fsmdata->pcs_blockingapienabledmodifyrsp && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") == 0)
+    if (PCS_DBCOMMENABLED && !req->update_far->bar_id.presence && PCS_BLOCKINGAPIENABLEDMODIFYRSP && strcmp(PCS_DBCOLLECTIONAME, "upf") == 0)
     {
+        clock_t pcs_clk_x = clock();
+        struct pcs_db_write_op_s pcs_db_write_op;
         uint64_t pcs_smfn4seid = sess->smf_n4_seid;
         char *pcs_dbrdata;
         double pcs_pfcpestdone = 0;
         struct pcs_upf_n4_create pcs_n4createdata;
-        if (!pcs_fsmdata->pcs_isproceduralstateless)
+        if (!PCS_ISPROCEDURALSTATELESS)
         {
             pcs_dbrdata = ogs_strdup(sess->pcs.pcs_dbrdata);
             JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
@@ -561,7 +583,7 @@ void upf_n4_handle_session_modification_request(
             char pcs_comma[] = ",";
             char pcs_curlybrace[] = "}";
             char pcs_squarebrace[] = "]";
-            int pcs_rv, pcs_numfar = 0;
+            int pcs_numfar = 0;
 
             asprintf(&pcs_fars, "[");
             ogs_list_for_each(&sess->pfcp.far_list, far)
@@ -597,43 +619,43 @@ void upf_n4_handle_session_modification_request(
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
 
-            if (pcs_fsmdata->pcs_isproceduralstateless)
+            if (PCS_ISPROCEDURALSTATELESS)
             {
                 asprintf(&pcs_docjson, "{\"_id\": %ld, \"pcs-pfcp-est-done\": 1, \"UPF-Node-IP\": \"%s\", \"SMF-Node-IP\": \"%s\", \"UPF-N4-SEID\": %ld, \"SMF-N4-SEID\": %ld, \"Cause\": %d, \"PDRs\": %s, \"FARs\": %s, \"QERs\": %s, \"BAR\": %s, \"pcs-pfcp-update-done\": 1}", pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.pcs_upfnodeip, pcs_n4createdata.pcs_smfnodeip, pcs_n4createdata.pcs_upfn4seid, pcs_n4createdata.pcs_smfn4seid, pcs_n4createdata.cause_value, pcs_n4createdata.pcs_pdrs, pcs_fars, pcs_n4createdata.pcs_qers, pcs_n4createdata.pcs_bars);
             
                 bson_error_t error;
                 bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_smfn4seid, bson_doc);
+                pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "create", pcs_smfn4seid, bson_doc);
                 free(pcs_docjson);
             }
             else
             {
-                if (pcs_fsmdata->pcs_updateapienabledmodify)
+                if (PCS_UPDATEAPIENABLEDMODIFY)
                 {
                     bson_error_t error;
                     bson_t *bson_doc_ary = bson_new_from_json((const uint8_t *)pcs_fars, -1, &error);
 
                     bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-pfcp-update-done", BCON_INT32(1), "FARs", BCON_ARRAY(bson_doc_ary), "}");
-                    pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_smfn4seid, bson_doc);
+                    pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "update", pcs_smfn4seid, bson_doc);
                     bson_destroy(bson_doc_ary);
                 }
                 else
                 {
                     char *pcs_updatedoc;
                     asprintf(&pcs_updatedoc, ", \"pcs-pfcp-update-done\": 1, \"FARs\": %s}", pcs_fars);
-                    if (pcs_fsmdata->pcs_replaceapienabledmodify)
+                    if (PCS_REPLACEAPIENABLEDMODIFY)
                     {
-                        pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);   
+                        pcs_db_write_op = replace_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);   
                     }
                     else
                     {
-                        pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);
+                        pcs_db_write_op = delete_create_data_to_db(pcs_dbcollection, pcs_smfn4seid, pcs_dbrdata, pcs_updatedoc);
                     }
                 }
             }
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
             
-            if (pcs_rv != OGS_OK)
+            if (pcs_db_write_op.rc != OGS_OK)
             {
                 ogs_error("PCS Error while inserting N4 Session Modification data to MongoDB for Session with N4 SEID [%ld]", sess->smf_n4_seid);
             }
@@ -646,7 +668,7 @@ void upf_n4_handle_session_modification_request(
             free(pcs_pfcpie);
             free(pcs_fars);
 
-            if (pcs_fsmdata->pcs_isproceduralstateless)
+            if (PCS_ISPROCEDURALSTATELESS)
             {
                 sess->pcs.pcs_n4updatedone = 1;
                 ogs_free(pcs_n4createdata.pcs_upfnodeip);
@@ -654,20 +676,23 @@ void upf_n4_handle_session_modification_request(
                 free(pcs_n4createdata.pcs_pdrs);
                 free(pcs_n4createdata.pcs_fars);
             }
+            ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n", sess->smf_n4_seid, "UpdateUpfWriteIOTime", pcs_db_write_op.pcs_clk_io);
+            ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n", sess->smf_n4_seid, "UpdateUpfWriteSDTime", (((double)(clock() - (pcs_clk_x))) / CLOCKS_PER_SEC) - (pcs_db_write_op.pcs_clk_io));
         }
         else
         {
             ogs_error("PCS PFCP Modify request got triggered without processing PFCP Create request");
-        }
+        }   
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && pcs_fsmdata->pcs_blockingapienabledmodifyrsp && strcmp(pcs_fsmdata->pcs_dbcollectioname, "upf") != 0)
+    else if (PCS_DBCOMMENABLED && !req->update_far->bar_id.presence && PCS_BLOCKINGAPIENABLEDMODIFYRSP && strcmp(PCS_DBCOLLECTIONAME, "upf") != 0)
     {
         ogs_info("PCS Successfully completed N4 Session Modification transaction with shared UDSF for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }
-    else if (pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence && !pcs_fsmdata->pcs_blockingapienabledmodifyrsp)
+    else if (PCS_DBCOMMENABLED && !req->update_far->bar_id.presence && !PCS_BLOCKINGAPIENABLEDMODIFYRSP)
     {
         if (sess->pcs.pcs_udsfcreatedone)
         {
+            clock_t pcs_clk_sd = clock();
             struct pcs_upf_update_udsf_s *pcs_upfupdateudsf = malloc(sizeof(struct pcs_upf_update_udsf_s));
             pcs_upfupdateudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
             (*pcs_upfupdateudsf).pcs_upfn4seid = (uint64_t *)sess->upf_n4_seid;
@@ -676,6 +701,7 @@ void upf_n4_handle_session_modification_request(
             //pthread_create(&pcs_thread1, NULL, pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
             mt_add_job(PCS_THREADPOOL, &pcs_upf_update_udsf, (void*) pcs_upfupdateudsf);
             ogs_info("PCS Started Update UDSF thread");
+            ogs_info("PCS time taken by UE %ld for transaction %s is: %g sec.\n", sess->smf_n4_seid, "UpdateUpfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         }
         else
         {
@@ -683,7 +709,7 @@ void upf_n4_handle_session_modification_request(
             sess->pcs.pcs_udsfupdatedone = 0;
         }
     }
-    else if (!pcs_fsmdata->pcs_dbcommenabled && !req->update_far->bar_id.presence)
+    else if (!PCS_DBCOMMENABLED && !req->update_far->bar_id.presence)
     {
         ogs_info("PCS Successfully completed N4 Session Modification transaction for Session with N4 SEID [%ld]", sess->smf_n4_seid);
     }

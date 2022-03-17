@@ -150,22 +150,23 @@ bool smf_namf_comm_handle_n1_n2_message_transfer(
         ogs_assert_if_reached();
     }
 
-    if (pcs_fsmdata->pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
-        if (pcs_fsmdata->pcs_isproceduralstateless)
+        if (PCS_ISPROCEDURALSTATELESS)
         {
             sess->pcs.pcs_n1n2done = 1;
             ogs_info("PCS Successfully completed Procedural Stateless n1-n2 transfer transaction for supi [%s]", sess->smf_ue->supi);
         }
         else
         {
+            clock_t pcs_clk_sd = clock();
+            struct pcs_db_write_op_s pcs_db_write_op;
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-            int pcs_rv;
             int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
             struct pcs_smf_n1n2 pcs_n1n2data = sess->pcs.pcs_n1n2data;
 
-            if (pcs_fsmdata->pcs_updateapienabledn1n2)
+            if (PCS_UPDATEAPIENABLEDN1N2)
             {
                 bson_error_t error;
                 bson_t *bson_doc_nas_qos_rule = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasqosrulestr, -1, &error);
@@ -174,7 +175,7 @@ bool smf_namf_comm_handle_n1_n2_message_transfer(
 
                 bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress), "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
+                pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
                 bson_destroy(bson_doc_nas_qos_rule);
                 bson_destroy(bson_doc_nas_qos_flow);
                 bson_destroy(bson_doc_nas_epco);
@@ -184,18 +185,18 @@ bool smf_namf_comm_handle_n1_n2_message_transfer(
                 char *pcs_updatedoc;
                 char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
                 asprintf(&pcs_updatedoc, ", \"pcs-n1n2-done\": 1, \"pdu-address\": \"%s\", \"sesion-ambr\": {\"uplink\": %d, \"ul-unit\": %d, \"downlink\": %d, \"dl-unit\": %d}, \"pdu-session-type\": %d, \"PDUSessionAggregateMaximumBitRate\": {\"pDUSessionAggregateMaximumBitRateUL\": %ld, \"pDUSessionAggregateMaximumBitRateDL\": %ld}, \"QosFlowSetupRequestList\": [{ \"qosFlowIdentifier\": %ld, \"fiveQI\": %ld, \"priorityLevelARP\": %ld, \"pre_emptionCapability\": %ld, \"pre_emptionVulnerability\": %ld}], \"UL_NGU_UP_TNLInformation\": {\"transportLayerAddress\": \"%s\", \"gTP_TEID\": %d}, \"nas-authorized-qos-rules\": %s, \"nas-authorized-qos-flow_descriptions\": %s, \"nas-extended-protocol-configuration-option\": %s }", pcs_n1n2data.pcs_pduaddress, pcs_n1n2data.pcs_sambrulv, pcs_n1n2data.pcs_sambrulu, pcs_n1n2data.pcs_sambrdlv, pcs_n1n2data.pcs_sambrdlu, pcs_n1n2data.pcs_pdusesstype, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul, pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl, pcs_n1n2data.pcs_qosflowidentifier, pcs_n1n2data.pcs_fiveqi, pcs_n1n2data.pcs_plarp, pcs_n1n2data.pcs_preemptioncapability, pcs_n1n2data.pcs_preemptionvulnerability, pcs_n1n2data.pcs_upfn3ip, pcs_n1n2data.pcs_upfn3teid, pcs_n1n2data.pcs_nasqosrulestr, pcs_n1n2data.pcs_nasqosflowstr, pcs_n1n2data.pcs_nasepcostr);
-                if (pcs_fsmdata->pcs_replaceapienabledn1n2)
+                if (PCS_REPLACEAPIENABLEDN1N2)
                 {
-                    pcs_rv = replace_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
+                    pcs_db_write_op = replace_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
                 }
                 else
                 {
-                    pcs_rv = delete_create_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
+                    pcs_db_write_op = delete_create_data_to_db(pcs_dbcollection, pcs_uedbid, pcs_dbrdata, pcs_updatedoc);
                 }
                 //bson_free(pcs_dbrdata);
             }
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
-            if (pcs_rv != OGS_OK)
+            if (pcs_db_write_op.rc != OGS_OK)
             {
                 ogs_error("PCS Error while uploading n1-n2 transfer data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
@@ -215,6 +216,9 @@ bool smf_namf_comm_handle_n1_n2_message_transfer(
             ogs_free(pcs_n1n2data.pcs_ie);
             ogs_free(pcs_n1n2data.pcs_gtptunnel);
             ogs_free(pcs_n1n2data.pcs_qosflowsetuprequestitem);*/
+
+            ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "N1N2SmfWriteIOTime", pcs_db_write_op.pcs_clk_io);
+            ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "N1N2SmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_write_op.pcs_clk_io));
             
         }
     }

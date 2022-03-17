@@ -29,6 +29,15 @@ static ogs_thread_t *thread;
 static void smf_main(void *data);
 static int initialized = 0;
 
+uint8_t PCS_DBCOMMENABLED;
+uint8_t PCS_UPSERTAPIENABLEDCREATE;
+uint8_t PCS_UPDATEAPIENABLEDN1N2;
+uint8_t PCS_UPDATEAPIENABLEDMODIFY;
+uint8_t PCS_ISPROCEDURALSTATELESS;
+uint8_t PCS_REPLACEAPIENABLEDN1N2;
+uint8_t PCS_REPLACEAPIENABLEDMODIFY;
+uint8_t PCS_ENABLESINGLEREAD;
+char *PCS_DBCOLLECTIONAME;
 mongoc_client_pool_t *PCS_MONGO_POOL;
 
 int smf_initialize()
@@ -140,7 +149,7 @@ static void smf_main(void *data)
     ogs_fsm_t smf_sm;
     int rv;
 
-    smf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    /* smf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
     smf_sm.pcs_fsmdata.pcs_upsertapienabledcreate = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
     smf_sm.pcs_fsmdata.pcs_updateapienabledn1n2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
     smf_sm.pcs_fsmdata.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
@@ -148,13 +157,24 @@ static void smf_main(void *data)
     smf_sm.pcs_fsmdata.pcs_replaceapienabledn1n2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
     smf_sm.pcs_fsmdata.pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
     smf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-    smf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
+    smf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"); */
+
+    PCS_DBCOMMENABLED = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    PCS_UPSERTAPIENABLEDCREATE = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
+    PCS_UPDATEAPIENABLEDN1N2 = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_N1N2");
+    PCS_UPDATEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+    PCS_ISPROCEDURALSTATELESS = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+    PCS_REPLACEAPIENABLEDN1N2 = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_N1N2");
+    PCS_REPLACEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
+    PCS_ENABLESINGLEREAD = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
+    PCS_DBCOLLECTIONAME = ogs_strdup(getenv("PCS_DB_COLLECTION_NAME"));
+    ogs_info("PCS ENV variable PCS_DB_COLLECTION_NAME is set as %s", PCS_DBCOLLECTIONAME);
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;
     mongoc_database_t *database;
     mongoc_collection_t *collection;
-    if (smf_sm.pcs_fsmdata.pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
         const char *uri_string = getenv("DB_URI");
         bson_error_t error;
@@ -199,7 +219,7 @@ static void smf_main(void *data)
         * Get a handle on the database "db_name" and collection "coll_name"
         */
         database = mongoc_client_get_database(client, "pcs_db");
-        collection = mongoc_client_get_collection(client, "pcs_db", smf_sm.pcs_fsmdata.pcs_dbcollectioname);
+        collection = mongoc_client_get_collection(client, "pcs_db", PCS_DBCOLLECTIONAME);
 
         /*
         * Do work. This example pings the database, prints the result as JSON and
@@ -265,7 +285,7 @@ static void smf_main(void *data)
     }
 done:
 
-    if (smf_sm.pcs_fsmdata.pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
         mongoc_collection_destroy(collection);
         mongoc_database_destroy(database);

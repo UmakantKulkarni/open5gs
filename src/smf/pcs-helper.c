@@ -25,7 +25,7 @@ struct pcs_mongo_info_s pcs_get_mongo_info(pcs_fsm_struct_t *pcs_fsmdata)
    }
    else
    {
-         pcs_mongo_info.pcs_dbcollection = mongoc_client_get_collection(pcs_mongo_info.pcs_mongoclient, "pcs_db", pcs_fsmdata->pcs_dbcollectioname);
+         pcs_mongo_info.pcs_dbcollection = mongoc_client_get_collection(pcs_mongo_info.pcs_mongoclient, "pcs_db", PCS_DBCOLLECTIONAME);
    }
    
    return pcs_mongo_info;
@@ -44,6 +44,7 @@ int pcs_set_int_from_env(const char *pcs_env_var)
       pcs_enval = 0;
    }
 
+   ogs_info("PCS ENV variable %s is set as %d", pcs_env_var, pcs_enval);
    return pcs_enval;
 }
 
@@ -124,22 +125,26 @@ void pcs_hex_to_binary_str(char *pcs_hex_str, char *pcs_bin_str, int pcs_start_i
    ogs_debug("PCS Conversion of Hex string %s to binary string is %s", pcs_substr, pcs_bin_str);
 }
 
-int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int pcs_docid, bson_t *bson_doc)
+struct pcs_db_write_op_s insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int pcs_docid, bson_t *bson_doc)
 {
    int rc = 0;
    bson_error_t error;
+   struct pcs_db_write_op_s pcs_db_write_op;
 
    if (strcmp(pcs_dbop, "create") == 0)
    {
+      clock_t pcs_clk_x = clock();
       if (!mongoc_collection_insert_one(collection, bson_doc, NULL, NULL, &error))
       {
          rc = 1;
          ogs_error("PCS mongoc_collection_insert_one failed %s\n", error.message);
       }
+      pcs_db_write_op.pcs_clk_io = (double)(clock() - (pcs_clk_x)) / CLOCKS_PER_SEC;
       ogs_debug("PCS Added new data to mongo by SMF");
    }
    else if (strcmp(pcs_dbop, "update") == 0)
    {
+      clock_t pcs_clk_x = clock();
       bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
 
       if (!mongoc_collection_update_one(collection, query, bson_doc, NULL, NULL, &error))
@@ -147,12 +152,14 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int
          rc = 1;
          ogs_error("PCS mongoc_collection_update_one failed %s\n", error.message);
       }
+      pcs_db_write_op.pcs_clk_io = (double)(clock() - (pcs_clk_x)) / CLOCKS_PER_SEC;
       ogs_debug("PCS Updated data to mongo by SMF");
 
       bson_destroy(query);
    }
    else if (strcmp(pcs_dbop, "upsert") == 0)
    {
+      clock_t pcs_clk_x = clock();
       bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
       bson_t *opts = BCON_NEW ("upsert", BCON_BOOL (true));
    
@@ -161,6 +168,7 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int
          rc = 1;
          ogs_error("PCS mongoc_collection_update_one with upsert failed %s\n", error.message);
       }
+      pcs_db_write_op.pcs_clk_io = (double)(clock() - (pcs_clk_x)) / CLOCKS_PER_SEC;
       ogs_debug("PCS Updated data to mongo by SMF");
 
       bson_destroy(query);
@@ -169,20 +177,24 @@ int insert_data_to_db(mongoc_collection_t *collection, const char *pcs_dbop, int
 
    bson_destroy(bson_doc);
 
-   return rc;
+   pcs_db_write_op.rc = rc;
+
+   return pcs_db_write_op;
 }
 
-int delete_create_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+struct pcs_db_write_op_s delete_create_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
    bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
+   struct pcs_db_write_op_s pcs_db_write_op;
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
    ogs_debug("Final Data after delete-create operation is %s", pcs_dbnewdata);
    bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_dbnewdata, -1, &error);
 
+   clock_t pcs_clk_x = clock();
    if (!mongoc_collection_delete_one(collection, query, NULL, NULL, &error))
    {
       rc = 1;
@@ -193,56 +205,67 @@ int delete_create_data_to_db(mongoc_collection_t *collection, int pcs_docid, cha
       rc = 1;
       ogs_error("PCS mongoc_collection_insert_one failed during delete-create process %s\n", error.message);
    }
+   pcs_db_write_op.pcs_clk_io = (double)(clock() - (pcs_clk_x)) / CLOCKS_PER_SEC;
 
    bson_destroy(query);
    bson_destroy(bson_doc);
    free(pcs_dbnewdata);
 
-   return rc;
+   pcs_db_write_op.rc = rc;
+
+   return pcs_db_write_op;
 }
 
-int replace_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
+struct pcs_db_write_op_s replace_data_to_db(mongoc_collection_t *collection, int pcs_docid, char *pcs_dbrdata, char *pcs_dbnewdata)
 {
    int rc = 0;
    bson_error_t error;
    bson_t *query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
+   struct pcs_db_write_op_s pcs_db_write_op;
 
    pcs_dbrdata[strlen(pcs_dbrdata) - 1] = '\0';
    pcs_dbnewdata = pcs_combine_strings(pcs_dbrdata, pcs_dbnewdata);
    ogs_debug("Final Data after delete-create operation is %s", pcs_dbnewdata);
    bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_dbnewdata, -1, &error);
 
+   clock_t pcs_clk_x = clock();
    if (!mongoc_collection_replace_one(collection, query, bson_doc, NULL, NULL, &error))
    {
       rc = 1;
       ogs_error("PCS mongoc_collection_replace_one failed during delete-create process %s\n", error.message);
    }
+   pcs_db_write_op.pcs_clk_io = (double)(clock() - (pcs_clk_x)) / CLOCKS_PER_SEC;
 
    bson_destroy(query);
    bson_destroy(bson_doc);
    free(pcs_dbnewdata);
 
-   return rc;
+   pcs_db_write_op.rc = rc;
+
+   return pcs_db_write_op;
 }
 
-char *read_data_from_db(mongoc_collection_t *collection, int pcs_docid)
+struct pcs_db_read_op_s read_data_from_db(mongoc_collection_t *collection, int pcs_docid)
 {
    mongoc_cursor_t *cursor;
    const bson_t *doc;
    bson_t *opts;
    bson_t *query = NULL;
    char *pcs_dbrdata;
+   struct pcs_db_read_op_s pcs_db_read_op;
 
    query = BCON_NEW("_id", BCON_INT32 (pcs_docid));
    opts = BCON_NEW ("limit", BCON_INT64 (1));
-   cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
    int i = 0;
 
+   clock_t pcs_clk_x = clock();
+   cursor = mongoc_collection_find_with_opts(collection, query, opts, NULL);
    while (mongoc_cursor_next(cursor, &doc))
    {
       i = i + 1;
       pcs_dbrdata = bson_as_relaxed_extended_json(doc, NULL);
    }
+   pcs_db_read_op.pcs_clk_io = (double)(clock() - (pcs_clk_x)) / CLOCKS_PER_SEC;
 
    if (i == 0)
    {
@@ -253,7 +276,9 @@ char *read_data_from_db(mongoc_collection_t *collection, int pcs_docid)
    bson_destroy(query);
    bson_destroy (opts);
 
-   return pcs_dbrdata;
+   pcs_db_read_op.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
+
+   return pcs_db_read_op;
 }
 
 void decode_buffer_to_hex(char *pcs_hexstr, const unsigned char *pcs_data, size_t pcs_len)

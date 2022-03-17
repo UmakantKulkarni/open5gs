@@ -272,40 +272,41 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
     ogs_assert(response);
     ogs_assert(true == ogs_sbi_server_send_response(stream, response));
 
-    if (pcs_fsmdata->pcs_dbcommenabled && response->status == OGS_SBI_HTTP_STATUS_CREATED)
+    if (PCS_DBCOMMENABLED && response->status == OGS_SBI_HTTP_STATUS_CREATED)
     {
-        if (pcs_fsmdata->pcs_isproceduralstateless)
+        if (PCS_ISPROCEDURALSTATELESS)
         {
             sess->pcs.pcs_createdone = 1;
             ogs_info("PCS Successfully completed Procedural Stateless Create-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
         }
         else
         {
+            clock_t pcs_clk_sd = clock();
+            struct pcs_db_write_op_s pcs_db_write_op;
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
 
-            int pcs_rv;            
             struct pcs_smf_create pcs_createdata = sess->pcs.pcs_createdata;
             int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
 
             bson_error_t error;
-            if (pcs_fsmdata->pcs_upsertapienabledcreate)
+            if (PCS_UPSERTAPIENABLEDCREATE)
             {
                 bson_t *bson_doc = BCON_NEW("$set", "{", "_id", BCON_INT32(pcs_uedbid), "pcs-create-done", BCON_INT32(1), "supi", BCON_UTF8(pcs_createdata.pcs_supi), "sm-context-ref", BCON_UTF8(pcs_createdata.pcs_smcontextref), "pdu-session-id", BCON_INT32(pcs_createdata.pcs_pdusessionid), "an-type", BCON_INT32(pcs_createdata.pcs_antype), "pei", BCON_UTF8(pcs_createdata.pcs_pei), "dnn", BCON_UTF8(pcs_createdata.pcs_dnn), "s-nssai", "{", "sst", BCON_INT32(pcs_createdata.pcs_snssaisst), "sd", BCON_UTF8(pcs_createdata.pcs_snssaisd), "}", "plmnid", "{", "mcc", BCON_UTF8(pcs_createdata.pcs_mnc), "mnc", BCON_UTF8(pcs_createdata.pcs_mnc), "}", "amf-id", BCON_UTF8(pcs_createdata.pcs_amfid), "tac", BCON_UTF8(pcs_createdata.pcs_tac), "cell-id", BCON_UTF8(pcs_createdata.pcs_cellid), "ue-location-timestamp", BCON_UTF8(pcs_createdata.pcs_uelocts), "ue-time-zone", BCON_UTF8(pcs_createdata.pcs_uetimezone), "sm-context-status-uri", BCON_UTF8(pcs_createdata.pcs_smcntxsttsuri), "pcf-id", BCON_UTF8(pcs_createdata.pcs_pcfid), "rat_type", BCON_UTF8(pcs_createdata.pcs_rattype), "}"); 
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
+                pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
             }
             else
             {
                 char *pcs_docjson;
                 asprintf(&pcs_docjson, "{\"_id\": %d, \"pcs-create-done\": 1, \"supi\": \"%s\", \"sm-context-ref\": \"%s\", \"pdu-session-id\": %d, \"an-type\": %d, \"pei\": \"%s\", \"dnn\": \"%s\", \"s-nssai\": {\"sst\": %d, \"sd\": \"%s\"}, \"plmnid\": {\"mcc\": \"%s\", \"mnc\": \"%s\"}, \"amf-id\": \"%s\", \"tac\": \"%s\", \"cell-id\": \"%s\", \"ue-location-timestamp\": \"%s\", \"ue-time-zone\": \"%s\", \"sm-context-status-uri\": \"%s\", \"pcf-id\": \"%s\", \"rat_type\": \"%s\"}", pcs_uedbid, pcs_createdata.pcs_supi, pcs_createdata.pcs_smcontextref, pcs_createdata.pcs_pdusessionid, pcs_createdata.pcs_antype, pcs_createdata.pcs_pei, pcs_createdata.pcs_dnn, pcs_createdata.pcs_snssaisst, pcs_createdata.pcs_snssaisd, pcs_createdata.pcs_mcc, pcs_createdata.pcs_mnc, pcs_createdata.pcs_amfid, pcs_createdata.pcs_tac, pcs_createdata.pcs_cellid, pcs_createdata.pcs_uelocts, pcs_createdata.pcs_uetimezone, pcs_createdata.pcs_smcntxsttsuri, pcs_createdata.pcs_pcfid, pcs_createdata.pcs_rattype);
                 bson_t *bson_doc = bson_new_from_json((const uint8_t *)pcs_docjson, -1, &error);
-                pcs_rv = insert_data_to_db(pcs_dbcollection, "create", pcs_uedbid, bson_doc);
+                pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "create", pcs_uedbid, bson_doc);
                 ogs_free(pcs_createdata.pcs_snssaisd);
                 free(pcs_docjson);
             }
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
 
-            if (pcs_rv != OGS_OK)
+            if (pcs_db_write_op.rc != OGS_OK)
             {
                 ogs_error("PCS Error while inserting Create-SM-Context data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
@@ -313,9 +314,12 @@ bool smf_nudm_sdm_handle_get(smf_sess_t *sess, ogs_sbi_stream_t *stream,
             {
                 ogs_info("PCS Successfully inserted Create-SM-Context data to MongoDB for supi [%s]", sess->smf_ue->supi);
             }
+
+            ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "CSCSmfWriteIOTime", pcs_db_write_op.pcs_clk_io);
+            ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "CSCSmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_write_op.pcs_clk_io));
         }
     }
-    else if (!pcs_fsmdata->pcs_dbcommenabled && response->status == OGS_SBI_HTTP_STATUS_CREATED)
+    else if (!PCS_DBCOMMENABLED && response->status == OGS_SBI_HTTP_STATUS_CREATED)
     {
         ogs_info("PCS Successfully completed Create-SM-Context transaction for supi [%s]", sess->smf_ue->supi);
     }

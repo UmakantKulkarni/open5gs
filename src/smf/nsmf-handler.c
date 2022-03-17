@@ -208,10 +208,13 @@ bool smf_nsmf_handle_create_sm_context(
     n1smbuf = ogs_pkbuf_copy(n1smbuf);
     ogs_assert(n1smbuf);
 
-    if (pcs_fsmdata->pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
+        clock_t pcs_clk_sd = clock();
+        struct pcs_db_read_op_s pcs_db_read_op;
+        pcs_db_read_op.pcs_clk_io = 0;
         char *pcs_dbrdata;
-        if (pcs_fsmdata->pcs_enablesingleread)
+        if (PCS_ENABLESINGLEREAD)
         {
             pcs_dbrdata = SmContextCreateData->supported_features;
         }
@@ -220,8 +223,9 @@ bool smf_nsmf_handle_create_sm_context(
             int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
             struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
             mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-            pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_uedbid);
+            pcs_db_read_op = read_data_from_db(pcs_dbcollection, pcs_uedbid);
             mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+            pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
         }        
         if (pcs_dbrdata == NULL || strlen(pcs_dbrdata) <= 29)
         { 
@@ -232,6 +236,8 @@ bool smf_nsmf_handle_create_sm_context(
         {
             ogs_error("PCS UE Context for UE [%s] is already present in DB", sess->smf_ue->supi);
         }
+        ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "CSCSmfReadIOTime", pcs_db_read_op.pcs_clk_io);
+        ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "CSCSmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
     }
 
     nas_5gs_send_to_gsm(sess, stream, n1smbuf);
@@ -370,10 +376,13 @@ bool smf_nsmf_handle_update_sm_context(
         n2smbuf = ogs_pkbuf_copy(n2smbuf);
         ogs_assert(n2smbuf);
 
-        if (pcs_fsmdata->pcs_dbcommenabled && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
+        if (PCS_DBCOMMENABLED && SmContextUpdateData->n2_sm_info_type == 2 && SmContextUpdateData->n2_sm_info)
         {
+            clock_t pcs_clk_sd = clock();
+            struct pcs_db_read_op_s pcs_db_read_op;
+            pcs_db_read_op.pcs_clk_io = 0;
             double pcs_n1n2done = 0, pcs_pfcpestdone = 0;
-            if (pcs_fsmdata->pcs_isproceduralstateless && sess->pcs.pcs_createdone && sess->pcs.pcs_n4createdone)
+            if (PCS_ISPROCEDURALSTATELESS && sess->pcs.pcs_createdone && sess->pcs.pcs_n4createdone)
             {
                 pcs_n1n2done = sess->pcs.pcs_n1n2done;
                 pcs_pfcpestdone = sess->pcs.pcs_n4createdone;
@@ -381,7 +390,7 @@ bool smf_nsmf_handle_update_sm_context(
             else
             {
                 char *pcs_dbrdata;
-                if (pcs_fsmdata->pcs_enablesingleread)
+                if (PCS_ENABLESINGLEREAD)
                 {
                     pcs_dbrdata = SmContextUpdateData->supported_features;
                 }
@@ -390,8 +399,9 @@ bool smf_nsmf_handle_update_sm_context(
                     int pcs_uedbid = imsi_to_dbid(sess->smf_ue->supi);
                     struct pcs_mongo_info_s pcs_mongo_info = pcs_get_mongo_info(pcs_fsmdata);
                     mongoc_collection_t *pcs_dbcollection = pcs_mongo_info.pcs_dbcollection;
-                    pcs_dbrdata = read_data_from_db(pcs_dbcollection, pcs_uedbid);
+                    pcs_db_read_op = read_data_from_db(pcs_dbcollection, pcs_uedbid);
                     mongoc_client_pool_push(PCS_MONGO_POOL, pcs_mongo_info.pcs_mongoclient);
+                    pcs_dbrdata = pcs_db_read_op.pcs_dbrdata;
                 }
                 sess->pcs.pcs_dbrdata = ogs_strdup(pcs_dbrdata);
                 JSON_Value *pcs_dbrdatajsonval = json_parse_string(pcs_dbrdata);
@@ -414,6 +424,8 @@ bool smf_nsmf_handle_update_sm_context(
             {
                 ogs_error("PCS Update-SM-Context got triggered without processing n1-n2 request");
             }
+            ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "USCSmfReadIOTime", pcs_db_read_op.pcs_clk_io);
+            ogs_info("PCS time taken by UE with imsi %s and smf-n4-seid %ld for transaction %s is: %g sec.\n", sess->smf_ue->supi, sess->smf_n4_seid, "USCSmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC) - (pcs_db_read_op.pcs_clk_io));
         }
 
         ngap_send_to_n2sm(

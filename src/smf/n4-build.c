@@ -70,7 +70,7 @@ ogs_pkbuf_t *smf_n4_build_session_establishment_request(
     i = 0;
     ogs_list_for_each(&sess->pfcp.pdr_list, pdr) {
         ogs_pfcp_build_create_pdr(&req->create_pdr[i], i, pdr);
-        if (i == 0 && pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+        if (i == 0 && PCS_ENABLESINGLEREAD)
         {
             char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
             req->create_pdr[i].pdi.framed_route.presence = 1;
@@ -199,7 +199,7 @@ ogs_pkbuf_t *smf_n4_build_session_modification_request(
                             &req->update_far[num_of_update_far],
                             num_of_update_far, far);
                     
-                    if (num_of_update_far == 0 && pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"))
+                    if (num_of_update_far == 0 && PCS_ENABLESINGLEREAD)
                     {                    
                         char *pcs_dbrdata = sess->pcs.pcs_dbrdata;
                         req->update_far[num_of_update_far].update_forwarding_parameters.framed_route.presence = 1;

@@ -111,6 +111,7 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         clock_t pcs_clk_sd = clock();
         char *pcs_dbrdata;
         struct pcs_db_read_op_s pcs_db_read_op;
+        pcs_db_read_op.pcs_clk_io = 0;
         if (PCS_ENABLESINGLEREAD)
         {
             pcs_dbrdata = N1N2MessageTransferReqData->supported_features;

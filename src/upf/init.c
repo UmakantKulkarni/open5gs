@@ -29,6 +29,15 @@ static ogs_thread_t *thread;
 static void upf_main(void *data);
 static int initialized = 0;
 
+uint8_t PCS_DBCOMMENABLED;
+uint8_t PCS_UPSERTAPIENABLEDCREATE;
+uint8_t PCS_UPDATEAPIENABLEDMODIFY;
+uint8_t PCS_BLOCKINGAPIENABLEDCREATE;
+uint8_t PCS_BLOCKINGAPIENABLEDMODIFYRSP;
+uint8_t PCS_ISPROCEDURALSTATELESS;
+uint8_t PCS_REPLACEAPIENABLEDMODIFY;
+uint8_t PCS_ENABLESINGLEREAD;
+char *PCS_DBCOLLECTIONAME;
 mongoc_client_pool_t *PCS_MONGO_POOL;
 ThreadPool *PCS_THREADPOOL;
 
@@ -103,7 +112,7 @@ static void upf_main(void *data)
     ogs_fsm_t upf_sm;
     int rv;
 
-    upf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    /* upf_sm.pcs_fsmdata.pcs_dbcommenabled = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
     upf_sm.pcs_fsmdata.pcs_upsertapienabledcreate = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
     upf_sm.pcs_fsmdata.pcs_updateapienabledmodify = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
     upf_sm.pcs_fsmdata.pcs_blockingapienabledcreate = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
@@ -111,13 +120,24 @@ static void upf_main(void *data)
     upf_sm.pcs_fsmdata.pcs_isproceduralstateless = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
     upf_sm.pcs_fsmdata.pcs_replaceapienabledmodify = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
     upf_sm.pcs_fsmdata.pcs_dbcollectioname = getenv("PCS_DB_COLLECTION_NAME");
-    upf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
+    upf_sm.pcs_fsmdata.pcs_enablesingleread = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ"); */
+
+    PCS_DBCOMMENABLED = pcs_set_int_from_env("PCS_DB_COMM_ENABLED");
+    PCS_UPSERTAPIENABLEDCREATE = pcs_set_int_from_env("PCS_UPSERT_API_ENABLED_CREATE");
+    PCS_UPDATEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_UPDATE_API_ENABLED_MODIFY");
+    PCS_BLOCKINGAPIENABLEDCREATE = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_CREATE");
+    PCS_BLOCKINGAPIENABLEDMODIFYRSP = pcs_set_int_from_env("PCS_BLOCKING_API_ENABLED_MODIFYRSP");
+    PCS_ISPROCEDURALSTATELESS = pcs_set_int_from_env("PCS_IS_PROCEDURAL_STATELESS");
+    PCS_REPLACEAPIENABLEDMODIFY = pcs_set_int_from_env("PCS_REPLACE_API_ENABLED_MODIFY");
+    PCS_ENABLESINGLEREAD = pcs_set_int_from_env("PCS_ENABLE_SINGLE_READ");
+    PCS_DBCOLLECTIONAME = ogs_strdup(getenv("PCS_DB_COLLECTION_NAME"));
+    ogs_info("PCS ENV variable PCS_DB_COLLECTION_NAME is set as %s", PCS_DBCOLLECTIONAME);
 
     mongoc_uri_t *uri;
     mongoc_client_t *client;
     mongoc_database_t *database;
     mongoc_collection_t *collection;
-    if (upf_sm.pcs_fsmdata.pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
         const char *uri_string = getenv("DB_URI");
         bson_error_t error;
@@ -143,7 +163,7 @@ static void upf_main(void *data)
         mongoc_client_pool_max_size(PCS_MONGO_POOL, 999999999);
         upf_sm.pcs_fsmdata.pcs_mongopool = PCS_MONGO_POOL;
 
-        if (!upf_sm.pcs_fsmdata.pcs_blockingapienabledcreate || !upf_sm.pcs_fsmdata.pcs_blockingapienabledmodifyrsp)
+        if (!PCS_BLOCKINGAPIENABLEDCREATE || !PCS_BLOCKINGAPIENABLEDMODIFYRSP)
         {
             long pcs_numprocessors = sysconf(_SC_NPROCESSORS_ONLN);
             ogs_info("PCS Number of Processors is %ld", pcs_numprocessors);
@@ -170,7 +190,7 @@ static void upf_main(void *data)
         * Get a handle on the database "db_name" and collection "coll_name"
         */
         database = mongoc_client_get_database(client, "pcs_db");
-        collection = mongoc_client_get_collection(client, "pcs_db", upf_sm.pcs_fsmdata.pcs_dbcollectioname);
+        collection = mongoc_client_get_collection(client, "pcs_db", PCS_DBCOLLECTIONAME);
 
         /*
         * Do work. This example pings the database, prints the result as JSON and
@@ -236,7 +256,7 @@ static void upf_main(void *data)
     }
 done:
 
-    if (upf_sm.pcs_fsmdata.pcs_dbcommenabled)
+    if (PCS_DBCOMMENABLED)
     {
         mongoc_collection_destroy(collection);
         mongoc_database_destroy(database);

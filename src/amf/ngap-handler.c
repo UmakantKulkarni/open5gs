@@ -1658,7 +1658,7 @@ void ngap_handle_pdu_session_resource_setup_response(
                 struct pcs_amf_update pcs_updatedata = pcs_get_amf_update_data(ogs_pkbuf_copy(param.n2smbuf));
                 sess->pcs.pcs_updatedata = pcs_updatedata;
                 sess->pcs.pcs_udsfupdatereqdone = 1;
-                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
+                ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfReadSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
             }
             else if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS && strcmp(PCS_DBCOLLECTIONAME, "amf") != 0)
             {
