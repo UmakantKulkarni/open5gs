@@ -253,49 +253,17 @@ int amf_nsmf_pdusession_handle_update_sm_context(
     if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT ||
         recvmsg->res_status == OGS_SBI_HTTP_STATUS_OK) {
 
-        if (PCS_DBCOMMENABLED && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0)
+        if (PCS_DBCOMMENABLED && recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT && strcmp(PCS_DBCOLLECTIONAME, "amf") == 0 && !PCS_BLOCKINGAPIENABLEDMODIFYRSP)
         {
             clock_t pcs_clk_sd = clock();
-            if (!PCS_BLOCKINGAPIENABLEDMODIFYREQ)
-            {
-                int pcs_loop = 0;
-                while(sess->pcs.pcs_udsfupdatereqdone == 0 && pcs_loop < 10000) {
-                    usleep(5);
-                    pcs_loop = pcs_loop + 1;
-                    if (sess->pcs.pcs_udsfupdatereqdone)
-                    {
-                        ogs_info("PCS Finally updatereq is done %d", pcs_loop);
-                    }
-                }
-            }
-            if (!PCS_BLOCKINGAPIENABLEDMODIFYRSP)
-            {
-                int pcs_flag = 0;
-                if (!PCS_BLOCKINGAPIENABLEDMODIFYREQ)
-                {
-                    pcs_flag = sess->pcs.pcs_udsfupdatereqdone;
-                }
-                else
-                {
-                    pcs_flag = 1;
-                }
-                if (pcs_flag)
-                {
-                    struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
-                    pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
-                    (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
-                    (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
-                    //pthread_t pcs_thread1;
-                    //pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
-                    mt_add_job(PCS_THREADPOOL, &pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
-                    ogs_info("PCS Started Update-Rsp UDSF thread");
-                }
-                else
-                {
-                    ogs_error("pcs_udsfupdatereqdone thread is not complete");
-                    sess->pcs.pcs_udsfupdaterspdone = 0;
-                }
-            }
+            struct pcs_amf_update_rsp_udsf_s *pcs_amfupdaterspudsf = malloc(sizeof(struct pcs_amf_update_rsp_udsf_s));
+            pcs_amfupdaterspudsf->pcs_dbcollection = pcs_fsmdata->pcs_dbcollection;
+            (*pcs_amfupdaterspudsf).pcs_amfuengapid = (uint64_t *)sess->amf_ue->ran_ue->amf_ue_ngap_id;
+            (*pcs_amfupdaterspudsf).pcs_pdusessionid = (long *) (long)sess->psi;
+            //pthread_t pcs_thread1;
+            //pthread_create(&pcs_thread1, NULL, pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
+            mt_add_job(PCS_THREADPOOL, &pcs_amf_update_rsp_udsf, (void*) pcs_amfupdaterspudsf);
+            ogs_info("PCS Started Update-Rsp UDSF thread");
             ogs_info("PCS time taken by UE %s for transaction %s is: %g sec.\n", sess->amf_ue->supi, "USCAmfWriteSDTime", (((double)(clock() - (pcs_clk_sd))) / CLOCKS_PER_SEC));
         }
 

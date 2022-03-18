@@ -299,7 +299,7 @@ void upf_n4_handle_session_modification_request(
         return;
     }
 
-    if (PCS_DBCOMMENABLED && !req->update_far->bar_id.presence && !PCS_BLOCKINGAPIENABLEDCREATE)
+    /* if (PCS_DBCOMMENABLED && !req->update_far->bar_id.presence && !PCS_BLOCKINGAPIENABLEDCREATE)
     {
         int pcs_loop = 0;
         while(sess->pcs.pcs_udsfcreatedone == 0 && pcs_loop < 10000) {
@@ -310,7 +310,7 @@ void upf_n4_handle_session_modification_request(
                ogs_info("PCS Finally create is done %d", pcs_loop);
             }
         }
-    }
+    } */
 
     if (PCS_DBCOMMENABLED && !PCS_ISPROCEDURALSTATELESS)
     {
