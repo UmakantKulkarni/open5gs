@@ -873,7 +873,14 @@ void pcs_amf_n1n2_udsf(void *pcs_amfn1n2udsf)
             bson_t *bson_doc_nas_epco = bson_new_from_json((const uint8_t *)pcs_n1n2data.pcs_nasepcostr, -1, &error);
             bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-n1n2-done", BCON_INT32(1), "pdu-address", BCON_UTF8(pcs_n1n2data.pcs_pduaddress),  "sesion-ambr", "{", "uplink", BCON_INT32(pcs_n1n2data.pcs_sambrulv), "ul-unit", BCON_INT32(pcs_n1n2data.pcs_sambrulu), "downlink", BCON_INT32(pcs_n1n2data.pcs_sambrdlv), "dl-unit", BCON_INT32(pcs_n1n2data.pcs_sambrdlu), "}", "pdu-session-type", BCON_INT32(pcs_n1n2data.pcs_pdusesstype), "PDUSessionAggregateMaximumBitRate", "{", "pDUSessionAggregateMaximumBitRateUL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitrateul), "pDUSessionAggregateMaximumBitRateDL", BCON_INT64(pcs_n1n2data.pcs_pdusessionaggregatemaximumbitratedl), "}", "QosFlowSetupRequestList", "[", "{", "qosFlowIdentifier", BCON_INT64(pcs_n1n2data.pcs_qosflowidentifier), "fiveQI", BCON_INT64(pcs_n1n2data.pcs_fiveqi), "priorityLevelARP", BCON_INT64(pcs_n1n2data.pcs_plarp), "pre_emptionCapability", BCON_INT64(pcs_n1n2data.pcs_preemptioncapability), "pre_emptionVulnerability", BCON_INT64(pcs_n1n2data.pcs_preemptionvulnerability), "}", "]", "UL_NGU_UP_TNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_n1n2data.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_n1n2data.pcs_upfn3teid), "}", "nas-authorized-qos-rules", BCON_ARRAY(bson_doc_nas_qos_rule), "nas-authorized-qos-flow_descriptions", BCON_ARRAY(bson_doc_nas_qos_flow), "nas-extended-protocol-configuration-option", BCON_DOCUMENT(bson_doc_nas_epco), "}");
 
-            pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
+            if (PCS_UPSERTAPIENABLEDCREATE)
+            {
+               pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
+            }
+            else
+            {
+               pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
+            }
             if (PCS_BLOCKINGAPIENABLEDN1N2)
             {
                bson_destroy(bson_doc_nas_qos_rule);
@@ -1090,7 +1097,14 @@ void pcs_amf_update_rsp_udsf(void *pcs_amfupdaterspudsf)
       {
          bson_t *bson_doc = BCON_NEW("$set", "{", "pcs-update-done", BCON_INT32(1), "dLQosFlowPerTNLInformation", "{", "transportLayerAddress", BCON_UTF8(pcs_updatedata.pcs_upfn3ip), "gTP_TEID", BCON_INT32(pcs_updatedata.pcs_upfn3teid), "associatedQosFlowId", BCON_INT64(pcs_updatedata.pcs_qosflowid), "}", "}");
 
-         pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
+         if (PCS_UPSERTAPIENABLEDCREATE)
+         {
+            pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "upsert", pcs_uedbid, bson_doc);
+         }
+         else
+         {
+            pcs_db_write_op = insert_data_to_db(pcs_dbcollection, "update", pcs_uedbid, bson_doc);
+         }
       }
       else
       {
