@@ -372,7 +372,7 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
     ogs_sbi_stream_t *stream = NULL;
     ogs_sbi_message_t *sbi_message = NULL;
 
-    smf_n1_n2_message_transfer_param_t param;
+    //smf_n1_n2_message_transfer_param_t param;
     uint8_t pfcp_cause;
     uint8_t gtp1_cause, gtp2_cause;
     bool release;

@@ -282,7 +282,7 @@ uint8_t smf_5gc_n4_handle_session_establishment_response(
         {
             pcs_n1n2data = pcs_get_smf_n1n2_data(sess, param.n1smbuf, param.n2smbuf);
             pcs_n4createdata = pcs_get_smf_n4_create_data(sess);
-            pcs_n4createdata.pfcp_cause_value = pfcp_cause_value;
+            pcs_n4createdata.pfcp_cause_value = OGS_PFCP_CAUSE_REQUEST_ACCEPTED;
             pcs_n4createdata.pcs_upfnodeip = ogs_ipv4_to_string(xact->node->addr.sin.sin_addr.s_addr);
             sess->pcs.pcs_n1n2data = pcs_n1n2data;
         }
