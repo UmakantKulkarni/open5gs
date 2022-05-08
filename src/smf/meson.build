@@ -47,6 +47,7 @@ libsmf_sources = files('''
     s5c-handler.h
     fd-path.h
     gx-handler.h
+    gy-handler.h
     pfcp-path.h
     n4-build.h
     n4-handler.h
@@ -84,8 +85,10 @@ libsmf_sources = files('''
     s5c-handler.c
     fd-path.c
     gx-path.c
+    gy-path.c
     s6b-path.c
     gx-handler.c
+    gy-handler.c
     pfcp-path.c
     n4-build.c
     n4-handler.c
@@ -118,6 +121,7 @@ libsmf = static_library('smf',
                     libngap_dep,
                     libnas_5gs_dep,
                     libdiameter_gx_dep,
+                    libdiameter_gy_dep,
                     libdiameter_s6b_dep,
                     libgtp_dep,
                     libpfcp_dep,
@@ -132,6 +136,7 @@ libsmf_dep = declare_dependency(
                     libngap_dep,
                     libnas_5gs_dep,
                     libdiameter_gx_dep,
+                    libdiameter_gy_dep,
                     libdiameter_s6b_dep,
                     libgtp_dep,
                     libpfcp_dep,

@@ -38,6 +38,7 @@ extern int __hss_log_domain;
 typedef struct _hss_context_t {
     const char          *diam_conf_path;/* HSS Diameter conf path */
     ogs_diam_config_t   *diam_config;   /* HSS Diameter config */
+    const char          *sms_over_ims;  /* SMS over IMS */
 
     ogs_thread_mutex_t  db_lock;
     ogs_thread_mutex_t  cx_lock;
@@ -61,6 +62,7 @@ int hss_context_parse_config(void);
 int hss_db_auth_info(char *imsi_bcd, ogs_dbi_auth_info_t *auth_info);
 int hss_db_update_sqn(char *imsi_bcd, uint8_t *rand, uint64_t sqn);
 int hss_db_increment_sqn(char *imsi_bcd);
+int hss_db_update_imeisv(char *imsi_bcd, char *imeisv);
 
 int hss_db_subscription_data(
     char *imsi_bcd, ogs_subscription_data_t *subscription_data);

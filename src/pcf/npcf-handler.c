@@ -90,7 +90,7 @@ bool pcf_npcf_am_policy_contrtol_handle_create(pcf_ue_t *pcf_ue,
         client = ogs_sbi_client_add(addr);
         ogs_assert(client);
     }
-    OGS_SETUP_SBI_CLIENT(&pcf_ue->namf, client);
+    OGS_SBI_SETUP_CLIENT(&pcf_ue->namf, client);
 
     ogs_freeaddrinfo(addr);
 
@@ -106,9 +106,28 @@ bool pcf_npcf_am_policy_contrtol_handle_create(pcf_ue_t *pcf_ue,
 
     pcf_ue->access_type = PolicyAssociationRequest->access_type;
 
-    if (pcf_ue->pei)
-        ogs_free(pcf_ue->pei);
-    pcf_ue->pei = ogs_strdup(PolicyAssociationRequest->pei);
+    if (PolicyAssociationRequest->pei) {
+        char *type = NULL, *value = NULL;
+        if (pcf_ue->pei)
+            ogs_free(pcf_ue->pei);
+        pcf_ue->pei = ogs_strdup(PolicyAssociationRequest->pei);
+
+        type = ogs_id_get_type(pcf_ue->pei);
+        ogs_assert(type);
+        value = ogs_id_get_value(pcf_ue->pei);
+        ogs_assert(value);
+
+        if (strcmp(type, "imeisv") == 0) {
+            ogs_assert(OGS_OK == ogs_dbi_update_imeisv(pcf_ue->supi, value));
+        } else {
+            ogs_fatal("Unknown Type = %s", type);
+            ogs_assert_if_reached();
+        }
+
+
+        ogs_free(type);
+        ogs_free(value);
+    }
 
     Guami = PolicyAssociationRequest->guami;
     if (Guami && Guami->amf_id &&
@@ -255,7 +274,7 @@ bool pcf_npcf_smpolicycontrol_handle_create(pcf_sess_t *sess,
         client = ogs_sbi_client_add(addr);
         ogs_assert(client);
     }
-    OGS_SETUP_SBI_CLIENT(&sess->nsmf, client);
+    OGS_SBI_SETUP_CLIENT(&sess->nsmf, client);
 
     ogs_freeaddrinfo(addr);
 
@@ -543,7 +562,7 @@ bool pcf_npcf_policyauthorization_handle_create(pcf_sess_t *sess,
         client = ogs_sbi_client_add(addr);
         ogs_assert(client);
     }
-    OGS_SETUP_SBI_CLIENT(&app_session->naf, client);
+    OGS_SBI_SETUP_CLIENT(&app_session->naf, client);
 
     ogs_freeaddrinfo(addr);
 

@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-void smf_5gc_n4_handle_session_establishment_response(
+uint8_t smf_5gc_n4_handle_session_establishment_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_establishment_response_t *rsp, pcs_fsm_struct_t *pcs_fsmdata);
 void smf_5gc_n4_handle_session_modification_response(
@@ -36,19 +36,21 @@ void smf_5gc_n4_handle_session_deletion_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_deletion_response_t *rsp);
 
-void smf_epc_n4_handle_session_establishment_response(
+uint8_t smf_epc_n4_handle_session_establishment_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_establishment_response_t *rsp);
 void smf_epc_n4_handle_session_modification_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_modification_response_t *rsp);
-void smf_epc_n4_handle_session_deletion_response(
+uint8_t smf_epc_n4_handle_session_deletion_response(
         smf_sess_t *sess, ogs_pfcp_xact_t *xact,
         ogs_pfcp_session_deletion_response_t *rsp);
 
 void smf_n4_handle_session_report_request(
         smf_sess_t *sess, ogs_pfcp_xact_t *pfcp_xact,
         ogs_pfcp_session_report_request_t *pfcp_req);
+
+uint8_t gtp_cause_from_pfcp(uint8_t pfcp_cause, uint8_t gtp_version);
 
 #ifdef __cplusplus
 }

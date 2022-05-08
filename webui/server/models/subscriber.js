@@ -12,6 +12,7 @@ const Subscriber = new Schema({
   imsi: { $type: String, unique: true, required: true },
 
   msisdn: [ String ],
+  imeisv: [ String ],
 
   security: {
     k: String,

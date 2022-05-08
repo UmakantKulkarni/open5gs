@@ -213,6 +213,9 @@ int amf_context_parse_config(void)
                         const char *dev = NULL;
                         ogs_sockaddr_t *addr = NULL;
 
+                        ogs_sockopt_t option;
+                        bool is_option = false;
+
                         if (ogs_yaml_iter_type(&ngap_array) ==
                                 YAML_MAPPING_NODE) {
                             memcpy(&ngap_iter, &ngap_array,
@@ -269,6 +272,11 @@ int amf_context_parse_config(void)
                                 if (v) port = atoi(v);
                             } else if (!strcmp(ngap_key, "dev")) {
                                 dev = ogs_yaml_iter_value(&ngap_iter);
+                            } else if (!strcmp(ngap_key, "option")) {
+                                rv = ogs_app_config_parse_sockopt(
+                                        &ngap_iter, &option);
+                                if (rv != OGS_OK) return rv;
+                                is_option = true;
                             } else
                                 ogs_warn("unknown key `%s`", ngap_key);
                         }
@@ -283,10 +291,12 @@ int amf_context_parse_config(void)
                         if (addr) {
                             if (ogs_app()->parameter.no_ipv4 == 0)
                                 ogs_socknode_add(
-                                        &self.ngap_list, AF_INET, addr);
+                                    &self.ngap_list, AF_INET, addr,
+                                    is_option ? &option : NULL);
                             if (ogs_app()->parameter.no_ipv6 == 0)
                                 ogs_socknode_add(
-                                        &self.ngap_list6, AF_INET6, addr);
+                                    &self.ngap_list6, AF_INET6, addr,
+                                    is_option ? &option : NULL);
                             ogs_freeaddrinfo(addr);
                         }
 
@@ -296,7 +306,8 @@ int amf_context_parse_config(void)
                                         NULL : &self.ngap_list,
                                     ogs_app()->parameter.no_ipv6 ?
                                         NULL : &self.ngap_list6,
-                                    dev, port);
+                                    dev, port,
+                                    is_option ? &option : NULL);
                             ogs_assert(rv == OGS_OK);
                         }
 
@@ -310,7 +321,7 @@ int amf_context_parse_config(void)
                                     NULL : &self.ngap_list,
                                 ogs_app()->parameter.no_ipv6 ?
                                     NULL : &self.ngap_list6,
-                                NULL, self.ngap_port);
+                                NULL, self.ngap_port, NULL);
                         ogs_assert(rv == OGS_OK);
                     }
                 } else if (!strcmp(amf_key, "guami")) {
@@ -697,22 +708,22 @@ int amf_context_parse_config(void)
 
                                 v = ogs_yaml_iter_value(&integrity_order_iter);
                                 if (v) {
-                                    int integrity_index = 
+                                    int integrity_index =
                                         self.num_of_integrity_order;
                                     if (strcmp(v, "NIA0") == 0) {
-                                        self.integrity_order[integrity_index] = 
+                                        self.integrity_order[integrity_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_NIA0;
                                         self.num_of_integrity_order++;
                                     } else if (strcmp(v, "NIA1") == 0) {
-                                        self.integrity_order[integrity_index] = 
+                                        self.integrity_order[integrity_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_128_NIA1;
                                         self.num_of_integrity_order++;
                                     } else if (strcmp(v, "NIA2") == 0) {
-                                        self.integrity_order[integrity_index] = 
+                                        self.integrity_order[integrity_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_128_NIA2;
                                         self.num_of_integrity_order++;
                                     } else if (strcmp(v, "NIA3") == 0) {
-                                        self.integrity_order[integrity_index] = 
+                                        self.integrity_order[integrity_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_128_NIA3;
                                         self.num_of_integrity_order++;
                                     }
@@ -739,22 +750,22 @@ int amf_context_parse_config(void)
 
                                 v = ogs_yaml_iter_value(&ciphering_order_iter);
                                 if (v) {
-                                    int ciphering_index = 
+                                    int ciphering_index =
                                         self.num_of_ciphering_order;
                                     if (strcmp(v, "NEA0") == 0) {
-                                        self.ciphering_order[ciphering_index] = 
+                                        self.ciphering_order[ciphering_index] =
                                             OGS_NAS_SECURITY_ALGORITHMS_NEA0;
                                         self.num_of_ciphering_order++;
                                     } else if (strcmp(v, "NEA1") == 0) {
-                                        self.ciphering_order[ciphering_index] = 
+                                        self.ciphering_order[ciphering_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_128_NEA1;
                                         self.num_of_ciphering_order++;
                                     } else if (strcmp(v, "NEA2") == 0) {
-                                        self.ciphering_order[ciphering_index] = 
+                                        self.ciphering_order[ciphering_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_128_NEA2;
                                         self.num_of_ciphering_order++;
                                     } else if (strcmp(v, "NEA3") == 0) {
-                                        self.ciphering_order[ciphering_index] = 
+                                        self.ciphering_order[ciphering_index] =
                                         OGS_NAS_SECURITY_ALGORITHMS_128_NEA3;
                                         self.num_of_ciphering_order++;
                                     }
@@ -772,7 +783,7 @@ int amf_context_parse_config(void)
                         const char *network_name_key =
                         ogs_yaml_iter_key(&network_name_iter);
                         ogs_assert(network_name_key);
-                        if (!strcmp(network_name_key, "full")) {  
+                        if (!strcmp(network_name_key, "full")) {
                             ogs_nas_network_name_t *network_full_name =
                                 &self.full_name;
                             const char *c_network_name =
@@ -847,12 +858,8 @@ amf_gnb_t *amf_gnb_add(ogs_sock_t *sock, ogs_sockaddr_t *addr, pcs_fsm_struct_t 
         ogs_assert(gnb->sctp.poll.read);
     }
 
-    gnb->max_num_of_ostreams = OGS_DEFAULT_SCTP_MAX_NUM_OF_OSTREAMS;
+    gnb->max_num_of_ostreams = 0;
     gnb->ostream_id = 0;
-    if (ogs_app()->sctp.max_num_of_ostreams) {
-        gnb->max_num_of_ostreams = ogs_app()->sctp.max_num_of_ostreams;
-        ogs_info("[GNB] max_num_of_ostreams : %d", gnb->max_num_of_ostreams);
-    }
 
     ogs_list_init(&gnb->ran_ue_list);
 
@@ -969,8 +976,9 @@ ran_ue_t *ran_ue_add(amf_gnb_t *gnb, uint32_t ran_ue_ngap_id)
      * SCTP output stream identification
      * Default ogs_app()->parameter.sctp_streams : 30
      *   0 : Non UE signalling
-     *   1-29 : UE specific association 
+     *   1-29 : UE specific association
      */
+    ogs_assert((gnb->max_num_of_ostreams-1) >= 1); /* NEXT_ID(MAX >= MIN) */
     ran_ue->gnb_ostream_id =
         OGS_NEXT_ID(gnb->ostream_id, 1, gnb->max_num_of_ostreams-1);
 
@@ -1022,7 +1030,7 @@ ran_ue_t *ran_ue_find_by_ran_ue_ngap_id(
         amf_gnb_t *gnb, uint32_t ran_ue_ngap_id)
 {
     ran_ue_t *ran_ue = NULL;
-    
+
     ogs_list_for_each(&gnb->ran_ue_list, ran_ue) {
         if (ran_ue_ngap_id == ran_ue->ran_ue_ngap_id)
             break;

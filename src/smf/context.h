@@ -24,6 +24,7 @@
 
 #include "ogs-gtp.h"
 #include "ogs-diameter-gx.h"
+#include "ogs-diameter-gy.h"
 #include "ogs-diameter-rx.h"
 #include "ogs-diameter-s6b.h"
 #include "ogs-pfcp.h"
@@ -115,7 +116,20 @@ struct pcs_smf_update
     char *pcs_upfn3ip;
 };
 
+typedef enum {
+    SMF_CTF_ENABLED_AUTO = 0,
+    SMF_CTF_ENABLED_YES,
+    SMF_CTF_ENABLED_NO,
+} smf_ctf_enabled_mode;
+
+typedef struct smf_ctf_config_s {
+    smf_ctf_enabled_mode enabled;
+} smf_ctf_config_t;
+
+int smf_ctf_config_init(smf_ctf_config_t *ctf_config);
+
 typedef struct smf_context_s {
+    smf_ctf_config_t    ctf_config;
     const char*         diam_conf_path;   /* SMF Diameter conf path */
     ogs_diam_config_t   *diam_config;     /* SMF Diameter config */
 
@@ -159,6 +173,11 @@ typedef struct smf_ue_s {
     uint8_t imsi[OGS_MAX_IMSI_LEN];
     int imsi_len;
     char imsi_bcd[OGS_MAX_IMSI_BCD_LEN+1];
+
+    /* MSISDN */
+    uint8_t msisdn[OGS_MAX_MSISDN_LEN];
+    int msisdn_len;
+    char msisdn_bcd[OGS_MAX_MSISDN_BCD_LEN+1];
 
     ogs_list_t sess_list;
 } smf_ue_t;
@@ -262,6 +281,18 @@ typedef struct smf_sess_s {
     ogs_sbi_object_t sbi;
     uint32_t        index;          /**< An index of this node */
     ogs_fsm_t       sm;             /* A state machine */
+    struct {
+        bool gx_ccr_init_in_flight; /* Waiting for Gx CCA */
+        uint32_t gx_cca_init_err; /* Gx CCA RXed error code */
+        bool gy_ccr_init_in_flight; /* Waiting for Gy CCA */
+        uint32_t gy_cca_init_err; /* Gy CCA RXed error code */
+        bool gx_ccr_term_in_flight; /* Waiting for Gx CCA */
+        uint32_t gx_cca_term_err; /* Gx CCA RXed error code */
+        bool gy_ccr_term_in_flight; /* Waiting for Gy CCA */
+        uint32_t gy_cca_term_err; /* Gy CCA RXed error code */
+        bool s6b_str_in_flight; /* Waiting for S6B CCA */
+        uint32_t s6b_sta_err; /* S6B CCA RXed error code */
+    } sm_data;
 
     ogs_pfcp_sess_t pfcp;           /* PFCP session context */
 
@@ -283,6 +314,7 @@ typedef struct smf_sess_s {
     ogs_ip_t        gnb_n3_ip;      /* gNB-N3 IPv4/IPv6 */
 
     char            *gx_sid;        /* Gx Session ID */
+    char            *gy_sid;        /* Gx Session ID */
     char            *s6b_sid;       /* S6b Session ID */
 
     OGS_POOL(pf_precedence_pool, uint8_t);
@@ -358,6 +390,18 @@ typedef struct smf_sess_s {
     } gtp1; /* GTPv1C specific fields */
 
     struct {
+        uint64_t ul_octets;
+        uint64_t dl_octets;
+        ogs_time_t duration;
+        /* Snapshot of measurement when last report was sent: */
+        struct {
+            uint64_t ul_octets;
+            uint64_t dl_octets;
+            ogs_time_t duration;
+        } last_report;
+    } gy;
+
+    struct {
         ogs_nas_extended_protocol_configuration_options_t ue_pco;
     } nas; /* Saved from NAS-5GS */
 
@@ -371,9 +415,6 @@ typedef struct smf_sess_s {
         bool ue_requested_pdu_session_establishment_done;
         char *n1n2message_location;
     } paging;
-
-    /* Release Holding timer of SMF session context */
-    ogs_timer_t     *t_release_holding;
 
     /* State */
 #define SMF_NGAP_STATE_NONE                                     0
@@ -440,6 +481,8 @@ smf_context_t *smf_self(void);
 
 int smf_context_parse_config(void);
 
+int smf_use_gy_iface(void);
+
 smf_ue_t *smf_ue_add_by_supi(char *supi);
 smf_ue_t *smf_ue_add_by_imsi(uint8_t *imsi, int imsi_len);
 void smf_ue_remove(smf_ue_t *smf_ue);
@@ -448,7 +491,7 @@ smf_ue_t *smf_ue_find_by_supi(char *supi);
 smf_ue_t *smf_ue_find_by_imsi(uint8_t *imsi, int imsi_len);
 
 smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
-smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
+smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp2_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);
 smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, pcs_fsm_struct_t *pcs_fsmdata);
 
 smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, pcs_fsm_struct_t *pcs_fsmdata);

@@ -26,6 +26,8 @@ static struct disp_hdl *hdl_gx_rar = NULL;
 struct sess_state {
     os0_t       gx_sid;             /* Gx Session-Id */
 
+    os0_t       peer_host;          /* Peer Host */
+
 #define MAX_CC_REQUEST_NUMBER 32
     smf_sess_t *sess;
     ogs_gtp_xact_t *xact[MAX_CC_REQUEST_NUMBER];
@@ -50,6 +52,7 @@ static __inline__ struct sess_state *new_state(os0_t sid)
     ogs_thread_mutex_lock(&sess_state_mutex);
     ogs_pool_alloc(&sess_state_pool, &new);
     ogs_expect_or_return_val(new, NULL);
+    memset(new, 0, sizeof(*new));
     ogs_thread_mutex_unlock(&sess_state_mutex);
 
     new->gx_sid = (os0_t)ogs_strdup((char *)sid);
@@ -62,6 +65,9 @@ static void state_cleanup(struct sess_state *sess_data, os0_t sid, void *opaque)
 {
     if (sess_data->gx_sid)
         ogs_free(sess_data->gx_sid);
+
+    if (sess_data->peer_host)
+        ogs_free(sess_data->peer_host);
 
     ogs_thread_mutex_lock(&sess_state_mutex);
     ogs_pool_free(&sess_state_pool, sess_data);
@@ -81,13 +87,12 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     struct sess_state *sess_data = NULL, *svg;
     struct session *session = NULL;
     int new;
-    ogs_paa_t paa; /* For changing Framed-IPv6-Prefix Length to 128 */
+    ogs_paa_t paa; /* For changing Framed-IPv6-Prefix Length to 64 */
     char buf[OGS_PLMNIDSTRLEN];
     struct sockaddr_in sin;
     struct sockaddr_in6 sin6;
     uint32_t charing_id;
 
-    ogs_assert(xact);
     ogs_assert(sess);
 
     ogs_assert(sess->ipv4 || sess->ipv6);
@@ -99,6 +104,12 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     /* Create the request */
     ret = fd_msg_new(ogs_diam_gx_cmd_ccr, MSGFL_ALLOC_ETEID, &req);
     ogs_assert(ret == 0);
+    {
+        struct msg_hdr *h;
+        ret = fd_msg_hdr(req, &h);
+        ogs_assert(ret == 0);
+        h->msg_appl = OGS_DIAM_GX_APPLICATION_ID;
+    }
 
     /* Find Diameter Gx Session */
     if (sess->gx_sid) {
@@ -215,6 +226,18 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
     ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
     ogs_assert(ret == 0);
 
+    /* Set the Destination-Host AVP */
+    if (sess_data->peer_host) {
+        ret = fd_msg_avp_new(ogs_diam_destination_host, 0, &avp);
+        ogs_assert(ret == 0);
+        val.os.data = sess_data->peer_host;
+        val.os.len  = strlen((char *)sess_data->peer_host);
+        ret = fd_msg_avp_setvalue(avp, &val);
+        ogs_assert(ret == 0);
+        ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
+        ogs_assert(ret == 0);
+    }
+
     /* Set Subscription-Id */
     ret = fd_msg_avp_new(ogs_diam_subscription_id, 0, &avp);
     ogs_assert(ret == 0);
@@ -296,11 +319,36 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         if (sess->ipv6) {
             ret = fd_msg_avp_new(ogs_diam_gx_framed_ipv6_prefix, 0, &avp);
             ogs_assert(ret == 0);
-            memcpy(&paa, &sess->session.paa, OGS_PAA_IPV6_LEN);
-#define FRAMED_IPV6_PREFIX_LENGTH 128  /* from spec document */
+            /* As per 3GPP TS 23.401 version 15.12.0, section 5.3.1.2.2
+             * The PDN GW allocates a globally unique /64
+             * IPv6 prefix via Router Advertisement to a given UE.
+             *
+             * After the UE has received the Router Advertisement message, it
+             * constructs a full IPv6 address via IPv6 Stateless Address
+             * autoconfiguration in accordance with RFC 4862 using the interface
+             * identifier assigned by PDN GW.
+             *
+             * For stateless address autoconfiguration however, the UE can
+             * choose any interface identifier to generate IPv6 addresses, other
+             * than link-local, without involving the network.
+             *
+             * And, from section 5.3.1.1, Both EPS network elements and UE shall
+             * support the following mechanisms:
+             *
+             * /64 IPv6 prefix allocation via IPv6 Stateless Address
+             * autoconfiguration according to RFC 4862 [18], if IPv6 is
+             * supported.
+             */
+            memset(&paa, 0 , sizeof(paa));
+            memcpy(&paa.addr6, &sess->ipv6->addr,
+                    OGS_IPV6_DEFAULT_PREFIX_LEN >> 3);
+#define FRAMED_IPV6_PREFIX_LENGTH 64  /* from spec document */
             paa.len = FRAMED_IPV6_PREFIX_LENGTH;
             val.os.data = (uint8_t*)&paa;
-            val.os.len = OGS_PAA_IPV6_LEN;
+            /* Reserved (1 byte) + Prefix length (1 byte) +
+             * IPv6 Prefix (8 bytes)
+             */
+            val.os.len = (OGS_IPV6_DEFAULT_PREFIX_LEN >> 3) + 2;
             ret = fd_msg_avp_setvalue(avp, &val);
             ogs_assert(ret == 0);
             ret = fd_msg_avp_add(req, MSG_BRW_LAST_CHILD, avp);
@@ -312,13 +360,13 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         ogs_assert(ret == 0);
 
         switch (sess->gtp_rat_type) {
-        case OGS_GTP_RAT_TYPE_UTRAN:
-        case OGS_GTP_RAT_TYPE_GERAN:
-        case OGS_GTP_RAT_TYPE_HSPA_EVOLUTION:
-        case OGS_GTP_RAT_TYPE_EUTRAN:
+        case OGS_GTP2_RAT_TYPE_UTRAN:
+        case OGS_GTP2_RAT_TYPE_GERAN:
+        case OGS_GTP2_RAT_TYPE_HSPA_EVOLUTION:
+        case OGS_GTP2_RAT_TYPE_EUTRAN:
             val.i32 = OGS_DIAM_GX_IP_CAN_TYPE_3GPP_EPS;
             break;
-        case OGS_GTP_RAT_TYPE_WLAN:
+        case OGS_GTP2_RAT_TYPE_WLAN:
             val.i32 = OGS_DIAM_GX_IP_CAN_TYPE_NON_3GPP_EPS;
             break;
         default:
@@ -336,19 +384,19 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
         ogs_assert(ret == 0);
 
         switch (sess->gtp_rat_type) {
-        case OGS_GTP_RAT_TYPE_UTRAN:
+        case OGS_GTP2_RAT_TYPE_UTRAN:
             val.i32 = OGS_DIAM_RAT_TYPE_UTRAN;
             break;
-        case OGS_GTP_RAT_TYPE_GERAN:
+        case OGS_GTP2_RAT_TYPE_GERAN:
             val.i32 = OGS_DIAM_RAT_TYPE_GERAN;
             break;
-        case OGS_GTP_RAT_TYPE_HSPA_EVOLUTION:
+        case OGS_GTP2_RAT_TYPE_HSPA_EVOLUTION:
             val.i32 = OGS_DIAM_RAT_TYPE_HSPA_EVOLUTION;
             break;
-        case OGS_GTP_RAT_TYPE_EUTRAN:
+        case OGS_GTP2_RAT_TYPE_EUTRAN:
             val.i32 = OGS_DIAM_RAT_TYPE_EUTRAN;
             break;
-        case OGS_GTP_RAT_TYPE_WLAN:
+        case OGS_GTP2_RAT_TYPE_WLAN:
             val.i32 = OGS_DIAM_RAT_TYPE_WLAN;
             break;
         default:
@@ -440,12 +488,12 @@ void smf_gx_send_ccr(smf_sess_t *sess, ogs_gtp_xact_t *xact,
 
         /* Set 3GPP-User-Location-Info */
         if (sess->gtp.user_location_information.presence) {
-            ogs_gtp_uli_t uli;
+            ogs_gtp2_uli_t uli;
             int16_t uli_len;
 
-            uint8_t uli_buf[OGS_GTP_MAX_ULI_LEN];
+            uint8_t uli_buf[OGS_GTP2_MAX_ULI_LEN];
 
-            uli_len = ogs_gtp_parse_uli(
+            uli_len = ogs_gtp2_parse_uli(
                     &uli, &sess->gtp.user_location_information);
             ogs_assert(sess->gtp.user_location_information.len == uli_len);
 
@@ -642,7 +690,7 @@ static void smf_gx_cca_cb(void *data, struct msg **msg)
     unsigned long dur;
     int error = 0;
     int new;
-
+    struct msg *req = NULL;
     smf_event_t *e = NULL;
     ogs_gtp_xact_t *xact = NULL;
     smf_sess_t *sess = NULL;
@@ -652,6 +700,10 @@ static void smf_gx_cca_cb(void *data, struct msg **msg)
     ogs_debug("[Credit-Control-Answer]");
 
     ret = clock_gettime(CLOCK_REALTIME, &ts);
+    ogs_assert(ret == 0);
+
+    /* Get originating request of received message, if any */
+    ret = fd_msg_answ_getq(*msg, &req);
     ogs_assert(ret == 0);
 
     /* Search the session, retrieve its data */
@@ -671,19 +723,24 @@ static void smf_gx_cca_cb(void *data, struct msg **msg)
     /* Value of CC-Request-Number */
     ret = fd_msg_search_avp(*msg, ogs_diam_gx_cc_request_number, &avp);
     ogs_assert(ret == 0);
-    if (avp) {
-        ret = fd_msg_avp_hdr(avp, &hdr);
+    if (!avp && req) {
+        /* Attempt searching for CC-Request-* in original request. Error
+         * messages (like DIAMETER_UNABLE_TO_DELIVER) crafted internally may not
+         * have them. */
+        ret = fd_msg_search_avp(req, ogs_diam_gx_cc_request_number, &avp);
         ogs_assert(ret == 0);
-        cc_request_number = hdr->avp_value->i32;
-    } else {
+    }
+    if (!avp) {
         ogs_error("no_CC-Request-Number");
         ogs_assert_if_reached();
     }
+    ret = fd_msg_avp_hdr(avp, &hdr);
+    ogs_assert(ret == 0);
+    cc_request_number = hdr->avp_value->i32;
 
     ogs_debug("    CC-Request-Number[%d]", cc_request_number);
 
     xact = sess_data->xact[cc_request_number];
-    ogs_assert(xact);
     sess = sess_data->sess;
     ogs_assert(sess);
 
@@ -752,14 +809,20 @@ static void smf_gx_cca_cb(void *data, struct msg **msg)
     /* Value of CC-Request-Type */
     ret = fd_msg_search_avp(*msg, ogs_diam_gx_cc_request_type, &avp);
     ogs_assert(ret == 0);
-    if (avp) {
-        ret = fd_msg_avp_hdr(avp, &hdr);
+    if (!avp && req) {
+        /* Attempt searching for CC-Request-* in original request. Error
+         * messages (like DIAMETER_UNABLE_TO_DELIVER) crafted internally may not
+         * have them. */
+        ret = fd_msg_search_avp(req, ogs_diam_gx_cc_request_type, &avp);
         ogs_assert(ret == 0);
-        gx_message->cc_request_type = hdr->avp_value->i32;
-    } else {
-        ogs_error("no_CC-Request-Type");
+    }
+    if (!avp) {
+        ogs_error("no_CC-Request-Number");
         error++;
     }
+    ret = fd_msg_avp_hdr(avp, &hdr);
+    ogs_assert(ret == 0);
+    gx_message->cc_request_type = hdr->avp_value->i32;
 
     if (gx_message->result_code != ER_DIAMETER_SUCCESS) {
         ogs_warn("ERROR DIAMETER Result Code(%d)", gx_message->result_code);
@@ -868,6 +931,12 @@ static void smf_gx_cca_cb(void *data, struct msg **msg)
         switch (hdr->avp_code) {
         case AC_SESSION_ID:
         case AC_ORIGIN_HOST:
+            if (sess_data->peer_host)
+                ogs_free(sess_data->peer_host);
+            sess_data->peer_host =
+                (os0_t)ogs_strdup((char *)hdr->avp_value->os.data);
+            ogs_assert(sess_data->peer_host);
+            break;
         case AC_ORIGIN_REALM:
         case AC_DESTINATION_REALM:
         case AC_RESULT_CODE:

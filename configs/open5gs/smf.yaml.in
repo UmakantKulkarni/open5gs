@@ -73,6 +73,18 @@ logger:
 #          - 127.0.0.99
 #          - ::1
 #
+#  o SBI Option (Default)
+#    - tcp_nodelay : true
+#    - so_linger.l_onoff : false
+#
+#    sbi:
+#      addr: 127.0.0.4
+#      option:
+#        tcp_nodelay: false
+#        so_linger:
+#          l_onoff: true
+#          l_linger: 10
+#
 #  <PFCP Server>
 #
 #  o PFCP Server(127.0.0.4:8805, ::1:8805)
@@ -83,6 +95,14 @@ logger:
 #  o PFCP-U Server(127.0.0.1:2152, [::1]:2152)
 #    pfcp:
 #      name: localhost
+#
+#  o PFCP Option (Default)
+#    - so_bindtodevice : NULL
+#
+#    pfcp:
+#      addr: 127.0.0.4
+#      option:
+#        so_bindtodevice: vrf-blue
 #
 #  <GTP-C Server>
 #
@@ -98,6 +118,14 @@ logger:
 #      - addr: 127.0.0.4
 #      - addr: fd69:f21d:873c:fa::3
 #
+#  o GTP-C Option (Default)
+#    - so_bindtodevice : NULL
+#
+#    gtpc:
+#      addr: 127.0.0.4
+#      option:
+#        so_bindtodevice: vrf-blue
+#
 #  <GTP-U Server>>
 #
 #  o GTP-U Server(127.0.0.4:2152, [::1]:2152)
@@ -108,6 +136,14 @@ logger:
 #  o GTP-U Server(127.0.0.1:2152, [::1]:2152)
 #    gtpu:
 #      name: localhost
+#
+#  o GTP-U Option (Default)
+#    - so_bindtodevice : NULL
+#
+#    gtpu:
+#      addr: 127.0.0.4
+#      option:
+#        so_bindtodevice: vrf-blue
 #
 #  <Subnet for UE Pool>
 #
@@ -196,6 +232,19 @@ logger:
 #    p-cscf:
 #      - 127.0.0.1
 #      - ::1
+#
+#  <CTF>
+#
+#  o Gy interface parameters towards OCS.
+#  o enabled:
+#    o auto: Default. Use Gy only if OCS available among Diameter peers
+#    o yes:  Use Gy always;
+#            reject subscribers if no OCS available among Diameter peers
+#    o no:   Don't use Gy interface if there is an OCS available
+#
+#    ctf:
+#      enabled: auto|yes|no
+#
 #
 #  <SMF Selection - 5G Core only>
 #  1. SMF sends SmfInfo(S-NSSAI, DNN, TAI) to the NRF
@@ -325,7 +374,7 @@ logger:
 #              mcc: 901
 #              mnc: 70
 #            tac: 99
-# 
+#
 
 smf:
     sbi:
@@ -349,6 +398,8 @@ smf:
       - 2001:4860:4860::8888
       - 2001:4860:4860::8844
     mtu: 1400
+    ctf:
+      enabled: auto
     freeDiameter: @sysconfdir@/freeDiameter/smf.conf
 
 #
@@ -377,6 +428,18 @@ smf:
 #        - 127.0.0.10
 #        - fd69:f21d:873c:fa::1
 #
+#  o SBI Option (Default)
+#    - tcp_nodelay : true
+#    - so_linger.l_onoff : false
+#
+#    sbi:
+#      addr: 127.0.0.10
+#      option:
+#        tcp_nodelay: false
+#        so_linger:
+#          l_onoff: true
+#          l_linger: 10
+#
 nrf:
     sbi:
       - addr:
@@ -390,7 +453,7 @@ nrf:
 #  <PFCP Client>>
 #
 #  o PFCP Client(127.0.0.7:8805)
-# 
+#
 #    pfcp:
 #      addr: 127.0.0.7
 #
@@ -443,9 +506,6 @@ upf:
 #
 # parameter:
 #
-#  o Number of output streams per SCTP associations.
-#      sctp_streams: 30
-#
 #  o Disable use of IPv4 addresses (only IPv6)
 #      no_ipv4: true
 #
@@ -458,6 +518,10 @@ upf:
 #  o Disable selection of UPF PFCP in Round-Robin manner
 #      no_pfcp_rr_select: true
 #
+#  o Legacy support for pre-release LTE 11 devices
+#    - Omits adding local address in packet filters for compatibility
+#      no_ipv4v6_local_addr_in_packet_filter: true
+#
 parameter:
 
 #
@@ -469,30 +533,6 @@ parameter:
 #    gnb: 64
 #
 max:
-
-#
-# pool:
-#
-# o The default memory pool size was set assuming 1024 UEs.
-#   To connect more UEs, you need to increase the size further.
-#
-#   - Pool-size 128         => 65536 Number
-#   - Pool-size 256         => 16384 Number
-#   - Pool-size 512         => 4096 Number
-#   - Pool-size 1024        => 1024 Number
-#   - Pool-size 2048        => 512 Number
-#   - Pool-size 8192        => 128 Number
-#   - Pool-size 1024*1024   => 8 Number
-#
-#    128:  65536
-#    256:  16384
-#    512:  4096
-#    1024: 1024
-#    2048: 512
-#    8192: 128
-#    big:  8
-#
-pool:
 
 #
 # time:

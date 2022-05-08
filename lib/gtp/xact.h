@@ -110,6 +110,15 @@ typedef struct ogs_gtp_xact_s {
 #define OGS_GTP_DELETE_INDIRECT_HANDOVER_COMPLETE 1
 #define OGS_GTP_DELETE_INDIRECT_HANDOVER_CANCEL 2
     int             delete_indirect_action;
+
+#define OGS_GTP_CREATE_IN_ATTACH_REQUEST 1
+#define OGS_GTP_CREATE_IN_UPLINK_NAS_TRANSPORT 2
+#define OGS_GTP_CREATE_IN_PATH_SWITCH_REQUEST 3
+    int             create_action;
+
+#define OGS_GTP_MODIFY_IN_PATH_SWITCH_REQUEST 1
+#define OGS_GTP_MODIFY_IN_E_RAB_MODIFICATION 2
+    int             modify_action;
 } ogs_gtp_xact_t;
 
 int ogs_gtp_xact_init(void);
@@ -119,7 +128,7 @@ ogs_gtp_xact_t *ogs_gtp1_xact_local_create(ogs_gtp_node_t *gnode,
         ogs_gtp1_header_t *hdesc, ogs_pkbuf_t *pkbuf,
         void (*cb)(ogs_gtp_xact_t *xact, void *data), void *data);
 ogs_gtp_xact_t *ogs_gtp_xact_local_create(ogs_gtp_node_t *gnode,
-        ogs_gtp_header_t *hdesc, ogs_pkbuf_t *pkbuf,
+        ogs_gtp2_header_t *hdesc, ogs_pkbuf_t *pkbuf,
         void (*cb)(ogs_gtp_xact_t *xact, void *data), void *data);
 
 ogs_gtp_xact_t *ogs_gtp_xact_cycle(ogs_gtp_xact_t *xact);
@@ -128,14 +137,14 @@ void ogs_gtp_xact_delete_all(ogs_gtp_node_t *gnode);
 int ogs_gtp1_xact_update_tx(ogs_gtp_xact_t *xact,
         ogs_gtp1_header_t *hdesc, ogs_pkbuf_t *pkbuf);
 int ogs_gtp_xact_update_tx(ogs_gtp_xact_t *xact,
-        ogs_gtp_header_t *hdesc, ogs_pkbuf_t *pkbuf);
+        ogs_gtp2_header_t *hdesc, ogs_pkbuf_t *pkbuf);
 
 int ogs_gtp_xact_commit(ogs_gtp_xact_t *xact);
 
 int ogs_gtp1_xact_receive(ogs_gtp_node_t *gnode,
         ogs_gtp1_header_t *h, ogs_gtp_xact_t **xact);
 int ogs_gtp_xact_receive(ogs_gtp_node_t *gnode,
-        ogs_gtp_header_t *h, ogs_gtp_xact_t **xact);
+        ogs_gtp2_header_t *h, ogs_gtp_xact_t **xact);
 
 void ogs_gtp_xact_associate(ogs_gtp_xact_t *xact1, ogs_gtp_xact_t *xact2);
 void ogs_gtp_xact_deassociate(ogs_gtp_xact_t *xact1, ogs_gtp_xact_t *xact2);

@@ -79,6 +79,7 @@ static void _gtpv1_tun_recv_common_cb(
     ogs_pfcp_pdr_t *fallback_pdr = NULL;
     ogs_pfcp_far_t *far = NULL;
     ogs_pfcp_user_plane_report_t report;
+    int i;
 
     recvbuf = ogs_tun_read(fd, packet_pool);
     if (!recvbuf) {
@@ -174,6 +175,10 @@ static void _gtpv1_tun_recv_common_cb(
         goto cleanup;
     }
 
+    /* Increment total & dl octets + pkts */
+    for (i = 0; i < pdr->num_of_urr; i++)
+        upf_sess_urr_acc_add(sess, pdr->urr[i], recvbuf->len, false);
+
     ogs_assert(true == ogs_pfcp_up_handle_pdr(pdr, recvbuf, &report));
 
     if (report.type.downlink_data_report) {
@@ -214,7 +219,7 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
     ogs_pkbuf_t *pkbuf = NULL;
     ogs_sockaddr_t from;
 
-    ogs_gtp_header_t *gtp_h = NULL;
+    ogs_gtp2_header_t *gtp_h = NULL;
     ogs_pfcp_user_plane_report_t report;
 
     uint32_t teid;
@@ -222,7 +227,7 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
 
     ogs_assert(fd != INVALID_SOCKET);
 
-    pkbuf = ogs_pkbuf_alloc(NULL, OGS_MAX_PKT_LEN);
+    pkbuf = ogs_pkbuf_alloc(packet_pool, OGS_MAX_PKT_LEN);
     ogs_assert(pkbuf);
     ogs_pkbuf_reserve(pkbuf, OGS_TUN_MAX_HEADROOM);
     ogs_pkbuf_put(pkbuf, OGS_MAX_PKT_LEN-OGS_TUN_MAX_HEADROOM);
@@ -239,8 +244,8 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
     ogs_assert(pkbuf);
     ogs_assert(pkbuf->len);
 
-    gtp_h = (ogs_gtp_header_t *)pkbuf->data;
-    if (gtp_h->version != OGS_GTP_VERSION_1) {
+    gtp_h = (ogs_gtp2_header_t *)pkbuf->data;
+    if (gtp_h->version != OGS_GTP2_VERSION_1) {
         ogs_error("[DROP] Invalid GTPU version [%d]", gtp_h->version);
         ogs_log_hexdump(OGS_LOG_ERROR, pkbuf->data, pkbuf->len);
         goto cleanup;
@@ -250,7 +255,7 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
         ogs_pkbuf_t *echo_rsp;
 
         ogs_debug("[RECV] Echo Request from [%s]", OGS_ADDR(&from, buf));
-        echo_rsp = ogs_gtp_handle_echo_req(pkbuf);
+        echo_rsp = ogs_gtp2_handle_echo_req(pkbuf);
         ogs_expect(echo_rsp);
         if (echo_rsp) {
             ssize_t sent;
@@ -283,13 +288,13 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
          * Note 4 : For a GTP-PDU with several Extension Headers, the PDU
          *          Session Container should be the first Extension Header
          */
-        ogs_gtp_extension_header_t *extension_header =
-            (ogs_gtp_extension_header_t *)(pkbuf->data + OGS_GTPV1U_HEADER_LEN);
+        ogs_gtp2_extension_header_t *extension_header =
+            (ogs_gtp2_extension_header_t *)(pkbuf->data+OGS_GTPV1U_HEADER_LEN);
         ogs_assert(extension_header);
         if (extension_header->type ==
-                OGS_GTP_EXTENSION_HEADER_TYPE_PDU_SESSION_CONTAINER) {
+                OGS_GTP2_EXTENSION_HEADER_TYPE_PDU_SESSION_CONTAINER) {
             if (extension_header->pdu_type ==
-                OGS_GTP_EXTENSION_HEADER_PDU_TYPE_UL_PDU_SESSION_INFORMATION) {
+                OGS_GTP2_EXTENSION_HEADER_PDU_TYPE_UL_PDU_SESSION_INFORMATION) {
                     ogs_debug("   QFI [0x%x]",
                             extension_header->qos_flow_identifier);
                     qfi = extension_header->qos_flow_identifier;
@@ -348,6 +353,7 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
 
         ogs_pfcp_subnet_t *subnet = NULL;
         ogs_pfcp_dev_t *dev = NULL;
+        int i;
 
         ip_h = (struct ip *)pkbuf->data;
         ogs_assert(ip_h);
@@ -427,8 +433,8 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
                 if (src_addr[0] == sess->ipv4->addr[0]) {
                     /* Source IP address should be matched in uplink */
                 } else {
-                    ogs_error("[DROP] Source IP-%d Spoofing SrcIf:%d DstIf:%d",
-                                ip_h->ip_v, pdr->src_if, far->dst_if);
+                    ogs_error("[DROP] Source IP-%d Spoofing APN:%s SrcIf:%d DstIf:%d TEID:0x%x",
+                                ip_h->ip_v, pdr->dnn, pdr->src_if, far->dst_if, teid);
                     ogs_error("       SRC:%08X, UE:%08X",
                         be32toh(src_addr[0]), be32toh(sess->ipv4->addr[0]));
                     ogs_log_hexdump(OGS_LOG_ERROR, pkbuf->data, pkbuf->len);
@@ -473,8 +479,8 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
                      * 64 bit prefix should be matched
                      */
                 } else {
-                    ogs_error("[DROP] Source IP-%d Spoofing SrcIf:%d DstIf:%d",
-                                ip_h->ip_v, pdr->src_if, far->dst_if);
+                    ogs_error("[DROP] Source IP-%d Spoofing APN:%s SrcIf:%d DstIf:%d TEID:0x%x",
+                                ip_h->ip_v, pdr->dnn, pdr->src_if, far->dst_if, teid);
                     ogs_error("SRC:%08x %08x %08x %08x",
                             be32toh(src_addr[0]), be32toh(src_addr[1]),
                             be32toh(src_addr[2]), be32toh(src_addr[3]));
@@ -512,6 +518,10 @@ static void _gtpv1_u_recv_cb(short when, ogs_socket_t fd, void *data)
 
             dev = subnet->dev;
             ogs_assert(dev);
+
+            /* Increment total & ul octets + pkts */
+            for (i = 0; i < pdr->num_of_urr; i++)
+                upf_sess_urr_acc_add(sess, pdr->urr[i], pkbuf->len, true);
 
             if (dev->is_tap) {
                 ogs_assert(eth_type);
@@ -579,7 +589,14 @@ int upf_gtp_init(void)
 
     config.cluster_2048_pool = ogs_app()->pool.packet;
 
+#if OGS_USE_TALLOC
+    /* allocate a talloc pool for GTP to ensure it doesn't have to go back
+     * to the libc malloc all the time */
+    packet_pool = talloc_pool(__ogs_talloc_core, 1000*1024);
+    ogs_assert(packet_pool);
+#else
     packet_pool = ogs_pkbuf_pool_create(&config);
+#endif
 
     return OGS_OK;
 }
@@ -643,7 +660,7 @@ int upf_gtp_open(void)
      *
      * $ sudo ip tuntap add name ogstun mode tun
      *
-     * Also, before running upf, assign the one IP from IP pool of UE 
+     * Also, before running upf, assign the one IP from IP pool of UE
      * to ogstun. The IP should not be assigned to UE
      *
      * $ sudo ifconfig ogstun 45.45.0.1/16 up
@@ -673,12 +690,12 @@ int upf_gtp_open(void)
         ogs_assert(dev->poll);
     }
 
-    /* 
-     * On Linux, it is possible to create a persistent tun/tap 
-     * interface which will continue to exist even if open5gs quit, 
-     * although this is normally not required. 
-     * It can be useful to set up a tun/tap interface owned 
-     * by a non-root user, so open5gs can be started without 
+    /*
+     * On Linux, it is possible to create a persistent tun/tap
+     * interface which will continue to exist even if open5gs quit,
+     * although this is normally not required.
+     * It can be useful to set up a tun/tap interface owned
+     * by a non-root user, so open5gs can be started without
      * needing any root privileges at all.
      */
 

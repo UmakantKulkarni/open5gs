@@ -70,7 +70,7 @@ static void test1_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -213,7 +213,7 @@ static void test1_func(abts_case *tc, void *data)
     ogs_pkbuf_free(recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 5;
 
@@ -348,7 +348,7 @@ static void test1_func(abts_case *tc, void *data)
     /* Send Bearer resource modification request */
     sess->pti = 7;
     esmbuf = testesm_build_bearer_resource_modification_request(
-            bearer, OGS_GTP_TFT_CODE_NO_TFT_OPERATION, 0, 0);
+            bearer, OGS_GTP2_TFT_CODE_NO_TFT_OPERATION, 0, 0);
     ABTS_PTR_NOTNULL(tc, esmbuf);
     sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, esmbuf);
     ABTS_PTR_NOTNULL(tc, sendbuf);
@@ -363,7 +363,7 @@ static void test1_func(abts_case *tc, void *data)
     /* Send Bearer resource modification request */
     sess->pti = 8;
     esmbuf = testesm_build_bearer_resource_modification_request(
-            bearer, OGS_GTP_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT, 1, 0);
+            bearer, OGS_GTP2_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT, 1, 0);
     ABTS_PTR_NOTNULL(tc, esmbuf);
     sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, esmbuf);
     ABTS_PTR_NOTNULL(tc, sendbuf);
@@ -396,7 +396,7 @@ static void test1_func(abts_case *tc, void *data)
     /* Send Bearer resource modification request */
     sess->pti = 9;
     esmbuf = testesm_build_bearer_resource_modification_request(
-            bearer, OGS_GTP_TFT_CODE_REPLACE_PACKET_FILTERS_IN_EXISTING, 0, 0);
+            bearer, OGS_GTP2_TFT_CODE_REPLACE_PACKET_FILTERS_IN_EXISTING, 0, 0);
     ABTS_PTR_NOTNULL(tc, esmbuf);
     sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, esmbuf);
     ABTS_PTR_NOTNULL(tc, sendbuf);
@@ -429,7 +429,7 @@ static void test1_func(abts_case *tc, void *data)
     /* Send Bearer resource modification request */
     sess->pti = 10;
     esmbuf = testesm_build_bearer_resource_modification_request(
-            bearer, OGS_GTP_TFT_CODE_DELETE_PACKET_FILTERS_FROM_EXISTING, 0,
+            bearer, OGS_GTP2_TFT_CODE_DELETE_PACKET_FILTERS_FROM_EXISTING, 0,
             ESM_CAUSE_REGULAR_DEACTIVATION);
     ABTS_PTR_NOTNULL(tc, esmbuf);
     sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, esmbuf);
@@ -585,7 +585,7 @@ static void test2_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -719,7 +719,7 @@ static void test2_func(abts_case *tc, void *data)
     tests1ap_recv(test_ue, recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 5;
 
@@ -816,6 +816,9 @@ static void test2_func(abts_case *tc, void *data)
     ABTS_PTR_NOTNULL(tc, sendbuf);
     rv = testenb_s1ap_send(s1ap, sendbuf);
     ABTS_INT_EQUAL(tc, OGS_OK, rv);
+
+    /* DELAY is needed in dedicated EPS bearer */
+    ogs_msleep(100);
 
     /* Send PDN disconnectivity request */
     sess->pti = 6;
@@ -936,7 +939,7 @@ static void test3_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -1079,7 +1082,7 @@ static void test3_func(abts_case *tc, void *data)
     ogs_pkbuf_free(recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 37;
 
@@ -1163,8 +1166,8 @@ static void test3_func(abts_case *tc, void *data)
             S1AP_ProcedureCode_id_E_RABRelease,
             test_ue->s1ap_procedure_code);
 
-    /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    /* Send PDN connectivity Request */
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 39;
 
@@ -1179,40 +1182,13 @@ static void test3_func(abts_case *tc, void *data)
     rv = testenb_s1ap_send(s1ap, sendbuf);
     ABTS_INT_EQUAL(tc, OGS_OK, rv);
 
-    /* Receive E-RABSetupRequest +
-     * Activate default EPS bearer context request */
+    /* Receive PDN connectivity reject */
     recvbuf = testenb_s1ap_read(s1ap);
     ABTS_PTR_NOTNULL(tc, recvbuf);
     tests1ap_recv(test_ue, recvbuf);
     ABTS_INT_EQUAL(tc,
-            S1AP_ProcedureCode_id_E_RABSetup,
+            S1AP_ProcedureCode_id_downlinkNASTransport,
             test_ue->s1ap_procedure_code);
-
-    /* Send E-RABSetupResponse */
-    bearer = test_bearer_find_by_ue_ebi(test_ue, 6);
-    ogs_assert(bearer);
-    sendbuf = test_s1ap_build_e_rab_setup_response(bearer);
-    ABTS_PTR_NOTNULL(tc, sendbuf);
-    rv = testenb_s1ap_send(s1ap, sendbuf);
-    ABTS_INT_EQUAL(tc, OGS_OK, rv);
-
-    /* Send Activate default EPS bearer context accept */
-    esmbuf = testesm_build_activate_default_eps_bearer_context_accept(
-            bearer, true);
-    ABTS_PTR_NOTNULL(tc, esmbuf);
-    sendbuf = test_s1ap_build_uplink_nas_transport(test_ue, esmbuf);
-    ABTS_PTR_NOTNULL(tc, sendbuf);
-    rv = testenb_s1ap_send(s1ap, sendbuf);
-    ABTS_INT_EQUAL(tc, OGS_OK, rv);
-
-    /* Send GTP-U ICMP Packet */
-    rv = test_gtpu_send_ping(gtpu, bearer, TEST_PING_IPV4);
-    ABTS_INT_EQUAL(tc, OGS_OK, rv);
-
-    /* Receive GTP-U ICMP Packet */
-    recvbuf = test_gtpu_read(gtpu);
-    ABTS_PTR_NOTNULL(tc, recvbuf);
-    ogs_pkbuf_free(recvbuf);
 
     /* Send Detach Request */
     emmbuf = testemm_build_detach_request(test_ue, 1, true, false);
@@ -1313,7 +1289,7 @@ static void test4_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -1456,7 +1432,7 @@ static void test4_func(abts_case *tc, void *data)
     ogs_pkbuf_free(recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 7;
 
@@ -1501,7 +1477,7 @@ static void test4_func(abts_case *tc, void *data)
     ogs_msleep(100);
 
     /* Send PDN disconnectivity request */
-    sess = test_sess_find_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_find_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     sess->pti = 8;
     esmbuf = testesm_build_pdn_disconnect_request(sess);
     ABTS_PTR_NOTNULL(tc, esmbuf);
@@ -1539,7 +1515,7 @@ static void test4_func(abts_case *tc, void *data)
     test_sess_remove(sess);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 9;
 
@@ -1584,7 +1560,7 @@ static void test4_func(abts_case *tc, void *data)
     ogs_msleep(100);
 
     /* Send AA-Request */
-    sess = test_sess_find_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_find_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     test_rx_send_aar_audio(&rx_sid, sess,
             OGS_DIAM_RX_SUBSCRIPTION_ID_TYPE_END_USER_IMSI, 1, 1);
@@ -1667,15 +1643,15 @@ static void test4_func(abts_case *tc, void *data)
     ABTS_INT_EQUAL(tc, OGS_OK, rv);
 
     /* Test Session Remove */
-    sess = test_sess_find_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_find_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     test_sess_remove(sess);
-    sess = test_sess_find_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_find_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     test_sess_remove(sess);
 
     /* Send Attach Request */
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     memset(&sess->pdn_connectivity_param,
@@ -1842,7 +1818,7 @@ static void test5_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -1985,7 +1961,7 @@ static void test5_func(abts_case *tc, void *data)
     ogs_pkbuf_free(recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 7;
 
@@ -2348,7 +2324,7 @@ static void test6_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -2491,7 +2467,7 @@ static void test6_func(abts_case *tc, void *data)
     ogs_pkbuf_free(recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 5;
 
@@ -2773,7 +2749,7 @@ static void test7_func(abts_case *tc, void *data)
     test_ue->k_string = "465b5ce8b199b49faa5f0a2ee238a6bc";
     test_ue->opc_string = "e8ed289deba952e4283b54e88e6183ca";
 
-    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "internet", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
 
     /* eNB connects to MME */
@@ -2916,7 +2892,7 @@ static void test7_func(abts_case *tc, void *data)
     ogs_pkbuf_free(recvbuf);
 
     /* Send PDN Connectivity Request */
-    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP_RAT_TYPE_EUTRAN);
+    sess = test_sess_add_by_apn(test_ue, "ims", OGS_GTP2_RAT_TYPE_EUTRAN);
     ogs_assert(sess);
     sess->pti = 5;
 

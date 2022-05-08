@@ -38,6 +38,27 @@ static int num_of_smf_sess = 0;
 static void stats_add_smf_session(void);
 static void stats_remove_smf_session(void);
 
+int smf_ctf_config_init(smf_ctf_config_t *ctf_config)
+{
+    ctf_config->enabled = SMF_CTF_ENABLED_AUTO;
+    return OGS_OK;
+}
+
+/* Shall Gy session be used according to policy and state? 1: yes, 0: no, -1: reject */
+int smf_use_gy_iface()
+{
+    switch (smf_self()->ctf_config.enabled) {
+    case SMF_CTF_ENABLED_AUTO:
+        return ogs_diam_app_connected(OGS_DIAM_GY_APPLICATION_ID) ? 1 : 0;
+    case SMF_CTF_ENABLED_YES:
+        return ogs_diam_app_connected(OGS_DIAM_GY_APPLICATION_ID) ? 1 : -1;
+    case SMF_CTF_ENABLED_NO:
+        return 0;
+    default:
+        return -1;
+    }
+}
+
 void smf_context_init(void)
 {
     ogs_assert(context_initialized == 0);
@@ -47,6 +68,7 @@ void smf_context_init(void)
 
     /* Initialize SMF context */
     memset(&self, 0, sizeof(smf_context_t));
+    smf_ctf_config_init(&self.ctf_config);
     self.diam_config = &g_diam_conf;
 
     ogs_log_install_domain(&__ogs_ngap_domain, "ngap", ogs_core()->log.level);
@@ -330,6 +352,32 @@ int smf_context_parse_config(void)
                             } else
                                 ogs_warn("unknown key `%s`", fd_key);
                         }
+                    }
+                } else if (!strcmp(smf_key, "ctf")) {
+                    ogs_yaml_iter_t ctf_iter;
+                    yaml_node_t *node =
+                        yaml_document_get_node(document, smf_iter.pair->value);
+                    ogs_assert(node);
+                    ogs_assert(node->type == YAML_MAPPING_NODE);
+                    ogs_yaml_iter_recurse(&smf_iter, &ctf_iter);
+                    while (ogs_yaml_iter_next(&ctf_iter)) {
+                        const char *ctf_key = ogs_yaml_iter_key(&ctf_iter);
+                        ogs_assert(ctf_key);
+                        if (!strcmp(ctf_key, "enabled")) {
+                            yaml_node_t *ctf_node =
+                                yaml_document_get_node(document, ctf_iter.pair->value);
+                            ogs_assert(ctf_node->type == YAML_SCALAR_NODE);
+                            const char* enabled = ogs_yaml_iter_value(&ctf_iter);
+                            if (!strcmp(enabled, "auto"))
+                                self.ctf_config.enabled = SMF_CTF_ENABLED_AUTO;
+                            else if (!strcmp(enabled, "yes"))
+                                self.ctf_config.enabled = SMF_CTF_ENABLED_YES;
+                            else if (!strcmp(enabled, "no"))
+                                self.ctf_config.enabled = SMF_CTF_ENABLED_NO;
+                            else
+                                ogs_warn("unknown 'enabled' value `%s`", enabled);
+                        } else
+                            ogs_warn("unknown key `%s`", ctf_key);
                     }
                 } else if (!strcmp(smf_key, "gtpc")) {
                     /* handle config in gtp library */
@@ -779,7 +827,11 @@ smf_ue_t *smf_ue_add_by_supi(char *supi)
     ogs_assert(supi);
 
     ogs_pool_alloc(&smf_ue_pool, &smf_ue);
-    ogs_assert(smf_ue);
+    if (!smf_ue) {
+        ogs_error("Maximum number of smf_ue[%lld] reached",
+                    (long long)ogs_app()->max.ue);
+        return NULL;
+    }
     memset(smf_ue, 0, sizeof *smf_ue);
 
     ogs_list_init(&smf_ue->sess_list);
@@ -804,7 +856,11 @@ smf_ue_t *smf_ue_add_by_imsi(uint8_t *imsi, int imsi_len)
     ogs_assert(imsi_len);
 
     ogs_pool_alloc(&smf_ue_pool, &smf_ue);
-    ogs_assert(smf_ue);
+    if (!smf_ue) {
+        ogs_error("Maximum number of smf_ue[%lld] reached",
+                    (long long)ogs_app()->max.ue);
+        return NULL;
+    }
     memset(smf_ue, 0, sizeof *smf_ue);
 
     ogs_list_init(&smf_ue->sess_list);
@@ -878,14 +934,14 @@ static bool compare_ue_info(ogs_pfcp_node_t *node, smf_sess_t *sess)
         if (ogs_strcasecmp(node->dnn[i], sess->session.name) == 0) return true;
 
     for (i = 0; i < node->num_of_e_cell_id; i++)
-        if (sess->gtp_rat_type == OGS_GTP_RAT_TYPE_EUTRAN &&
+        if (sess->gtp_rat_type == OGS_GTP2_RAT_TYPE_EUTRAN &&
                 node->e_cell_id[i] == sess->e_cgi.cell_id) return true;
 
     for (i = 0; i < node->num_of_nr_cell_id; i++)
         if (node->nr_cell_id[i] == sess->nr_cgi.cell_id) return true;
 
     for (i = 0; i < node->num_of_tac; i++)
-        if ((sess->gtp_rat_type == OGS_GTP_RAT_TYPE_EUTRAN &&
+        if ((sess->gtp_rat_type == OGS_GTP2_RAT_TYPE_EUTRAN &&
                 node->tac[i] == sess->e_tai.tac) ||
             (node->tac[i] == sess->nr_tai.tac.v)) return true;
 
@@ -1001,10 +1057,6 @@ smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type, p
     sess->gtp_rat_type = rat_type;
     ogs_assert(sess->gtp_rat_type);
 
-    /* Setup Timer */
-    sess->t_release_holding = ogs_timer_add(
-            ogs_app()->timer_mgr, smf_timer_release_holding_expire, sess);
-
     memset(&e, 0, sizeof(e));
     e.sess = sess;
     sess->sm.pcs_fsmdata = *pcs_fsmdata;
@@ -1082,7 +1134,8 @@ smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message, pcs_fsm_st
     smf_ue = smf_ue_find_by_imsi(req->imsi.data, req->imsi.len);
     if (!smf_ue) {
         smf_ue = smf_ue_add_by_imsi(req->imsi.data, req->imsi.len);
-        ogs_assert(smf_ue);
+        if (!smf_ue)
+            return NULL;
     }
 
     sess = smf_sess_find_by_apn(smf_ue, apn, req->rat_type.u8);
@@ -1096,13 +1149,13 @@ smf_sess_t *smf_sess_add_by_gtp1_message(ogs_gtp1_message_t *message, pcs_fsm_st
     return sess;
 }
 
-smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
+smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp2_message_t *message, pcs_fsm_struct_t *pcs_fsmdata)
 {
     smf_ue_t *smf_ue = NULL;
     smf_sess_t *sess = NULL;
     char apn[OGS_MAX_APN_LEN+1];
 
-    ogs_gtp_create_session_request_t *req = &message->create_session_request;
+    ogs_gtp2_create_session_request_t *req = &message->create_session_request;
 
     if (req->imsi.presence == 0) {
         ogs_error("No IMSI");
@@ -1144,12 +1197,13 @@ smf_sess_t *smf_sess_add_by_gtp_message(ogs_gtp_message_t *message, pcs_fsm_stru
     smf_ue = smf_ue_find_by_imsi(req->imsi.data, req->imsi.len);
     if (!smf_ue) {
         smf_ue = smf_ue_add_by_imsi(req->imsi.data, req->imsi.len);
-        ogs_assert(smf_ue);
+        if (!smf_ue)
+            return NULL;
     }
 
     sess = smf_sess_find_by_apn(smf_ue, apn, req->rat_type.u8);
     if (sess) {
-        ogs_warn("OLD Session Release [IMSI:%s,APN:%s]",
+        ogs_info("OLD Session Release [IMSI:%s,APN:%s]",
                 smf_ue->imsi_bcd, sess->session.name);
         smf_sess_remove(sess);
     }
@@ -1210,10 +1264,6 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi, pcs_fsm_struct_t 
     /* Set Charging Id */
     sess->charging.id = sess->index;
 
-    /* Setup Timer */
-    sess->t_release_holding = ogs_timer_add(
-            ogs_app()->timer_mgr, smf_timer_release_holding_expire, sess);
-
     memset(&e, 0, sizeof(e));
     e.sess = sess;
     sess->sm.pcs_fsmdata = *pcs_fsmdata;
@@ -1258,7 +1308,8 @@ smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message, pcs_fsm_stru
     smf_ue = smf_ue_find_by_supi(SmContextCreateData->supi);
     if (!smf_ue) {
         smf_ue = smf_ue_add_by_supi(SmContextCreateData->supi);
-        ogs_assert(smf_ue);
+        if (!smf_ue)
+            return NULL;
     }
 
     sess = smf_sess_find_by_psi(smf_ue, SmContextCreateData->pdu_session_id);
@@ -1562,8 +1613,6 @@ void smf_sess_remove(smf_sess_t *sess)
     /* Free SBI object memory */
     ogs_sbi_object_free(&sess->sbi);
 
-    ogs_timer_delete(sess->t_release_holding);
-
     smf_bearer_remove_all(sess);
 
     ogs_assert(sess->pfcp.bar);
@@ -1858,18 +1907,44 @@ void smf_sess_create_indirect_data_forwarding(smf_sess_t *sess)
             pdr->f_teid.choose_id = OGS_PFCP_INDIRECT_DATA_FORWARDING_CHOOSE_ID;
             pdr->f_teid_len = 2;
         } else {
-            char buf[OGS_ADDRSTRLEN];
-            ogs_sockaddr_t *addr = sess->pfcp_node->sa_list;
-            ogs_assert(addr);
+            ogs_gtpu_resource_t *resource = NULL;
 
-            ogs_error("F-TEID allocation/release not supported "
-                        "with peer [%s]:%d",
-                        OGS_ADDR(addr, buf), OGS_PORT(addr));
+            if (sess->handover.upf_dl_addr)
+                ogs_freeaddrinfo(sess->handover.upf_dl_addr);
+            if (sess->handover.upf_dl_addr6)
+                ogs_freeaddrinfo(sess->handover.upf_dl_addr6);
+
+            resource = ogs_pfcp_find_gtpu_resource(
+                    &sess->pfcp_node->gtpu_resource_list,
+                    sess->session.name, OGS_PFCP_INTERFACE_ACCESS);
+
+            if (resource) {
+                ogs_user_plane_ip_resource_info_to_sockaddr(&resource->info,
+                    &sess->handover.upf_dl_addr, &sess->handover.upf_dl_addr6);
+                if (resource->info.teidri)
+                    sess->handover.upf_dl_teid = OGS_PFCP_GTPU_INDEX_TO_TEID(
+                            pdr->index, resource->info.teidri,
+                            resource->info.teid_range);
+                else
+                    sess->handover.upf_dl_teid = pdr->index;
+            } else {
+                if (sess->pfcp_node->addr.ogs_sa_family == AF_INET)
+                    ogs_assert(OGS_OK == ogs_copyaddrinfo(
+                        &sess->handover.upf_dl_addr, &sess->pfcp_node->addr));
+                else if (sess->pfcp_node->addr.ogs_sa_family == AF_INET6)
+                    ogs_assert(OGS_OK == ogs_copyaddrinfo(
+                        &sess->handover.upf_dl_addr6, &sess->pfcp_node->addr));
+                else
+                    ogs_assert_if_reached();
+
+                sess->handover.upf_dl_teid = pdr->index;
+            }
+
             ogs_assert(OGS_OK ==
                 ogs_pfcp_sockaddr_to_f_teid(
-                    sess->upf_n3_addr, sess->upf_n3_addr6,
+                    sess->handover.upf_dl_addr, sess->handover.upf_dl_addr6,
                     &pdr->f_teid, &pdr->f_teid_len));
-            pdr->f_teid.teid = sess->upf_n3_teid;
+            pdr->f_teid.teid = sess->handover.upf_dl_teid;
         }
 
         ogs_assert(OGS_OK ==
@@ -1993,6 +2068,16 @@ void smf_sess_create_cp_up_data_forwarding(smf_sess_t *sess)
     ogs_pfcp_pdr_associate_far(up2cp_pdr, up2cp_far);
 
     up2cp_far->apply_action = OGS_PFCP_APPLY_ACTION_FORW;
+
+    if (qos_flow->qer && qos_flow->qfi) {
+        /* To match the PDI of UP2CP_PDR(from ff02::2/128 to assigned)
+         * Router-Solicitation has QFI in the Extended Header */
+        up2cp_pdr->qfi = qos_flow->qfi;
+
+        /* When UPF sends router advertisement to gNB,
+         * it includes QFI in extension header */
+        ogs_pfcp_pdr_associate_qer(cp2up_pdr, qos_flow->qer);
+    }
 }
 
 void smf_sess_delete_cp_up_data_forwarding(smf_sess_t *sess)

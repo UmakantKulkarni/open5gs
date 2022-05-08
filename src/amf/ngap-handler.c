@@ -959,6 +959,13 @@ void ngap_handle_initial_context_setup_response(
                     ogs_error("nas_5gs_send_to_gnb() failed");
                 }
 
+                /* n1buf is de-allocated
+                 * in gmm_build_dl_nas_transport() */
+                sess->gsm_message.n1buf = NULL;
+                /* n2buf is de-allocated
+                 * in ngap_build_pdu_session_resource_modify_request() */
+                sess->gsm_message.n2buf = NULL;
+
                 AMF_SESS_CLEAR_5GSM_MESSAGE(sess);
 
                 break;
@@ -1409,7 +1416,7 @@ void ngap_handle_ue_context_release_action(ran_ue_t *ran_ue)
          * An assert occurs when a NAS message retransmission occurs.
          *
          * Because there is no `ran_ue` context.
-         * 
+         *
          * Therefore, before removing `ran_ue`, all Timers must be stopped
          * to prevent retransmission of NAS messages.
          */
@@ -2309,7 +2316,7 @@ void ngap_handle_path_switch_request(
 
     NGAP_InitiatingMessage_t *initiatingMessage = NULL;
     NGAP_PathSwitchRequest_t *PathSwitchRequest = NULL;
-    
+
     NGAP_PathSwitchRequestIEs_t *ie = NULL;
     NGAP_RAN_UE_NGAP_ID_t *RAN_UE_NGAP_ID = NULL;
     NGAP_AMF_UE_NGAP_ID_t *AMF_UE_NGAP_ID = NULL;
@@ -2343,7 +2350,7 @@ void ngap_handle_path_switch_request(
     ogs_assert(PathSwitchRequest);
 
     ogs_info("PathSwitchRequest");
-    
+
     for (i = 0; i < PathSwitchRequest->protocolIEs.list.count; i++) {
         ie = PathSwitchRequest->protocolIEs.list.array[i];
         switch (ie->id) {
@@ -2449,6 +2456,30 @@ void ngap_handle_path_switch_request(
         return;
     }
 
+    if (!UESecurityCapabilities) {
+        ogs_error("No UESecurityCapabilities");
+        ogs_assert(OGS_OK ==
+            ngap_send_error_indication2(amf_ue,
+                NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
+        return;
+    }
+
+    if (!PDUSessionResourceToBeSwitchedDLList) {
+        ogs_error("No PDUSessionResourceToBeSwitchedDLList");
+        ogs_assert(OGS_OK ==
+            ngap_send_error_indication2(amf_ue,
+                NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
+        return;
+    }
+
+    if (!SECURITY_CONTEXT_IS_VALID(amf_ue)) {
+        ogs_error("No Security Context");
+        ogs_assert(OGS_OK ==
+            ngap_send_error_indication2(amf_ue,
+                NGAP_Cause_PR_nas, NGAP_CauseNas_authentication_failure));
+        return;
+    }
+
     ogs_info("    [NEW] RAN_UE_NGAP_ID[%d] AMF_UE_NGAP_ID[%lld] ",
         ran_ue->ran_ue_ngap_id, (long long)ran_ue->amf_ue_ngap_id);
 
@@ -2467,14 +2498,6 @@ void ngap_handle_path_switch_request(
 
     ogs_info("    [NEW] TAC[%d] CellID[0x%llx]",
         amf_ue->nr_tai.tac.v, (long long)amf_ue->nr_cgi.cell_id);
-
-    if (!UESecurityCapabilities) {
-        ogs_error("No UESecurityCapabilities");
-        ogs_assert(OGS_OK ==
-            ngap_send_error_indication2(amf_ue,
-                NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
-        return;
-    }
 
     nRencryptionAlgorithms = &UESecurityCapabilities->nRencryptionAlgorithms;
     nRintegrityProtectionAlgorithms =
@@ -2509,25 +2532,9 @@ void ngap_handle_path_switch_request(
     amf_ue->ue_security_capability.eutra_ia = eutra_ia >> 9;
     amf_ue->ue_security_capability.eutra_ia0 = eutra_ia0;
 
-    if (!SECURITY_CONTEXT_IS_VALID(amf_ue)) {
-        ogs_error("No Security Context");
-        ogs_assert(OGS_OK ==
-            ngap_send_error_indication2(amf_ue,
-                NGAP_Cause_PR_nas, NGAP_CauseNas_authentication_failure));
-        return;
-    }
-
     /* Update Security Context (NextHop) */
     amf_ue->nhcc++;
     ogs_kdf_nh_gnb(amf_ue->kamf, amf_ue->nh, amf_ue->nh);
-
-    if (!PDUSessionResourceToBeSwitchedDLList) {
-        ogs_error("No PDUSessionResourceToBeSwitchedDLList");
-        ogs_assert(OGS_OK ==
-            ngap_send_error_indication2(amf_ue,
-                NGAP_Cause_PR_protocol, NGAP_CauseProtocol_semantic_error));
-        return;
-    }
 
     for (i = 0; i < PDUSessionResourceToBeSwitchedDLList->list.count; i++) {
         amf_sess_t *sess = NULL;

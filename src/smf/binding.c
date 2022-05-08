@@ -40,7 +40,7 @@ static void bearer_timeout(ogs_gtp_xact_t *xact, void *data)
     type = xact->seq[0].type;
 
     switch (type) {
-    case OGS_GTP_CREATE_BEARER_REQUEST_TYPE:
+    case OGS_GTP2_CREATE_BEARER_REQUEST_TYPE:
         ogs_error("[%s] No Create Bearer Response", smf_ue->imsi_bcd);
         if (!smf_bearer_cycle(bearer)) {
             ogs_warn("[%s] Bearer has already been removed", smf_ue->imsi_bcd);
@@ -50,9 +50,9 @@ static void bearer_timeout(ogs_gtp_xact_t *xact, void *data)
             smf_epc_pfcp_send_bearer_modification_request(
                 bearer, NULL, OGS_PFCP_MODIFY_REMOVE,
                 OGS_NAS_PROCEDURE_TRANSACTION_IDENTITY_UNASSIGNED,
-                OGS_GTP_CAUSE_UNDEFINED_VALUE));
+                OGS_GTP2_CAUSE_UNDEFINED_VALUE));
         break;
-    case OGS_GTP_UPDATE_BEARER_REQUEST_TYPE:
+    case OGS_GTP2_UPDATE_BEARER_REQUEST_TYPE:
         ogs_error("[%s] No Update Bearer Response", smf_ue->imsi_bcd);
         break;
     default:
@@ -74,7 +74,7 @@ static void bearer_timeout(ogs_gtp_xact_t *xact, void *data)
  * TFT : Local <UE_IP> <UE_PORT> REMOTE <P-CSCF_RTP_IP> <P-CSCF_RTP_PORT>
  */
 static void encode_traffic_flow_template(
-        ogs_gtp_tft_t *tft, smf_bearer_t *bearer, uint8_t tft_operation_code)
+        ogs_gtp2_tft_t *tft, smf_bearer_t *bearer, uint8_t tft_operation_code)
 {
     int i;
     smf_pf_t *pf = NULL;
@@ -86,8 +86,8 @@ static void encode_traffic_flow_template(
     tft->code = tft_operation_code;
 
     i = 0;
-    if (tft_operation_code != OGS_GTP_TFT_CODE_DELETE_EXISTING_TFT &&
-        tft_operation_code != OGS_GTP_TFT_CODE_NO_TFT_OPERATION) {
+    if (tft_operation_code != OGS_GTP2_TFT_CODE_DELETE_EXISTING_TFT &&
+        tft_operation_code != OGS_GTP2_TFT_CODE_NO_TFT_OPERATION) {
         ogs_list_for_each_entry(&bearer->pf_to_add_list, pf, to_add_node) {
             ogs_assert(i < OGS_MAX_NUM_OF_FLOW_IN_GTP);
             tft->pf[i].identifier = pf->identifier - 1;
@@ -95,13 +95,15 @@ static void encode_traffic_flow_template(
             /* Deletion of packet filters
              * from existing requires only the identifier */
             if (tft_operation_code !=
-                OGS_GTP_TFT_CODE_DELETE_PACKET_FILTERS_FROM_EXISTING) {
+                OGS_GTP2_TFT_CODE_DELETE_PACKET_FILTERS_FROM_EXISTING) {
 
                 tft->pf[i].direction = pf->direction;
                 tft->pf[i].precedence = pf->precedence - 1;
 
                 ogs_pf_content_from_ipfw_rule(
-                        pf->direction, &tft->pf[i].content, &pf->ipfw_rule);
+                        pf->direction, &tft->pf[i].content, &pf->ipfw_rule,
+                        ogs_app()->
+                        parameter.no_ipv4v6_local_addr_in_packet_filter);
             }
 
             i++;
@@ -119,7 +121,7 @@ void smf_bearer_binding(smf_sess_t *sess)
 
     for (i = 0; i < sess->policy.num_of_pcc_rule; i++) {
         ogs_gtp_xact_t *xact = NULL;
-        ogs_gtp_header_t h;
+        ogs_gtp2_header_t h;
         ogs_pkbuf_t *pkbuf = NULL;
         smf_bearer_t *bearer = NULL;
         ogs_pcc_rule_t *pcc_rule = &sess->policy.pcc_rule[i];
@@ -169,15 +171,7 @@ void smf_bearer_binding(smf_sess_t *sess)
                     ul_pdr->f_teid.ch = 1;
                     ul_pdr->f_teid_len = 1;
                 } else {
-                    char buf[OGS_ADDRSTRLEN];
                     ogs_gtpu_resource_t *resource = NULL;
-                    ogs_sockaddr_t *addr = sess->pfcp_node->sa_list;
-                    ogs_assert(addr);
-
-                    ogs_error("F-TEID allocation/release not supported "
-                                "with peer [%s]:%d",
-                                OGS_ADDR(addr, buf), OGS_PORT(addr));
-
                     resource = ogs_pfcp_find_gtpu_resource(
                             &sess->pfcp_node->gtpu_resource_list,
                             sess->session.name, OGS_PFCP_INTERFACE_ACCESS);
@@ -187,10 +181,10 @@ void smf_bearer_binding(smf_sess_t *sess)
                                 &bearer->pgw_s5u_addr, &bearer->pgw_s5u_addr6);
                         if (resource->info.teidri)
                             bearer->pgw_s5u_teid = OGS_PFCP_GTPU_INDEX_TO_TEID(
-                                    bearer->index, resource->info.teidri,
+                                    ul_pdr->index, resource->info.teidri,
                                     resource->info.teid_range);
                         else
-                            bearer->pgw_s5u_teid = bearer->index;
+                            bearer->pgw_s5u_teid = ul_pdr->index;
                     } else {
                         if (sess->pfcp_node->addr.ogs_sa_family == AF_INET)
                             ogs_assert(OGS_OK ==
@@ -204,7 +198,7 @@ void smf_bearer_binding(smf_sess_t *sess)
                         else
                             ogs_assert_if_reached();
 
-                        bearer->pgw_s5u_teid = bearer->index;
+                        bearer->pgw_s5u_teid = ul_pdr->index;
                     }
 
                     ogs_assert(OGS_OK ==
@@ -243,7 +237,7 @@ void smf_bearer_binding(smf_sess_t *sess)
             /*
              * We only use the method of adding a flow to an existing tft.
              *
-             * EPC: OGS_GTP_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT
+             * EPC: OGS_GTP2_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT
              * 5GC: OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_AND_ADD_PACKET_FILTERS
              */
             ogs_list_init(&bearer->pf_to_add_list);
@@ -334,19 +328,19 @@ void smf_bearer_binding(smf_sess_t *sess)
                     smf_epc_pfcp_send_bearer_modification_request(
                         bearer, NULL, OGS_PFCP_MODIFY_CREATE,
                         OGS_NAS_PROCEDURE_TRANSACTION_IDENTITY_UNASSIGNED,
-                        OGS_GTP_CAUSE_UNDEFINED_VALUE));
+                        OGS_GTP2_CAUSE_UNDEFINED_VALUE));
             } else {
-                ogs_gtp_tft_t tft;
+                ogs_gtp2_tft_t tft;
 
                 memset(&tft, 0, sizeof tft);
                 if (ogs_list_count(&bearer->pf_to_add_list) > 0) {
                     encode_traffic_flow_template(
                         &tft, bearer,
-                        OGS_GTP_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT);
+                        OGS_GTP2_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT);
                 }
 
-                memset(&h, 0, sizeof(ogs_gtp_header_t));
-                h.type = OGS_GTP_UPDATE_BEARER_REQUEST_TYPE;
+                memset(&h, 0, sizeof(ogs_gtp2_header_t));
+                h.type = OGS_GTP2_UPDATE_BEARER_REQUEST_TYPE;
                 h.teid = sess->sgw_s5c_teid;
 
                 pkbuf = smf_s5c_build_update_bearer_request(
@@ -393,7 +387,7 @@ void smf_bearer_binding(smf_sess_t *sess)
                     bearer, NULL,
                     OGS_PFCP_MODIFY_DL_ONLY|OGS_PFCP_MODIFY_DEACTIVATE,
                     OGS_NAS_PROCEDURE_TRANSACTION_IDENTITY_UNASSIGNED,
-                    OGS_GTP_CAUSE_UNDEFINED_VALUE));
+                    OGS_GTP2_CAUSE_UNDEFINED_VALUE));
         } else {
             ogs_error("Invalid Type[%d]", pcc_rule->type);
         }
@@ -407,19 +401,19 @@ int smf_gtp_send_create_bearer_request(smf_bearer_t *bearer)
     smf_sess_t *sess = NULL;
     ogs_gtp_xact_t *xact = NULL;
 
-    ogs_gtp_header_t h;
+    ogs_gtp2_header_t h;
     ogs_pkbuf_t *pkbuf = NULL;
-    ogs_gtp_tft_t tft;
+    ogs_gtp2_tft_t tft;
 
     ogs_assert(bearer);
     sess = bearer->sess;
     ogs_assert(sess);
 
-    h.type = OGS_GTP_CREATE_BEARER_REQUEST_TYPE;
+    h.type = OGS_GTP2_CREATE_BEARER_REQUEST_TYPE;
     h.teid = sess->sgw_s5c_teid;
 
     memset(&tft, 0, sizeof tft);
-    encode_traffic_flow_template(&tft, bearer, OGS_GTP_TFT_CODE_CREATE_NEW_TFT);
+    encode_traffic_flow_template(&tft, bearer, OGS_GTP2_TFT_CODE_CREATE_NEW_TFT);
 
     pkbuf = smf_s5c_build_create_bearer_request(h.type, bearer, &tft);
     ogs_expect_or_return_val(pkbuf, OGS_ERROR);
@@ -494,14 +488,6 @@ void smf_qos_flow_binding(smf_sess_t *sess)
                     ul_pdr->f_teid.choose_id = OGS_PFCP_DEFAULT_CHOOSE_ID;
                     ul_pdr->f_teid_len = 2;
                 } else {
-                    char buf[OGS_ADDRSTRLEN];
-                    ogs_sockaddr_t *addr = sess->pfcp_node->sa_list;
-                    ogs_assert(addr);
-
-                    ogs_error("F-TEID allocation/release not supported "
-                                "with peer [%s]:%d",
-                                OGS_ADDR(addr, buf), OGS_PORT(addr));
-
                     ogs_assert(OGS_OK ==
                         ogs_pfcp_sockaddr_to_f_teid(
                             sess->upf_n3_addr, sess->upf_n3_addr6,
@@ -538,7 +524,7 @@ void smf_qos_flow_binding(smf_sess_t *sess)
             /*
              * We only use the method of adding a flow to an existing tft.
              *
-             * EPC: OGS_GTP_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT
+             * EPC: OGS_GTP2_TFT_CODE_ADD_PACKET_FILTERS_TO_EXISTING_TFT
              * 5GC: OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_AND_ADD_PACKET_FILTERS
              */
             ogs_list_init(&qos_flow->pf_to_add_list);
