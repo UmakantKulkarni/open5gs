@@ -441,17 +441,17 @@ void smf_gsm_state_operational(ogs_fsm_t *s, smf_event_t *e)
             assert(!e->pfcp_xact->epc);
             pfcp_cause = smf_5gc_n4_handle_session_establishment_response(
                             sess, e->pfcp_xact,
-                            &e->pfcp_message->pfcp_session_establishment_response);
+                            &e->pfcp_message->pfcp_session_establishment_response, pcs_fsmdata);
             if (pfcp_cause != OGS_PFCP_CAUSE_REQUEST_ACCEPTED)
                 return;
-            memset(&param, 0, sizeof(param));
+            /* memset(&param, 0, sizeof(param));
             param.state = SMF_UE_REQUESTED_PDU_SESSION_ESTABLISHMENT;
             param.n1smbuf = gsm_build_pdu_session_establishment_accept(sess);
             ogs_assert(param.n1smbuf);
             param.n2smbuf = ngap_build_pdu_session_resource_setup_request_transfer(
                                 sess);
             ogs_assert(param.n2smbuf);
-            smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
+            smf_namf_comm_send_n1_n2_message_transfer(sess, &param); */
             break;
         case OGS_PFCP_SESSION_DELETION_RESPONSE_TYPE:
             /* This is left here for 5gc sessions to properly receive messages,
