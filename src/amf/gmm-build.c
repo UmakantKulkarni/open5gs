@@ -622,7 +622,7 @@ ogs_pkbuf_t *gmm_build_dl_nas_transport(amf_sess_t *sess,
     }
 
     gmmbuf = nas_5gs_security_encode(amf_ue, &message);
-    ogs_pkbuf_free(payload_container);
+    //ogs_pkbuf_free(payload_container);
 
     return gmmbuf;
 }
