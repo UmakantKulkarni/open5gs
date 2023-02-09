@@ -38,6 +38,7 @@ void udr_state_final(ogs_fsm_t *s, udr_event_t *e)
 
 void udr_state_operational(ogs_fsm_t *s, udr_event_t *e)
 {
+    ogs_info("PCS UDR ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
 
     ogs_sbi_stream_t *stream = NULL;

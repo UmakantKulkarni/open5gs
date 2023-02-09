@@ -45,6 +45,7 @@ void amf_state_final(ogs_fsm_t *s, amf_event_t *e)
 
 void amf_state_operational(ogs_fsm_t *s, amf_event_t *e)
 {
+    ogs_info("PCS AMF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int r, rv;
     char buf[OGS_ADDRSTRLEN];
     const char *api_version = NULL;
