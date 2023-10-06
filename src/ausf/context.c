@@ -126,6 +126,10 @@ ausf_ue_t *ausf_ue_add(char *suci)
     ogs_assert(suci);
 
     ogs_pool_alloc(&ausf_ue_pool, &ausf_ue);
+    if (!ausf_ue) {
+        ogs_error("ogs_pool_alloc() failed");
+        return NULL;
+    }
     ogs_assert(ausf_ue);
     memset(ausf_ue, 0, sizeof *ausf_ue);
 
@@ -183,7 +187,7 @@ void ausf_ue_remove(ausf_ue_t *ausf_ue)
     ogs_pool_free(&ausf_ue_pool, ausf_ue);
 }
 
-void ausf_ue_remove_all()
+void ausf_ue_remove_all(void)
 {
     ausf_ue_t *ausf_ue = NULL, *next = NULL;;
 
@@ -223,7 +227,7 @@ ausf_ue_t *ausf_ue_cycle(ausf_ue_t *ausf_ue)
     return ogs_pool_cycle(&ausf_ue_pool, ausf_ue);
 }
 
-int get_ue_load()
+int get_ue_load(void)
 {
     return (((ogs_pool_size(&ausf_ue_pool) -
             ogs_pool_avail(&ausf_ue_pool)) * 100) /

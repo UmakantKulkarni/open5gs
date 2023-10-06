@@ -33,6 +33,15 @@
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __gmm_log_domain
 
+typedef enum {
+    GMM_COMMON_STATE_DEREGISTERED,
+    GMM_COMMON_STATE_REGISTERED,
+} gmm_common_state_e;
+
+static void common_register_state(ogs_fsm_t *s, amf_event_t *e,
+        gmm_common_state_e state);
+
+
 void gmm_state_initial(ogs_fsm_t *s, amf_event_t *e)
 {
     ogs_assert(s);
@@ -48,8 +57,6 @@ void gmm_state_final(ogs_fsm_t *s, amf_event_t *e)
 
     amf_sm_debug(e);
 }
-
-static void common_register_state(ogs_fsm_t *s, amf_event_t *e);
 
 void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
 {
@@ -118,7 +125,7 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
         break;
 
     case AMF_EVENT_5GMM_MESSAGE:
-        common_register_state(s, e);
+        common_register_state(s, e, GMM_COMMON_STATE_DEREGISTERED);
         break;
 
     case AMF_EVENT_5GMM_TIMER:
@@ -154,6 +161,80 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
             }
             break;
 
+        case AMF_TIMER_MOBILE_REACHABLE:
+
+            /*
+             * TS 24.501
+             * 5.3.7 Handling of the periodic registration update timer and
+             *
+             * Upon expiry of the mobile reachable timer the network shall
+             * start the implicit de-registration timer over 3GPP access.
+             * The default value of the implicit de-registration timer over
+             * 3GPP access is 4 minutes greater than the value of timer T3512.
+             */
+
+            ogs_warn("[%s] Mobile Reachable Timer Expired", amf_ue->supi);
+
+            ogs_list_for_each(&amf_ue->sess_list, sess) {
+                if (sess->paging.ongoing == true &&
+                    sess->paging.n1n2_failure_txf_notif_uri != NULL) {
+                    ogs_assert(true ==
+                        amf_sbi_send_n1_n2_failure_notify(
+                            sess,
+                            OpenAPI_n1_n2_message_transfer_cause_UE_NOT_REACHABLE_FOR_SESSION));
+                }
+            }
+
+            /* Stop Paging */
+            AMF_UE_CLEAR_PAGING_INFO(amf_ue);
+            AMF_UE_CLEAR_N2_TRANSFER(
+                    amf_ue, pdu_session_resource_setup_request);
+            AMF_UE_CLEAR_5GSM_MESSAGE(amf_ue);
+            CLEAR_AMF_UE_TIMER(amf_ue->t3513);
+
+            ogs_timer_start(amf_ue->implicit_deregistration.timer,
+                    ogs_time_from_sec(amf_self()->time.t3512.value + 240));
+            break;
+
+        case AMF_TIMER_IMPLICIT_DEREGISTRATION:
+
+            /*
+             * TS 24.501
+             * 5.3.7 Handling of the periodic registration update timer and
+             *
+             * If the implicit de-registration timer expires before the UE
+             * contacts the network, the network shall implicitly de-register
+             * the UE.
+             *
+             * TS 23.502
+             * 4.2.2.3.3 Network-initiated Deregistration
+             *
+             * The AMF does not send the Deregistration Request message
+             * to the UE for Implicit Deregistration.
+             */
+
+            ogs_info("[%s] Do Network-initiated De-register UE", amf_ue->supi);
+
+            state = AMF_NETWORK_INITIATED_IMPLICIT_DE_REGISTERED;
+
+            if (UDM_SDM_SUBSCRIBED(amf_ue)) {
+                r = amf_ue_sbi_discover_and_send(
+                        OGS_SBI_SERVICE_TYPE_NUDM_SDM, NULL,
+                        amf_nudm_sdm_build_subscription_delete,
+                        amf_ue, state, NULL);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
+            } else if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
+                    r = amf_ue_sbi_discover_and_send(
+                        OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
+                        NULL,
+                        amf_npcf_am_policy_control_build_delete,
+                        amf_ue, state, NULL);
+                    ogs_expect(r == OGS_OK);
+                    ogs_assert(r != OGS_ERROR);
+            }
+            break;
+
         default:
             ogs_error("Unknown timer[%s:%d]",
                     amf_timer_get_name(e->h.timer_id), e->h.timer_id);
@@ -181,7 +262,6 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
                         ogs_error("[%s] HTTP response error [%d]",
                             amf_ue->suci, sbi_message->res_status);
                     }
-                    break;
                 }
 
                 SWITCH(sbi_message->h.method)
@@ -222,7 +302,6 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
                 (sbi_message->res_status != OGS_SBI_HTTP_STATUS_NO_CONTENT)) {
                 ogs_error("[%s] HTTP response error [%d]",
                           amf_ue->supi, sbi_message->res_status);
-                break;
             }
 
             SWITCH(sbi_message->h.resource.component[1])
@@ -292,7 +371,6 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
                 sbi_message->res_status != OGS_SBI_HTTP_STATUS_OK) {
                 ogs_error("[%s] HTTP response error [%d]",
                         amf_ue->supi, sbi_message->res_status);
-                break;
             }
 
             SWITCH(sbi_message->h.resource.component[1])
@@ -459,7 +537,7 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
         for (i = 0; i < amf_ue->num_of_slice; i++) {
             amf_metrics_inst_by_slice_add(&amf_ue->nr_tai.plmn_id,
                     &amf_ue->slice[i].s_nssai,
-                    AMF_METR_GAUGE_RM_REGISTEREDSUBNBR, 1);
+                    AMF_METR_GAUGE_RM_REGISTERED_SUB_NBR, 1);
         }
         break;
     case OGS_FSM_EXIT_SIG:
@@ -467,12 +545,12 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
         for (i = 0; i < amf_ue->num_of_slice; i++) {
             amf_metrics_inst_by_slice_add(&amf_ue->nr_tai.plmn_id,
                     &amf_ue->slice[i].s_nssai,
-                    AMF_METR_GAUGE_RM_REGISTEREDSUBNBR, -1);
+                    AMF_METR_GAUGE_RM_REGISTERED_SUB_NBR, -1);
         }
         break;
 
     case AMF_EVENT_5GMM_MESSAGE:
-        common_register_state(s, e);
+        common_register_state(s, e, GMM_COMMON_STATE_REGISTERED);
         break;
 
     case AMF_EVENT_5GMM_TIMER:
@@ -596,6 +674,7 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
             ogs_timer_start(amf_ue->implicit_deregistration.timer,
                     ogs_time_from_sec(amf_self()->time.t3512.value + 240));
             break;
+
         case AMF_TIMER_IMPLICIT_DEREGISTRATION:
 
             /*
@@ -634,6 +713,7 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
                     ogs_assert(r != OGS_ERROR);
             }
             break;
+
         default:
             ogs_error("Unknown timer[%s:%d]",
                     amf_timer_get_name(e->h.timer_id), e->h.timer_id);
@@ -663,7 +743,6 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
                         ogs_error("[%s] HTTP response error [%d]",
                             amf_ue->suci, sbi_message->res_status);
                     }
-                    break;
                 }
 
                 SWITCH(sbi_message->h.method)
@@ -704,7 +783,6 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
                 (sbi_message->res_status != OGS_SBI_HTTP_STATUS_NO_CONTENT)) {
                 ogs_error("[%s] HTTP response error [%d]",
                           amf_ue->supi, sbi_message->res_status);
-                break;
             }
 
             SWITCH(sbi_message->h.resource.component[1])
@@ -780,7 +858,6 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
                 sbi_message->res_status != OGS_SBI_HTTP_STATUS_OK) {
                 ogs_error("[%s] HTTP response error [%d]",
                         amf_ue->supi, sbi_message->res_status);
-                break;
             }
 
             SWITCH(sbi_message->h.resource.component[1])
@@ -944,7 +1021,8 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
     }
 }
 
-static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
+static void common_register_state(ogs_fsm_t *s, amf_event_t *e,
+        gmm_common_state_e state)
 {
     int r, rv, xact_count = 0;
     ogs_nas_5gmm_cause_t gmm_cause;
@@ -984,6 +1062,24 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
             gmm_cause = gmm_handle_registration_request(
                     amf_ue, h, e->ngap.code,
                     &nas_message->gmm.registration_request);
+
+            switch (amf_ue->nas.registration.value) {
+            case OGS_NAS_5GS_REGISTRATION_TYPE_INITIAL:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_INIT_REQ);
+                break;
+            case OGS_NAS_5GS_REGISTRATION_TYPE_MOBILITY_UPDATING:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_MOB_REQ);
+                break;
+            case OGS_NAS_5GS_REGISTRATION_TYPE_PERIODIC_UPDATING:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_PERIOD_REQ);
+                break;
+            case OGS_NAS_5GS_REGISTRATION_TYPE_EMERGENCY:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_EMERG_REQ);
+                break;
+            default:
+                ogs_error("Unknown reg_type[%d]", amf_ue->nas.registration.value);
+            }
+
             if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
                 ogs_error("gmm_handle_registration_request() failed [%d]",
                             gmm_cause);
@@ -1020,7 +1116,11 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
 
                     if (amf_update_allowed_nssai(amf_ue) == false) {
                         ogs_error("No Allowed-NSSAI");
-
+                        r = nas_5gs_send_gmm_reject(
+                                amf_ue,
+                                OGS_5GMM_CAUSE_NO_NETWORK_SLICES_AVAILABLE);
+                        ogs_expect(r == OGS_OK);
+                        ogs_assert(r != OGS_ERROR);
                         OGS_FSM_TRAN(s, gmm_state_exception);
                         break;
                     }
@@ -1070,6 +1170,17 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
         case OGS_NAS_5GS_SERVICE_REQUEST:
             ogs_info("Service request");
 
+            if (state != GMM_COMMON_STATE_REGISTERED) {
+                ogs_info("[%s] Handling service request failed [Not registered]",
+                            amf_ue->suci);
+                r = nas_5gs_send_service_reject(amf_ue,
+                    OGS_5GMM_CAUSE_UE_IDENTITY_CANNOT_BE_DERIVED_BY_THE_NETWORK);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
+                OGS_FSM_TRAN(s, gmm_state_exception);
+                break;
+            }
+
             gmm_cause = gmm_handle_service_request(
                     amf_ue, h, e->ngap.code, &nas_message->gmm.service_request);
             if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
@@ -1111,6 +1222,7 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
                 ogs_expect(r == OGS_OK);
                 ogs_assert(r != OGS_ERROR);
                 OGS_FSM_TRAN(s, gmm_state_exception);
+                break;
             }
 
             OGS_FSM_TRAN(s, gmm_state_registered);
@@ -1181,6 +1293,8 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e)
 
         case OGS_NAS_5GS_CONFIGURATION_UPDATE_COMPLETE:
             ogs_debug("[%s] Configuration update complete", amf_ue->supi);
+
+            amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_MM_CONF_UPDATE_SUCC);
 
             /*
              * TS24.501
@@ -1303,6 +1417,9 @@ void gmm_state_authentication(ogs_fsm_t *s, amf_event_t *e)
 
             ogs_debug("[%s] Authentication failure [%d]", amf_ue->suci,
                     authentication_failure->gmm_cause);
+
+            amf_metrics_inst_by_cause_add(authentication_failure->gmm_cause,
+                    AMF_METR_CTR_AMF_AUTH_FAIL, 1);
 
             CLEAR_AMF_UE_TIMER(amf_ue->t3560);
 
@@ -1793,10 +1910,6 @@ void gmm_state_initial_context_setup(ogs_fsm_t *s, amf_event_t *e)
                 if (rv != OGS_OK) {
                     ogs_error("[%s] amf_nudm_sdm_handle_provisioned(%s) failed",
                             amf_ue->supi, sbi_message->h.resource.component[1]);
-                    r = nas_5gs_send_gmm_reject(
-                            amf_ue, OGS_5GMM_CAUSE_5GS_SERVICES_NOT_ALLOWED);
-                    ogs_expect(r == OGS_OK);
-                    ogs_assert(r != OGS_ERROR);
                     OGS_FSM_TRAN(&amf_ue->sm, &gmm_state_exception);
                     break;
                 }
@@ -1938,6 +2051,23 @@ void gmm_state_initial_context_setup(ogs_fsm_t *s, amf_event_t *e)
             ogs_expect(r == OGS_OK);
             ogs_assert(r != OGS_ERROR);
 
+            switch (amf_ue->nas.registration.value) {
+            case OGS_NAS_5GS_REGISTRATION_TYPE_INITIAL:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_INIT_SUCC);
+                break;
+            case OGS_NAS_5GS_REGISTRATION_TYPE_MOBILITY_UPDATING:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_MOB_SUCC);
+                break;
+            case OGS_NAS_5GS_REGISTRATION_TYPE_PERIODIC_UPDATING:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_PERIOD_SUCC);
+                break;
+            case OGS_NAS_5GS_REGISTRATION_TYPE_EMERGENCY:
+                amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_RM_REG_EMERG_SUCC);
+                break;
+            default:
+                ogs_error("Unknown reg_type[%d]",
+                        amf_ue->nas.registration.value);
+            }
             OGS_FSM_TRAN(s, &gmm_state_registered);
             break;
 
@@ -2162,6 +2292,12 @@ void gmm_state_exception(ogs_fsm_t *s, amf_event_t *e)
 
                     if (amf_update_allowed_nssai(amf_ue) == false) {
                         ogs_error("No Allowed-NSSAI");
+                        r = nas_5gs_send_gmm_reject(
+                                amf_ue,
+                                OGS_5GMM_CAUSE_NO_NETWORK_SLICES_AVAILABLE);
+                        ogs_expect(r == OGS_OK);
+                        ogs_assert(r != OGS_ERROR);
+                        OGS_FSM_TRAN(s, gmm_state_exception);
                         break;
                     }
 

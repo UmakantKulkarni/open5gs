@@ -165,8 +165,8 @@ $ make test
 The Open5GS package is available on the recent versions of *Ubuntu*.
 ```bash
 # Install the MongoDB Packages
-$ wget -qO - https://www.mongodb.org/static/pgp/server-6.0.asc | sudo apt-key add -
-$ echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
+$ curl -fsSL https://pgp.mongodb.com/server-6.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
+$ echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
 $ sudo apt update
 $ sudo apt install mongodb-org
 
@@ -179,8 +179,21 @@ $ sudo apt install open5gs
 The following shows how to install the Web UI of Open5GS.
 
 ```bash
-$ curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-$ sudo apt install nodejs
+# Download and import the Nodesource GPG key
+$ sudo apt update
+$ sudo apt install -y ca-certificates curl gnupg
+$ sudo mkdir -p /etc/apt/keyrings
+$ curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg
+
+# Create deb repository
+$ NODE_MAJOR=20
+$ echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_$NODE_MAJOR.x nodistro main" | sudo tee /etc/apt/sources.list.d/nodesource.list
+
+# Run Update and Install
+$ sudo apt update
+$ sudo apt install nodejs -y
+
+# Install the WebUI of Open5GS
 $ curl -fsSL https://open5gs.org/open5gs/assets/webui/install | sudo -E bash -
 ```
 

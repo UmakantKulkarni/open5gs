@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -145,7 +145,12 @@ static void pfcp_recv_cb(short when, ogs_socket_t fd, void *data)
     node = ogs_pfcp_node_find(&ogs_pfcp_self()->pfcp_peer_list, &from);
     if (!node) {
         node = ogs_pfcp_node_add(&ogs_pfcp_self()->pfcp_peer_list, &from);
-        ogs_assert(node);
+        if (!node) {
+            ogs_error("No memory: ogs_pfcp_node_add() failed");
+            ogs_pkbuf_free(e->pkbuf);
+            ogs_event_free(e);
+            return;
+        }
 
         node->sock = data;
         pfcp_node_fsm_init(node, false);
@@ -196,6 +201,9 @@ void smf_pfcp_close(void)
     ogs_list_for_each(&ogs_pfcp_self()->pfcp_peer_list, pfcp_node)
         pfcp_node_fsm_fini(pfcp_node);
 
+    ogs_freeaddrinfo(ogs_pfcp_self()->pfcp_advertise);
+    ogs_freeaddrinfo(ogs_pfcp_self()->pfcp_advertise6);
+
     ogs_socknode_remove_all(&ogs_pfcp_self()->pfcp_list);
     ogs_socknode_remove_all(&ogs_pfcp_self()->pfcp_list6);
 }
@@ -208,6 +216,8 @@ static void sess_5gc_timeout(ogs_pfcp_xact_t *xact, void *data)
     uint8_t type;
     int trigger;
     char *strerror = NULL;
+    smf_event_t *e = NULL;
+    int rv;
 
     ogs_assert(xact);
     ogs_assert(data);
@@ -222,7 +232,19 @@ static void sess_5gc_timeout(ogs_pfcp_xact_t *xact, void *data)
 
     switch (type) {
     case OGS_PFCP_SESSION_ESTABLISHMENT_REQUEST_TYPE:
-        ogs_error("No PFCP session establishment response");
+        ogs_warn("No PFCP session establishment response");
+
+        e = smf_event_new(SMF_EVT_N4_TIMER);
+        ogs_assert(e);
+        e->sess = sess;
+        e->h.timer_id = SMF_TIMER_PFCP_NO_ESTABLISHMENT_RESPONSE;
+        e->pfcp_node = sess->pfcp_node;
+
+        rv = ogs_queue_push(ogs_app()->queue, e);
+        if (rv != OGS_OK) {
+            ogs_error("ogs_queue_push() failed:%d", (int)rv);
+            ogs_event_free(e);
+        }
         break;
     case OGS_PFCP_SESSION_MODIFICATION_REQUEST_TYPE:
         strerror = ogs_msprintf("[%s:%d] No PFCP session modification response",
@@ -230,10 +252,10 @@ static void sess_5gc_timeout(ogs_pfcp_xact_t *xact, void *data)
         ogs_assert(strerror);
 
         ogs_error("%s", strerror);
-        ogs_assert(stream);
-        smf_sbi_send_sm_context_update_error(stream,
-                OGS_SBI_HTTP_STATUS_GATEWAY_TIMEOUT,
-                strerror, NULL, NULL, NULL);
+        if (stream) {
+            smf_sbi_send_sm_context_update_error_log(
+                stream, OGS_SBI_HTTP_STATUS_GATEWAY_TIMEOUT, strerror, NULL);
+        }
         ogs_free(strerror);
         break;
     case OGS_PFCP_SESSION_DELETION_REQUEST_TYPE:
@@ -358,7 +380,7 @@ int smf_pfcp_send_modify_list(
 }
 
 int smf_5gc_pfcp_send_session_establishment_request(
-        smf_sess_t *sess, ogs_sbi_stream_t *stream)
+        smf_sess_t *sess, uint64_t flags)
 {
     int rv;
     ogs_pkbuf_t *n4buf = NULL;
@@ -366,7 +388,6 @@ int smf_5gc_pfcp_send_session_establishment_request(
     ogs_pfcp_xact_t *xact = NULL;
 
     ogs_assert(sess);
-    ogs_assert(stream);
 
     xact = ogs_pfcp_xact_local_create(sess->pfcp_node, sess_5gc_timeout, sess);
     if (!xact) {
@@ -374,14 +395,44 @@ int smf_5gc_pfcp_send_session_establishment_request(
         return OGS_ERROR;
     }
 
-    xact->assoc_stream = stream;
     xact->local_seid = sess->smf_n4_seid;
+    xact->create_flags = flags;
 
     memset(&h, 0, sizeof(ogs_pfcp_header_t));
     h.type = OGS_PFCP_SESSION_ESTABLISHMENT_REQUEST_TYPE;
+
+/*
+ * 7.2.2.4.2 Conditions for Sending SEID=0 in PFCP Header
+ *
+ * If a peer's SEID is not available, the SEID field shall still be present
+ * in the header and its value shall be set to "0" in the following messages:
+ *
+ * - PFCP Session Establishment Request message on Sxa/Sxb/Sxc/N4;
+ *
+ * - If a node receives a message for which it has no session, i.e.
+ *   if SEID in the PFCP header is not known, it shall respond
+ *   with "Session context not found" cause in the corresponding
+ *   response message to the sender, the SEID used in the PFCP header
+ *   in the response message shall be then set to "0";
+ *
+ * - If a node receives a request message containing protocol error,
+ *   e.g. Mandatory IE missing, which requires the receiver
+ *   to reject the message as specified in clause 7.6, it shall reject
+ *   the request message. For the response message, the node should look up
+ *   the remote peer's SEID and accordingly set SEID in the PFCP header
+ *   and the message cause code. As an implementation option,
+ *   the node may not look up the remote peer's SEID and
+ *   set the PFCP header SEID to "0" in the response message.
+ *   However in this case, the cause value shall not be set
+ *   to "Session not found".
+ *
+ * - When the UP function sends PFCP Session Report Request message
+ *   over N4 towards another SMF or another PFCP entity in the SMF
+ *   as specified in clause 5.22.2 and clause 5.22.3.
+ */
     h.seid = sess->upf_n4_seid;
 
-    n4buf = smf_n4_build_session_establishment_request(h.type, sess);
+    n4buf = smf_n4_build_session_establishment_request(h.type, sess, xact);
     if (!n4buf) {
         ogs_error("smf_n4_build_session_establishment_request() failed");
         return OGS_ERROR;
@@ -502,7 +553,7 @@ int smf_5gc_pfcp_send_session_deletion_request(
 }
 
 int smf_epc_pfcp_send_session_establishment_request(
-        smf_sess_t *sess, void *gtp_xact)
+        smf_sess_t *sess, void *gtp_xact, uint64_t flags)
 {
     int rv;
     ogs_pkbuf_t *n4buf = NULL;
@@ -520,12 +571,43 @@ int smf_epc_pfcp_send_session_establishment_request(
     xact->epc = true; /* EPC PFCP transaction */
     xact->assoc_xact = gtp_xact;
     xact->local_seid = sess->smf_n4_seid;
+    xact->create_flags = flags;
 
     memset(&h, 0, sizeof(ogs_pfcp_header_t));
     h.type = OGS_PFCP_SESSION_ESTABLISHMENT_REQUEST_TYPE;
+
+/*
+ * 7.2.2.4.2 Conditions for Sending SEID=0 in PFCP Header
+ *
+ * If a peer's SEID is not available, the SEID field shall still be present
+ * in the header and its value shall be set to "0" in the following messages:
+ *
+ * - PFCP Session Establishment Request message on Sxa/Sxb/Sxc/N4;
+ *
+ * - If a node receives a message for which it has no session, i.e.
+ *   if SEID in the PFCP header is not known, it shall respond
+ *   with "Session context not found" cause in the corresponding
+ *   response message to the sender, the SEID used in the PFCP header
+ *   in the response message shall be then set to "0";
+ *
+ * - If a node receives a request message containing protocol error,
+ *   e.g. Mandatory IE missing, which requires the receiver
+ *   to reject the message as specified in clause 7.6, it shall reject
+ *   the request message. For the response message, the node should look up
+ *   the remote peer's SEID and accordingly set SEID in the PFCP header
+ *   and the message cause code. As an implementation option,
+ *   the node may not look up the remote peer's SEID and
+ *   set the PFCP header SEID to "0" in the response message.
+ *   However in this case, the cause value shall not be set
+ *   to "Session not found".
+ *
+ * - When the UP function sends PFCP Session Report Request message
+ *   over N4 towards another SMF or another PFCP entity in the SMF
+ *   as specified in clause 5.22.2 and clause 5.22.3.
+ */
     h.seid = sess->upf_n4_seid;
 
-    n4buf = smf_n4_build_session_establishment_request(h.type, sess);
+    n4buf = smf_n4_build_session_establishment_request(h.type, sess, xact);
     if (!n4buf) {
         ogs_error("smf_n4_build_session_establishment_request() failed");
         return OGS_ERROR;

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2022 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -29,6 +29,7 @@ extern "C" {
 #endif
 
 #define OGS_MAX_NUM_OF_NF_INFO 8
+#define OGS_MAX_NUM_OF_SCP_DOMAIN 8
 
 typedef struct ogs_sbi_client_s ogs_sbi_client_t;
 typedef struct ogs_sbi_smf_info_s ogs_sbi_smf_info_t;
@@ -46,23 +47,8 @@ typedef struct ogs_sbi_discovery_config_s {
     bool prefer_requester_nf_instance_id;
 } ogs_sbi_discovery_config_t;
 
-typedef enum {
-    OGS_SBI_TLS_ENABLED_AUTO = 0,
-    OGS_SBI_TLS_ENABLED_YES,
-    OGS_SBI_TLS_ENABLED_NO,
-} ogs_sbi_tls_enabled_mode_e;
-
 typedef struct ogs_sbi_context_s {
     ogs_sbi_discovery_config_t discovery_config; /* SCP Discovery Delegated */
-
-    struct {
-        ogs_sbi_tls_enabled_mode_e enabled;
-        struct {
-            const char *cacert;
-            const char *cert;
-            const char *key;
-        } server, client;
-    } tls;
 
 #define OGS_HOME_NETWORK_PKI_VALUE_MIN 1
 #define OGS_HOME_NETWORK_PKI_VALUE_MAX 254
@@ -72,8 +58,6 @@ typedef struct ogs_sbi_context_s {
         uint8_t scheme;
         uint8_t key[OGS_ECCKEY_LEN]; /* 32 bytes Private Key */
     } hnet[OGS_HOME_NETWORK_PKI_VALUE_MAX+1]; /* PKI Value : 1 ~ 254 */
-
-    uint16_t sbi_port;                      /* SBI local port */
 
     ogs_list_t server_list;
     ogs_list_t client_list;
@@ -233,6 +217,7 @@ typedef struct ogs_sbi_nf_service_s {
     struct {
         ogs_sockaddr_t *ipv4;
         ogs_sockaddr_t *ipv6;
+        bool is_port;
         int port;
     } addr[OGS_SBI_MAX_NUM_OF_IP_ADDRESS];
 
@@ -261,11 +246,14 @@ typedef struct ogs_sbi_subscription_spec_s {
 typedef struct ogs_sbi_subscription_data_s {
     ogs_lnode_t lnode;
 
+#define OGS_SBI_VALIDITY_SEC(v) \
+        ogs_time_sec(v) + (ogs_time_usec(v) ? 1 : 0)
     struct {
         int validity_duration;
     } time;
 
     ogs_timer_t *t_validity;                /* check validation */
+    ogs_timer_t *t_patch;                   /* for sending PATCH */
 
     char *id;                               /* SubscriptionId */
     char *req_nf_instance_id;               /* reqNfInstanceId */
@@ -310,6 +298,18 @@ typedef struct ogs_sbi_smf_info_s {
     } nr_tai_range[OGS_MAX_NUM_OF_TAI];
 } ogs_sbi_smf_info_t;
 
+typedef struct ogs_sbi_scp_info_s {
+    ogs_port_t http, https;
+
+    int num_of_domain;
+    struct {
+        char *name;
+        char *fqdn;
+        ogs_port_t http, https;
+    } domain[OGS_MAX_NUM_OF_SCP_DOMAIN];
+
+} ogs_sbi_scp_info_t;
+
 typedef struct ogs_sbi_amf_info_s {
     int amf_set_id;
     int amf_region_id;
@@ -341,6 +341,7 @@ typedef struct ogs_sbi_nf_info_s {
     union {
         ogs_sbi_smf_info_t smf;
         ogs_sbi_amf_info_t amf;
+        ogs_sbi_scp_info_t scp;
     };
 } ogs_sbi_nf_info_t;
 
@@ -349,6 +350,7 @@ void ogs_sbi_context_final(void);
 ogs_sbi_context_t *ogs_sbi_self(void);
 int ogs_sbi_context_parse_config(
         const char *local, const char *nrf, const char *scp);
+int ogs_sbi_context_parse_hnet_config(ogs_yaml_iter_t *root_iter);
 
 bool ogs_sbi_nf_service_is_available(const char *name);
 
@@ -412,7 +414,10 @@ ogs_sbi_client_t *ogs_sbi_client_find_by_service_type(
 
 void ogs_sbi_client_associate(ogs_sbi_nf_instance_t *nf_instance);
 
-OpenAPI_uri_scheme_e ogs_sbi_default_uri_scheme(void);
+OpenAPI_uri_scheme_e ogs_sbi_server_default_scheme(void);
+OpenAPI_uri_scheme_e ogs_sbi_client_default_scheme(void);
+int ogs_sbi_server_default_port(void);
+int ogs_sbi_client_default_port(void);
 
 #define OGS_SBI_SETUP_NF_INSTANCE(__cTX, __nFInstance) \
     do { \

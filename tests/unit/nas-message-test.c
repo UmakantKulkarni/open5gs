@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -90,7 +90,7 @@ static void ogs_nas_eps_message_test2(abts_case *tc, void *data)
     tai0_list.tai[0].num = 1;
     ogs_plmn_id_build(&tai0_list.tai[0].plmn_id, 417, 99, 2);
     tai0_list.tai[0].tac[0] = 12345;
-    ogs_nas_tai_list_build(&attach_accept->tai_list, &tai0_list, &tai2_list);
+    ogs_nas_tai_list_build(&attach_accept->tai_list, &tai0_list, NULL, NULL);
 
     attach_accept->esm_message_container.length = sizeof(esm_buffer);
     attach_accept->esm_message_container.buffer = 
@@ -373,19 +373,19 @@ static void ogs_nas_eps_message_test9(abts_case *tc, void *data)
     ABTS_INT_EQUAL(tc, 31, gprs_timer.value);
     rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*32);
     ABTS_INT_EQUAL(tc, OGS_ERROR, rv);
-    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*10*4);
+    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*6*8);
     ABTS_INT_EQUAL(tc, OGS_OK, rv);
     ABTS_INT_EQUAL(tc, OGS_NAS_GPRS_TIMER_UNIT_MULTIPLES_OF_DECI_HH,
             gprs_timer.unit);
-    ABTS_INT_EQUAL(tc, 4, gprs_timer.value);
-    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*10*4+1);
+    ABTS_INT_EQUAL(tc, 8, gprs_timer.value);
+    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*6*8+1);
     ABTS_INT_EQUAL(tc, OGS_ERROR, rv);
-    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*10*31);
+    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*6*31);
     ABTS_INT_EQUAL(tc, OGS_OK, rv);
     ABTS_INT_EQUAL(tc, OGS_NAS_GPRS_TIMER_UNIT_MULTIPLES_OF_DECI_HH,
             gprs_timer.unit);
     ABTS_INT_EQUAL(tc, 31, gprs_timer.value);
-    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*10*32);
+    rv = ogs_nas_gprs_timer_from_sec(&gprs_timer, 60*6*32);
     ABTS_INT_EQUAL(tc, OGS_ERROR, rv);
 
     rv = ogs_nas_gprs_timer_3_from_sec(&gprs_timer, 1);

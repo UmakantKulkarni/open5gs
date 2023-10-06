@@ -98,9 +98,9 @@ int pcf_sbi_open(void)
 
     /* Setup Subscription-Data */
     ogs_sbi_subscription_spec_add(
-            OpenAPI_nf_type_BSF, OGS_SBI_SERVICE_NAME_NBSF_MANAGEMENT);
+            OpenAPI_nf_type_NULL, OGS_SBI_SERVICE_NAME_NBSF_MANAGEMENT);
     ogs_sbi_subscription_spec_add(
-            OpenAPI_nf_type_UDR, OGS_SBI_SERVICE_NAME_NUDR_DR);
+            OpenAPI_nf_type_NULL, OGS_SBI_SERVICE_NAME_NUDR_DR);
 
     if (ogs_sbi_server_start_all(ogs_sbi_server_handler) != OGS_OK)
         return OGS_ERROR;
@@ -341,31 +341,6 @@ bool pcf_sbi_send_smpolicycontrol_delete_notify(
 
     rc = ogs_sbi_send_request_to_client(
             client, client_delete_notify_cb, request, app_session);
-    ogs_expect(rc == true);
-
-    ogs_sbi_request_free(request);
-
-    return rc;
-}
-
-bool pcf_sbi_send_smpolicycontrol_terminate_notify(pcf_sess_t *sess)
-{
-    bool rc;
-    ogs_sbi_request_t *request = NULL;
-    ogs_sbi_client_t *client = NULL;
-
-    ogs_assert(sess);
-    client = sess->nsmf.client;
-    ogs_assert(client);
-
-    request = pcf_nsmf_callback_build_smpolicycontrol_terminate(sess, NULL);
-    if (!request) {
-        ogs_error("pcf_nsmf_callback_build_smpolicycontrol_terminate() failed");
-        return false;
-    }
-
-    rc = ogs_sbi_send_request_to_client(
-            client, client_notify_cb, request, NULL);
     ogs_expect(rc == true);
 
     ogs_sbi_request_free(request);

@@ -29,14 +29,13 @@ bool pcf_npcf_am_policy_contrtol_handle_create(pcf_ue_t *pcf_ue,
 
     OpenAPI_policy_association_request_t *PolicyAssociationRequest = NULL;
     OpenAPI_guami_t *Guami = NULL;
+    OpenAPI_lnode_t *node = NULL;
 
     uint64_t supported_features = 0;
 
     ogs_sbi_client_t *client = NULL;
     OpenAPI_uri_scheme_e scheme = OpenAPI_uri_scheme_NULL;
     ogs_sockaddr_t *addr = NULL;
-
-    pcf_metrics_inst_by_plmn_add(NULL, PCF_METR_CTR_PA_POLICYAMASSOREQ, 1);
 
     ogs_assert(pcf_ue);
     ogs_assert(stream);
@@ -113,26 +112,9 @@ bool pcf_npcf_am_policy_contrtol_handle_create(pcf_ue_t *pcf_ue,
     pcf_ue->access_type = PolicyAssociationRequest->access_type;
 
     if (PolicyAssociationRequest->pei) {
-        char *type = NULL, *value = NULL;
         if (pcf_ue->pei)
             ogs_free(pcf_ue->pei);
         pcf_ue->pei = ogs_strdup(PolicyAssociationRequest->pei);
-
-        type = ogs_id_get_type(pcf_ue->pei);
-        ogs_assert(type);
-        value = ogs_id_get_value(pcf_ue->pei);
-        ogs_assert(value);
-
-        if (strcmp(type, "imeisv") == 0) {
-            ogs_assert(OGS_OK == ogs_dbi_update_imeisv(pcf_ue->supi, value));
-        } else {
-            ogs_fatal("Unknown Type = %s", type);
-            ogs_assert_if_reached();
-        }
-
-
-        ogs_free(type);
-        ogs_free(value);
     }
 
     Guami = PolicyAssociationRequest->guami;
@@ -141,8 +123,19 @@ bool pcf_npcf_am_policy_contrtol_handle_create(pcf_ue_t *pcf_ue,
         ogs_sbi_parse_guami(&pcf_ue->guami, PolicyAssociationRequest->guami);
     }
 
-    pcf_metrics_inst_by_plmn_add(&pcf_ue->guami.plmn_id,
-            PCF_METR_CTR_PA_POLICYAMASSOREQ, 1);
+    OpenAPI_list_for_each(PolicyAssociationRequest->allowed_snssais, node) {
+        struct OpenAPI_snssai_s *Snssai = node->data;
+        if (Snssai) {
+            ogs_s_nssai_t s_nssai;
+            s_nssai.sst = Snssai->sst;
+            s_nssai.sd = ogs_s_nssai_sd_from_string(Snssai->sd);
+
+            pcf_metrics_inst_by_slice_add(&pcf_ue->guami.plmn_id,
+                    &s_nssai, PCF_METR_CTR_PA_POLICYAMASSOREQ, 1);
+        } else {
+            ogs_error("[%s] No Snssai", pcf_ue->supi);
+        }
+    }
 
     if (PolicyAssociationRequest->rat_type)
         pcf_ue->rat_type = PolicyAssociationRequest->rat_type;
@@ -179,8 +172,6 @@ bool pcf_npcf_smpolicycontrol_handle_create(pcf_sess_t *sess,
     ogs_sbi_client_t *client = NULL;
     OpenAPI_uri_scheme_e scheme = OpenAPI_uri_scheme_NULL;
     ogs_sockaddr_t *addr = NULL;
-
-    pcf_metrics_inst_by_slice_add(NULL, NULL, PCF_METR_CTR_PA_POLICYSMASSOREQ, 1);
 
     ogs_assert(sess);
     pcf_ue = sess->pcf_ue;
@@ -314,7 +305,7 @@ bool pcf_npcf_smpolicycontrol_handle_create(pcf_sess_t *sess,
     if (SmPolicyContextData->ipv6_frame_route_list) {
         OpenAPI_lnode_t *node = NULL;
 
-        OpenAPI_clear_and_free_string_list(sess->ipv4_frame_route_list);
+        OpenAPI_clear_and_free_string_list(sess->ipv6_frame_route_list);
         sess->ipv6_frame_route_list = OpenAPI_list_create();
         OpenAPI_list_for_each(SmPolicyContextData->ipv6_frame_route_list, node) {
             if (!node->data)
@@ -475,6 +466,9 @@ bool pcf_npcf_policyauthorization_handle_create(pcf_sess_t *sess,
     server = ogs_sbi_server_from_stream(stream);
     ogs_assert(server);
 
+    memset(&ims_data, 0, sizeof(ims_data));
+    memset(&session_data, 0, sizeof(ogs_session_data_t));
+
     AppSessionContext = recvmsg->AppSessionContext;
     if (!AppSessionContext) {
         strerror = ogs_msprintf("[%s:%d] No AppSessionContext",
@@ -529,8 +523,6 @@ bool pcf_npcf_policyauthorization_handle_create(pcf_sess_t *sess,
             ogs_uint64_to_string(sess->policyauthorization_features);
         ogs_assert(AscReqData->supp_feat);
     }
-
-    memset(&ims_data, 0, sizeof(ims_data));
 
     MediaComponentList = AscReqData->med_components;
     OpenAPI_list_for_each(MediaComponentList, node) {
@@ -613,7 +605,6 @@ bool pcf_npcf_policyauthorization_handle_create(pcf_sess_t *sess,
     OGS_SBI_SETUP_CLIENT(&app_session->naf, client);
     ogs_freeaddrinfo(addr);
 
-    memset(&session_data, 0, sizeof(ogs_session_data_t));
     rv = ogs_dbi_session_data(
             pcf_ue->supi, &sess->s_nssai, sess->dnn, &session_data);
     if (rv != OGS_OK) {
@@ -941,6 +932,9 @@ bool pcf_npcf_policyauthorization_handle_update(
     ogs_assert(stream);
     ogs_assert(recvmsg);
 
+    memset(&ims_data, 0, sizeof(ims_data));
+    memset(&session_data, 0, sizeof(ogs_session_data_t));
+
     AppSessionContextUpdateDataPatch =
         recvmsg->AppSessionContextUpdateDataPatch;
     if (!AppSessionContextUpdateDataPatch) {
@@ -964,8 +958,6 @@ bool pcf_npcf_policyauthorization_handle_update(
         status = OGS_SBI_HTTP_STATUS_BAD_REQUEST;
         goto cleanup;
     }
-
-    memset(&ims_data, 0, sizeof(ims_data));
 
     MediaComponentList = AscUpdateData->med_components;
     OpenAPI_list_for_each(MediaComponentList, node) {
@@ -1033,7 +1025,6 @@ bool pcf_npcf_policyauthorization_handle_update(
         }
     }
 
-    memset(&session_data, 0, sizeof(ogs_session_data_t));
     rv = ogs_dbi_session_data(
             pcf_ue->supi, &sess->s_nssai, sess->dnn, &session_data);
     if (rv != OGS_OK) {

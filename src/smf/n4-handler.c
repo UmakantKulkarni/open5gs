@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -148,8 +148,6 @@ uint8_t smf_5gc_n4_handle_session_establishment_response(
 {
     int i;
 
-    ogs_sbi_stream_t *stream = NULL;
-
     uint8_t cause_value = OGS_PFCP_CAUSE_REQUEST_ACCEPTED;
     uint8_t offending_ie_value = 0;
 
@@ -163,9 +161,6 @@ uint8_t smf_5gc_n4_handle_session_establishment_response(
     ogs_assert(rsp);
 
     ogs_debug("Session Establishment Response [5gc]");
-
-    stream = xact->assoc_stream;
-    ogs_assert(stream);
 
     ogs_pfcp_xact_commit(xact);
 
@@ -363,8 +358,8 @@ void smf_5gc_n4_handle_session_modification_response(
         char *strerror = ogs_msprintf(
                 "PFCP Cause [%d] : Not Accepted", rsp->cause.u8);
         if (stream)
-            smf_sbi_send_sm_context_update_error(
-                    stream, status, strerror, NULL, NULL, NULL);
+            smf_sbi_send_sm_context_update_error_log(
+                    stream, status, strerror, NULL);
         ogs_error("%s", strerror);
         ogs_free(strerror);
         return;
@@ -374,8 +369,8 @@ void smf_5gc_n4_handle_session_modification_response(
 
     if (sess->upf_n3_addr == NULL && sess->upf_n3_addr6 == NULL) {
         if (stream)
-            smf_sbi_send_sm_context_update_error(
-                    stream, status, "No UP F_TEID", NULL, NULL, NULL);
+            smf_sbi_send_sm_context_update_error_log(
+                    stream, status, "No UP F_TEID", NULL);
         return;
     }
 
@@ -401,14 +396,17 @@ void smf_5gc_n4_handle_session_modification_response(
                     sess, stream, OpenAPI_ho_state_COMPLETED);
 
         } else {
-            sess->paging.ue_requested_pdu_session_establishment_done = true;
-
             if (sess->up_cnx_state == OpenAPI_up_cnx_state_ACTIVATING) {
                 sess->up_cnx_state = OpenAPI_up_cnx_state_ACTIVATED;
                 smf_sbi_send_sm_context_updated_data_up_cnx_state(
                         sess, stream, OpenAPI_up_cnx_state_ACTIVATED);
             } else {
-                ogs_assert(true == ogs_sbi_send_http_status_no_content(stream));
+                int r = smf_sbi_discover_and_send(
+                        OGS_SBI_SERVICE_TYPE_NUDM_UECM, NULL,
+                        smf_nudm_uecm_build_registration,
+                        sess, stream, SMF_UECM_STATE_REGISTERED, NULL);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
             }
         }
 
@@ -701,8 +699,8 @@ int smf_5gc_n4_handle_session_deletion_response(
         } else if (trigger == OGS_PFCP_DELETE_TRIGGER_UE_REQUESTED ||
             trigger == OGS_PFCP_DELETE_TRIGGER_AMF_UPDATE_SM_CONTEXT) {
             ogs_assert(stream);
-            smf_sbi_send_sm_context_update_error(
-                stream, status, strerror, NULL, NULL, NULL);
+            smf_sbi_send_sm_context_update_error_log(
+                stream, status, strerror, NULL);
         } else if (trigger == OGS_PFCP_DELETE_TRIGGER_AMF_RELEASE_SM_CONTEXT) {
             ogs_assert(stream);
             ogs_assert(true ==
@@ -732,7 +730,6 @@ uint8_t smf_epc_n4_handle_session_establishment_response(
     uint8_t cause_value = OGS_PFCP_CAUSE_REQUEST_ACCEPTED;
 
     smf_bearer_t *bearer = NULL;
-    ogs_gtp_xact_t *gtp_xact = NULL;
 
     ogs_pfcp_f_seid_t *up_f_seid = NULL;
 
@@ -741,9 +738,6 @@ uint8_t smf_epc_n4_handle_session_establishment_response(
     ogs_assert(rsp);
 
     ogs_debug("Session Establishment Response [epc]");
-
-    gtp_xact = xact->assoc_xact;
-    ogs_assert(gtp_xact);
 
     ogs_pfcp_xact_commit(xact);
 
@@ -1157,9 +1151,11 @@ void smf_n4_handle_session_report_request(
         smf_sess_t *sess, ogs_pfcp_xact_t *pfcp_xact,
         ogs_pfcp_session_report_request_t *pfcp_req)
 {
+    smf_ue_t *smf_ue = NULL;
     smf_bearer_t *qos_flow = NULL;
     smf_bearer_t *bearer = NULL;
     ogs_pfcp_pdr_t *pdr = NULL;
+    ogs_pfcp_far_t *far = NULL;
 
     ogs_pfcp_report_type_t report_type;
     uint8_t cause_value = 0;
@@ -1193,12 +1189,16 @@ void smf_n4_handle_session_report_request(
     }
 
     ogs_assert(sess);
+    smf_ue = sess->smf_ue;
+    ogs_assert(smf_ue);
+
     report_type.value = pfcp_req->report_type.u8;
 
     if (report_type.downlink_data_report) {
         ogs_pfcp_downlink_data_service_information_t *info = NULL;
         uint8_t paging_policy_indication_value = 0;
         uint8_t qfi = 0;
+        smf_n1_n2_message_transfer_param_t param;
 
         if (pfcp_req->downlink_data_report.presence) {
             if (pfcp_req->downlink_data_report.
@@ -1263,9 +1263,21 @@ void smf_n4_handle_session_report_request(
             return;
         }
 
-        if (sess->paging.ue_requested_pdu_session_establishment_done == true) {
-            smf_n1_n2_message_transfer_param_t param;
-
+        switch (sess->up_cnx_state) {
+        case OpenAPI_up_cnx_state_NULL:
+            /* UE Requested PDU Session is NOT established */
+            break;
+        case OpenAPI_up_cnx_state_ACTIVATED:
+            ogs_error("[%s:%s] PDU Session had already been ACTIVATED",
+                smf_ue->imsi_bcd, sess->session.name);
+            break;
+        case OpenAPI_up_cnx_state_ACTIVATING:
+#if OGS_SBI_DISABLE_NETWORK_SERVICE_REQUEST_WHILE_ACTIVATING == 1
+            ogs_warn("[%s:%s] UE is being triggering Service Request",
+                smf_ue->imsi_bcd, sess->session.name);
+            break;
+#endif
+        case OpenAPI_up_cnx_state_DEACTIVATED:
             memset(&param, 0, sizeof(param));
             param.state = SMF_NETWORK_TRIGGERED_SERVICE_REQUEST;
             param.n2smbuf =
@@ -1275,25 +1287,22 @@ void smf_n4_handle_session_report_request(
             param.n1n2_failure_txf_notif_uri = true;
 
             smf_namf_comm_send_n1_n2_message_transfer(sess, &param);
+            break;
+        case OpenAPI_up_cnx_state_SUSPENDED:
+            ogs_error("[%s:%s] PDU Session had been SUSPENDED",
+                smf_ue->imsi_bcd, sess->session.name);
+            break;
+        default:
+            ogs_error("Invalid UpCnxState[%d]", sess->up_cnx_state);
+            break;
         }
     }
 
     if (report_type.error_indication_report) {
-        smf_ue_t *smf_ue = sess->smf_ue;
-        smf_sess_t *error_indication_session = NULL;
-        ogs_assert(smf_ue);
-
-        error_indication_session = smf_sess_find_by_error_indication_report(
-                smf_ue, &pfcp_req->error_indication_report);
-
-        if (error_indication_session) {
-            ogs_assert(OGS_OK ==
-                smf_5gc_pfcp_send_all_pdr_modification_request(
-                    error_indication_session, NULL,
-                    OGS_PFCP_MODIFY_DL_ONLY|OGS_PFCP_MODIFY_DEACTIVATE|
-                    OGS_PFCP_MODIFY_ERROR_INDICATION,
-                    0));
-        }
+        far = ogs_pfcp_far_find_by_pfcp_session_report(
+                &sess->pfcp, &pfcp_req->error_indication_report);
+        if (!far)
+            ogs_error("Cannot find Session in Error Indication");
     }
 
     if (report_type.usage_report) {
@@ -1349,5 +1358,25 @@ void smf_n4_handle_session_report_request(
         ogs_assert(OGS_OK ==
             smf_pfcp_send_session_report_response(
                 pfcp_xact, sess, OGS_PFCP_CAUSE_SYSTEM_FAILURE));
+    }
+
+    /* Error Indication is handled last */
+    if (report_type.error_indication_report && far) {
+        if (sess->epc == true) {
+            ogs_error("[%s:%s] Error Indication from SGW-C",
+                smf_ue->imsi_bcd, sess->session.name);
+            ogs_assert(OGS_OK ==
+                smf_epc_pfcp_send_session_deletion_request(
+                    sess, NULL));
+        } else {
+            ogs_warn("[%s:%s] Error Indication from gNB",
+                smf_ue->supi, sess->session.name);
+            ogs_assert(OGS_OK ==
+                smf_5gc_pfcp_send_all_pdr_modification_request(
+                    sess, NULL,
+                    OGS_PFCP_MODIFY_DL_ONLY|OGS_PFCP_MODIFY_DEACTIVATE|
+                    OGS_PFCP_MODIFY_ERROR_INDICATION,
+                    0));
+        }
     }
 }

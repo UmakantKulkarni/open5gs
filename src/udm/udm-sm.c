@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019,2020 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -50,6 +50,7 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
     ogs_sbi_xact_t *sbi_xact = NULL;
 
     udm_ue_t *udm_ue = NULL;
+    udm_sess_t *sess = NULL;
 
     udm_sm_debug(e);
 
@@ -163,7 +164,15 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                         message.h.resource.component[0]);
                 if (!udm_ue) {
                     udm_ue = udm_ue_add(message.h.resource.component[0]);
-                    ogs_assert(udm_ue);
+                    if (!udm_ue) {
+                        ogs_error("Invalid Request [%s]",
+                                message.h.resource.component[0]);
+                        ogs_assert(true ==
+                            ogs_sbi_server_send_error(stream,
+                                OGS_SBI_HTTP_STATUS_BAD_REQUEST,
+                                &message, NULL, NULL));
+                        break;
+                    }
                 }
             }
 
@@ -176,15 +185,44 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                 break;
             }
 
-            ogs_assert(OGS_FSM_STATE(&udm_ue->sm));
+            SWITCH(message.h.resource.component[2])
+            CASE(OGS_SBI_RESOURCE_NAME_SMF_REGISTRATIONS)
+                if (message.h.resource.component[3]) {
+                    uint8_t psi = atoi(message.h.resource.component[3]);
 
-            e->udm_ue = udm_ue;
-            e->h.sbi.message = &message;
-            ogs_fsm_dispatch(&udm_ue->sm, e);
-            if (OGS_FSM_CHECK(&udm_ue->sm, udm_ue_state_exception)) {
-                ogs_error("[%s] State machine exception", udm_ue->suci);
-                udm_ue_remove(udm_ue);
-            }
+                    sess = udm_sess_find_by_psi(udm_ue, psi);
+                    if (!sess) {
+                        sess = udm_sess_add(udm_ue, psi);
+                        ogs_assert(sess);
+                        ogs_debug("[%s:%d] UDM session added",
+                                udm_ue->supi, sess->psi);
+                    }
+                }
+
+                ogs_assert(sess);
+                ogs_assert(OGS_FSM_STATE(&sess->sm));
+
+                e->sess = sess;
+                e->h.sbi.message = &message;
+                ogs_fsm_dispatch(&sess->sm, e);
+                if (OGS_FSM_CHECK(&sess->sm, udm_sess_state_exception)) {
+                    ogs_error("[%s:%d] State machine exception",
+                            udm_ue->suci, sess->psi);
+                    udm_sess_remove(sess);
+                }
+                break;
+
+            DEFAULT
+                ogs_assert(OGS_FSM_STATE(&udm_ue->sm));
+
+                e->udm_ue = udm_ue;
+                e->h.sbi.message = &message;
+                ogs_fsm_dispatch(&udm_ue->sm, e);
+                if (OGS_FSM_CHECK(&udm_ue->sm, udm_ue_state_exception)) {
+                    ogs_error("[%s] State machine exception", udm_ue->suci);
+                    udm_ue_remove(udm_ue);
+                }
+            END
             break;
 
         DEFAULT
@@ -251,8 +289,21 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                         ogs_nnrf_nfm_handle_nf_status_subscribe(
                                 subscription_data, &message);
                     } else {
+                        ogs_error("HTTP response error : %d",
+                                message.res_status);
+                    }
+                    break;
+
+                CASE(OGS_SBI_HTTP_METHOD_PATCH)
+                    if (message.res_status == OGS_SBI_HTTP_STATUS_OK ||
+                        message.res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT) {
+                        ogs_nnrf_nfm_handle_nf_status_update(
+                                subscription_data, &message);
+                    } else {
                         ogs_error("[%s] HTTP response error [%d]",
-                                subscription_data->id, message.res_status);
+                                subscription_data->id ?
+                                    subscription_data->id : "Unknown",
+                                message.res_status);
                     }
                     break;
 
@@ -262,7 +313,9 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                         ogs_sbi_subscription_data_remove(subscription_data);
                     } else {
                         ogs_error("[%s] HTTP response error [%d]",
-                                subscription_data->id, message.res_status);
+                                subscription_data->id ?
+                                    subscription_data->id : "Unknown",
+                                message.res_status);
                     }
                     break;
 
@@ -311,39 +364,83 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
         CASE(OGS_SBI_SERVICE_NAME_NUDR_DR)
             SWITCH(message.h.resource.component[0])
             CASE(OGS_SBI_RESOURCE_NAME_SUBSCRIPTION_DATA)
-                sbi_xact = e->h.sbi.data;
-                ogs_assert(sbi_xact);
+                SWITCH(message.h.resource.component[3])
+                CASE(OGS_SBI_RESOURCE_NAME_SMF_REGISTRATIONS)
+                    sbi_xact = e->h.sbi.data;
+                    ogs_assert(sbi_xact);
 
-                sbi_xact = ogs_sbi_xact_cycle(sbi_xact);
-                if (!sbi_xact) {
-                    /* CLIENT_WAIT timer could remove SBI transaction
-                     * before receiving SBI message */
-                    ogs_error("SBI transaction has already been removed");
+                    sbi_xact = ogs_sbi_xact_cycle(sbi_xact);
+                    if (!sbi_xact) {
+                        /* CLIENT_WAIT timer could remove SBI transaction
+                         * before receiving SBI message */
+                        ogs_error("SBI transaction has already been removed");
+                        break;
+                    }
+
+                    sess = (udm_sess_t *)sbi_xact->sbi_object;
+                    ogs_assert(sess);
+
+                    e->h.sbi.data = sbi_xact->assoc_stream;
+
+                    ogs_sbi_xact_remove(sbi_xact);
+
+                    sess = udm_sess_cycle(sess);
+                    if (!sess) {
+                        ogs_error("SESS Context has already been removed");
+                        break;
+                    }
+
+                    udm_ue = udm_ue_cycle(sess->udm_ue);
+                    if (!udm_ue) {
+                        ogs_error("UE Context has already been removed");
+                        break;
+                    }
+
+                    e->sess = sess;
+                    e->h.sbi.message = &message;
+
+                    ogs_fsm_dispatch(&sess->sm, e);
+                    if (OGS_FSM_CHECK(&sess->sm, udm_sess_state_exception)) {
+                        ogs_error("[%s:%d] State machine exception",
+                                udm_ue->suci, sess->psi);
+                        udm_sess_remove(sess);
+                    }
                     break;
-                }
 
-                udm_ue = (udm_ue_t *)sbi_xact->sbi_object;
-                ogs_assert(udm_ue);
+                DEFAULT
+                    sbi_xact = e->h.sbi.data;
+                    ogs_assert(sbi_xact);
 
-                e->h.sbi.data = sbi_xact->assoc_stream;
+                    sbi_xact = ogs_sbi_xact_cycle(sbi_xact);
+                    if (!sbi_xact) {
+                        /* CLIENT_WAIT timer could remove SBI transaction
+                         * before receiving SBI message */
+                        ogs_error("SBI transaction has already been removed");
+                        break;
+                    }
 
-                ogs_sbi_xact_remove(sbi_xact);
+                    udm_ue = (udm_ue_t *)sbi_xact->sbi_object;
+                    ogs_assert(udm_ue);
 
-                udm_ue = udm_ue_cycle(udm_ue);
-                if (!udm_ue) {
-                    ogs_error("UE(udm_ue) Context has already been removed");
-                    break;
-                }
+                    e->h.sbi.data = sbi_xact->assoc_stream;
 
-                e->udm_ue = udm_ue;
-                e->h.sbi.message = &message;
+                    ogs_sbi_xact_remove(sbi_xact);
 
-                ogs_fsm_dispatch(&udm_ue->sm, e);
-                if (OGS_FSM_CHECK(&udm_ue->sm, udm_ue_state_exception)) {
-                    ogs_error("[%s] State machine exception", udm_ue->suci);
-                    udm_ue_remove(udm_ue);
-                }
+                    udm_ue = udm_ue_cycle(udm_ue);
+                    if (!udm_ue) {
+                        ogs_error("UE Context has already been removed");
+                        break;
+                    }
 
+                    e->udm_ue = udm_ue;
+                    e->h.sbi.message = &message;
+
+                    ogs_fsm_dispatch(&udm_ue->sm, e);
+                    if (OGS_FSM_CHECK(&udm_ue->sm, udm_ue_state_exception)) {
+                        ogs_error("[%s] State machine exception", udm_ue->suci);
+                        udm_ue_remove(udm_ue);
+                    }
+                END
                 break;
 
             DEFAULT
@@ -394,9 +491,20 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                     subscription_data->subscr_cond.nf_type,
                     subscription_data->subscr_cond.service_name));
             
-            ogs_info("[%s] Subscription validity expired",
-                    subscription_data->id);
+            ogs_error("[%s] Subscription validity expired",
+                subscription_data->id);
             ogs_sbi_subscription_data_remove(subscription_data);
+            break;
+
+        case OGS_TIMER_SUBSCRIPTION_PATCH:
+            subscription_data = e->h.sbi.data;
+            ogs_assert(subscription_data);
+
+            ogs_assert(true ==
+                ogs_nnrf_nfm_send_nf_status_update(subscription_data));
+
+            ogs_info("[%s] Need to update Subscription",
+                    subscription_data->id);
             break;
 
         case OGS_TIMER_SBI_CLIENT_WAIT:

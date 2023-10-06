@@ -36,6 +36,15 @@
 #undef OGS_LOG_DOMAIN
 #define OGS_LOG_DOMAIN __emm_log_domain
 
+typedef enum {
+    EMM_COMMON_STATE_DEREGISTERED,
+    EMM_COMMON_STATE_REGISTERED,
+} emm_common_state_e;
+
+static void common_register_state(ogs_fsm_t *s, mme_event_t *e,
+        emm_common_state_e state);
+
+
 void emm_state_initial(ogs_fsm_t *s, mme_event_t *e)
 {
     ogs_assert(s);
@@ -52,7 +61,6 @@ void emm_state_final(ogs_fsm_t *s, mme_event_t *e)
     mme_sm_debug(e);
 }
 
-static void common_register_state(ogs_fsm_t *s, mme_event_t *e);
 
 void emm_state_de_registered(ogs_fsm_t *s, mme_event_t *e)
 {
@@ -75,7 +83,7 @@ void emm_state_de_registered(ogs_fsm_t *s, mme_event_t *e)
         break;
 
     case MME_EVENT_EMM_MESSAGE:
-        common_register_state(s, e);
+        common_register_state(s, e, EMM_COMMON_STATE_DEREGISTERED);
         break;
 
     case MME_EVENT_EMM_TIMER:
@@ -124,7 +132,7 @@ void emm_state_registered(ogs_fsm_t *s, mme_event_t *e)
         break;
 
     case MME_EVENT_EMM_MESSAGE:
-        common_register_state(s, e);
+        common_register_state(s, e, EMM_COMMON_STATE_REGISTERED);
         break;
 
     case MME_EVENT_EMM_TIMER:
@@ -183,10 +191,58 @@ void emm_state_registered(ogs_fsm_t *s, mme_event_t *e)
         case MME_TIMER_MOBILE_REACHABLE:
             ogs_info("[%s] Mobile Reachable timer expired", mme_ue->imsi_bcd);
             CLEAR_MME_UE_TIMER(mme_ue->t_mobile_reachable);
-            /* TS 24.301 5.3.5
-             * Upon expiry of the mobile reachable timer the network shall
-             * start the implicit detach timer.
-             */
+        /*
+         * TS 24.301
+         * Section 5.3.5
+         * Handling of the periodic tracking area update timer and
+         * mobile reachable timer (S1 mode only)
+         *
+         * The periodic tracking area updating procedure is used to
+         * periodically notify the availability of the UE to the network.
+         * The procedure is controlled in the UE by timer T3412.
+         * The value of timer T3412 is sent by the network to the UE
+         * in the ATTACH ACCEPT message and can be sent in the TRACKING AREA
+         * UPDATE ACCEPT message. The UE shall apply this value in all tracking
+         * areas of the list of tracking areas assigned to the UE
+         * until a new value is received.
+         *
+         * If timer T3412 received by the UE in an ATTACH ACCEPT or TRACKING
+         * AREA UPDATE ACCEPT message contains an indication that the timer is
+         * deactivated or the timer value is zero, then timer T3412 is
+         * deactivated and the UE shall not perform the periodic tracking area
+         * updating procedure.
+         *
+         * Timer T3412 is reset and started with its initial value,
+         * when the UE changes from EMM-CONNECTED to EMM-IDLE mode.
+         *
+         * Timer T3412 is stopped when the UE enters EMM-CONNECTED mode or
+         * the EMM-DEREGISTERED state. If the UE is attached for emergency
+         * bearer services, and timer T3412 expires, the UE shall not initiate
+         * a periodic tracking area updating procedure, but shall locally detach
+         * from the network. When the UE is camping on a suitable cell, it may
+         * re-attach to regain normal service.
+         *
+         * When a UE is not attached for emergency bearer services, and timer
+         * T3412 expires, the periodic tracking area updating procedure shall
+         * be started and the timer shall be set to its initial value
+         * for the next start.
+         *
+         * If the UE is not attached for emergency bearer services, the mobile
+         * reachable timer shall be longer than T3412. In this case, by default,
+         * the mobile reachable timer is 4 minutes greater than timer T3412.
+         *
+         * Upon expiry of the mobile reachable timer the network shall start
+         * the implicit detach timer. The value of the implicit detach timer is
+         * network dependent. If ISR is activated, the default value of
+         * the implicit detach timer is 4 minutes greater than timer T3423.
+         * If the implicit detach timer expires before the UE contacts
+         * the network, the network shall implicitly detach the UE. If the MME
+         * includes timer T3346 in the TRACKING AREA UPDATE REJECT message or
+         * the SERVICE REJECT message and timer T3346 is greater than timer
+         * T3412, the MME sets the mobile reachable timer and the implicit
+         * detach timer such that the sum of the timer values is greater than
+         * timer T3346.
+         */
             ogs_debug("[%s] Starting Implicit Detach timer",
                 mme_ue->imsi_bcd);
             ogs_timer_start(mme_ue->t_implicit_detach.timer,
@@ -222,9 +278,10 @@ void emm_state_registered(ogs_fsm_t *s, mme_event_t *e)
     }
 }
 
-static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
+static void common_register_state(ogs_fsm_t *s, mme_event_t *e,
+        emm_common_state_e state)
 {
-    int r, rv;
+    int r, rv, xact_count = 0;
 
     mme_ue_t *mme_ue = NULL;
     enb_ue_t *enb_ue = NULL;
@@ -248,9 +305,23 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
 
         h.type = e->nas_type;
 
+        xact_count = mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR);
+
         if (message->emm.h.security_header_type
                 == OGS_NAS_SECURITY_HEADER_FOR_SERVICE_REQUEST_MESSAGE) {
             ogs_info("[%s] Service request", mme_ue->imsi_bcd);
+
+            if (state != EMM_COMMON_STATE_REGISTERED) {
+                ogs_info("Service request : Not registered[%s]",
+                        mme_ue->imsi_bcd);
+                r = nas_eps_send_service_reject(mme_ue,
+                    OGS_NAS_EMM_CAUSE_UE_IDENTITY_CANNOT_BE_DERIVED_BY_THE_NETWORK);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
+                OGS_FSM_TRAN(s, &emm_state_exception);
+                break;
+            }
+
             rv = emm_handle_service_request(
                     mme_ue, &message->emm.service_request);
             if (rv != OGS_OK) {
@@ -270,7 +341,7 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
             }
 
             if (!SECURITY_CONTEXT_IS_VALID(mme_ue)) {
-                ogs_warn("No Security Context : IMSI[%s]", mme_ue->imsi_bcd);
+                ogs_error("No Security Context : IMSI[%s]", mme_ue->imsi_bcd);
                 r = nas_eps_send_service_reject(mme_ue,
                     OGS_NAS_EMM_CAUSE_UE_IDENTITY_CANNOT_BE_DERIVED_BY_THE_NETWORK);
                 ogs_expect(r == OGS_OK);
@@ -280,7 +351,7 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
             }
 
             if (!SESSION_CONTEXT_IS_AVAILABLE(mme_ue)) {
-                ogs_warn("No Session Context : IMSI[%s]", mme_ue->imsi_bcd);
+                ogs_error("No Session Context : IMSI[%s]", mme_ue->imsi_bcd);
                 r = nas_eps_send_service_reject(mme_ue,
                     OGS_NAS_EMM_CAUSE_UE_IDENTITY_CANNOT_BE_DERIVED_BY_THE_NETWORK);
                 ogs_expect(r == OGS_OK);
@@ -290,7 +361,7 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
             }
 
             if (!ACTIVE_EPS_BEARERS_IS_AVAIABLE(mme_ue)) {
-                ogs_warn("No active EPS bearers : IMSI[%s]", mme_ue->imsi_bcd);
+                ogs_error("No active EPS bearers : IMSI[%s]", mme_ue->imsi_bcd);
                 r = nas_eps_send_service_reject(mme_ue,
                         OGS_NAS_EMM_CAUSE_NO_EPS_BEARER_CONTEXT_ACTIVATED);
                 ogs_expect(r == OGS_OK);
@@ -325,12 +396,15 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
                 break;
             }
 
-            if (SESSION_CONTEXT_IS_AVAILABLE(mme_ue)) {
-                mme_gtp_send_delete_all_sessions(mme_ue,
-                        OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
-            } else {
+            mme_gtp_send_delete_all_sessions(mme_ue,
+                    OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
+
+            if (!MME_SESSION_RELEASE_PENDING(mme_ue) &&
+                mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR) ==
+                    xact_count) {
                 mme_s6a_send_air(mme_ue, NULL);
             }
+
             OGS_FSM_TRAN(s, &emm_state_authentication);
             break;
 
@@ -353,10 +427,12 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
             }
 
             if (h.integrity_protected && SECURITY_CONTEXT_IS_VALID(mme_ue)) {
-                if (SESSION_CONTEXT_IS_AVAILABLE(mme_ue)) {
-                    mme_gtp_send_delete_all_sessions(mme_ue,
-                        OGS_GTP_DELETE_HANDLE_PDN_CONNECTIVITY_REQUEST);
-                } else {
+                mme_gtp_send_delete_all_sessions(mme_ue,
+                    OGS_GTP_DELETE_HANDLE_PDN_CONNECTIVITY_REQUEST);
+
+                if (!MME_SESSION_RELEASE_PENDING(mme_ue) &&
+                    mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR) ==
+                        xact_count) {
                     rv = nas_eps_send_emm_to_esm(mme_ue,
                             &mme_ue->pdn_connectivity_request);
                     if (rv != OGS_OK) {
@@ -370,15 +446,21 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
                         break;
                     }
                 }
+
                 OGS_FSM_TRAN(s, &emm_state_initial_context_setup);
+
             } else {
-                if (SESSION_CONTEXT_IS_AVAILABLE(mme_ue)) {
-                    mme_gtp_send_delete_all_sessions(mme_ue,
-                        OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
-                } else {
+                mme_gtp_send_delete_all_sessions(mme_ue,
+                    OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
+
+                if (!MME_SESSION_RELEASE_PENDING(mme_ue) &&
+                    mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR) ==
+                        xact_count) {
                     mme_s6a_send_air(mme_ue, NULL);
                 }
+
                 OGS_FSM_TRAN(s, &emm_state_authentication);
+
             }
             break;
 
@@ -496,6 +578,23 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
             if (e->s1ap_code == S1AP_ProcedureCode_id_initialUEMessage) {
                 ogs_debug("    Iniital UE Message");
                 if (mme_ue->nas_eps.update.active_flag) {
+
+    /*
+     * TS33.401
+     * 7 Security procedures between UE and EPS access network elements
+     * 7.2 Handling of user-related keys in E-UTRAN
+     * 7.2.7 Key handling for the TAU procedure when registered in E-UTRAN
+     *
+     * If the "active flag" is set in the TAU request message or
+     * the MME chooses to establish radio bearers when there is pending downlink
+     * UP data or pending downlink signalling, radio bearers will be established
+     * as part of the TAU procedure and a KeNB derivation is necessary.
+     */
+                    ogs_kdf_kenb(mme_ue->kasme, mme_ue->ul_count.i32,
+                            mme_ue->kenb);
+                    ogs_kdf_nh_enb(mme_ue->kasme, mme_ue->kenb, mme_ue->nh);
+                    mme_ue->nhcc = 1;
+
                     r = nas_eps_send_tau_accept(mme_ue,
                             S1AP_ProcedureCode_id_InitialContextSetup);
                     ogs_expect(r == OGS_OK);
@@ -531,6 +630,7 @@ static void common_register_state(ogs_fsm_t *s, mme_event_t *e)
 
         case OGS_NAS_EPS_EXTENDED_SERVICE_REQUEST:
             ogs_info("[%s] Extended service request", mme_ue->imsi_bcd);
+
             rv = emm_handle_extended_service_request(
                     mme_ue, &message->emm.extended_service_request);
             if (rv != OGS_OK) {
@@ -797,6 +897,7 @@ void emm_state_authentication(ogs_fsm_t *s, mme_event_t *e)
                         authentication_response_parameter;
 
             ogs_debug("Authentication response");
+            MME_UE_LIST_CHECK;
             ogs_debug("    IMSI[%s]", mme_ue->imsi_bcd);
 
             CLEAR_MME_UE_TIMER(mme_ue->t3460);
@@ -1157,7 +1258,7 @@ void emm_state_security_mode(ogs_fsm_t *s, mme_event_t *e)
 
 void emm_state_initial_context_setup(ogs_fsm_t *s, mme_event_t *e)
 {
-    int r, rv;
+    int r, rv, xact_count;
     mme_ue_t *mme_ue = NULL;
     ogs_nas_eps_message_t *message = NULL;
     ogs_nas_security_header_type_t h;
@@ -1178,6 +1279,8 @@ void emm_state_initial_context_setup(ogs_fsm_t *s, mme_event_t *e)
     case MME_EVENT_EMM_MESSAGE:
         message = e->nas_message;
         ogs_assert(message);
+
+        xact_count = mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR);
 
         if (message->emm.h.security_header_type
                 == OGS_NAS_SECURITY_HEADER_FOR_SERVICE_REQUEST_MESSAGE) {
@@ -1294,8 +1397,16 @@ void emm_state_initial_context_setup(ogs_fsm_t *s, mme_event_t *e)
 
             mme_gtp_send_delete_all_sessions(mme_ue,
                 OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
+
+            if (!MME_SESSION_RELEASE_PENDING(mme_ue) &&
+                mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR) ==
+                    xact_count) {
+                mme_s6a_send_air(mme_ue, NULL);
+            }
+
             OGS_FSM_TRAN(s, &emm_state_authentication);
             break;
+
         case OGS_NAS_EPS_EMM_STATUS:
             ogs_warn("EMM STATUS : IMSI[%s] Cause[%d]",
                     mme_ue->imsi_bcd,
@@ -1395,7 +1506,7 @@ void emm_state_initial_context_setup(ogs_fsm_t *s, mme_event_t *e)
 
 void emm_state_exception(ogs_fsm_t *s, mme_event_t *e)
 {
-    int r, rv;
+    int r, rv, xact_count;
 
     mme_ue_t *mme_ue = NULL;
     enb_ue_t *enb_ue = NULL;
@@ -1425,6 +1536,8 @@ void emm_state_exception(ogs_fsm_t *s, mme_event_t *e)
 
         h.type = e->nas_type;
 
+        xact_count = mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR);
+
         switch (message->emm.h.message_type) {
         case OGS_NAS_EPS_ATTACH_REQUEST:
             ogs_warn("[%s] Attach request", mme_ue->imsi_bcd);
@@ -1447,10 +1560,12 @@ void emm_state_exception(ogs_fsm_t *s, mme_event_t *e)
             }
 
             if (h.integrity_protected && SECURITY_CONTEXT_IS_VALID(mme_ue)) {
-                if (SESSION_CONTEXT_IS_AVAILABLE(mme_ue)) {
-                    mme_gtp_send_delete_all_sessions(mme_ue,
-                        OGS_GTP_DELETE_HANDLE_PDN_CONNECTIVITY_REQUEST);
-                } else {
+                mme_gtp_send_delete_all_sessions(mme_ue,
+                    OGS_GTP_DELETE_HANDLE_PDN_CONNECTIVITY_REQUEST);
+
+                if (!MME_SESSION_RELEASE_PENDING(mme_ue) &&
+                    mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR) ==
+                        xact_count) {
                     rv = nas_eps_send_emm_to_esm(mme_ue,
                             &mme_ue->pdn_connectivity_request);
                     if (rv != OGS_OK) {
@@ -1464,15 +1579,21 @@ void emm_state_exception(ogs_fsm_t *s, mme_event_t *e)
                         break;
                     }
                 }
+
                 OGS_FSM_TRAN(s, &emm_state_initial_context_setup);
+
             } else {
-                if (SESSION_CONTEXT_IS_AVAILABLE(mme_ue)) {
-                    mme_gtp_send_delete_all_sessions(mme_ue,
-                        OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
-                } else {
+                mme_gtp_send_delete_all_sessions(mme_ue,
+                    OGS_GTP_DELETE_SEND_AUTHENTICATION_REQUEST);
+
+                if (!MME_SESSION_RELEASE_PENDING(mme_ue) &&
+                    mme_ue_xact_count(mme_ue, OGS_GTP_LOCAL_ORIGINATOR) ==
+                        xact_count) {
                     mme_s6a_send_air(mme_ue, NULL);
                 }
+
                 OGS_FSM_TRAN(s, &emm_state_authentication);
+
             }
             break;
 

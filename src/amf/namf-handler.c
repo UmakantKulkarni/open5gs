@@ -274,23 +274,18 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
                 sendmsg.http.location = ogs_sbi_server_uri(server, &header);
 
-                if (ogs_timer_running(
-                            amf_ue->implicit_deregistration.timer) == true) {
-                    ogs_warn("[%s] Paging failed. Stop", amf_ue->supi);
-                } else {
-                    /* Store Paging Info */
-                    AMF_SESS_STORE_PAGING_INFO(
-                        sess, sendmsg.http.location,
-                        N1N2MessageTransferReqData->n1n2_failure_txf_notif_uri);
+                /* Store Paging Info */
+                AMF_SESS_STORE_PAGING_INFO(
+                    sess, sendmsg.http.location,
+                    N1N2MessageTransferReqData->n1n2_failure_txf_notif_uri);
 
-                    /* Store N2 Transfer message */
-                    AMF_SESS_STORE_N2_TRANSFER(
-                            sess, pdu_session_resource_setup_request, n2buf);
+                /* Store N2 Transfer message */
+                AMF_SESS_STORE_N2_TRANSFER(
+                        sess, pdu_session_resource_setup_request, n2buf);
 
-                    r = ngap_send_paging(amf_ue);
-                    ogs_expect(r == OGS_OK);
-                    ogs_assert(r != OGS_ERROR);
-                }
+                r = ngap_send_paging(amf_ue);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
 
             } else if (CM_CONNECTED(amf_ue)) {
                 r = nas_send_pdu_session_setup_request(sess, NULL, n2buf);
@@ -341,23 +336,18 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
 
             sendmsg.http.location = ogs_sbi_server_uri(server, &header);
 
-            if (ogs_timer_running(
-                        amf_ue->implicit_deregistration.timer) == true) {
-                ogs_warn("[%s] Paging failed. Stop", amf_ue->supi);
-            } else {
-                /* Store Paging Info */
-                AMF_SESS_STORE_PAGING_INFO(
-                        sess, sendmsg.http.location, NULL);
+            /* Store Paging Info */
+            AMF_SESS_STORE_PAGING_INFO(
+                    sess, sendmsg.http.location, NULL);
 
-                /* Store 5GSM Message */
-                AMF_SESS_STORE_5GSM_MESSAGE(sess,
-                        OGS_NAS_5GS_PDU_SESSION_MODIFICATION_COMMAND,
-                        n1buf, n2buf);
+            /* Store 5GSM Message */
+            AMF_SESS_STORE_5GSM_MESSAGE(sess,
+                    OGS_NAS_5GS_PDU_SESSION_MODIFICATION_COMMAND,
+                    n1buf, n2buf);
 
-                r = ngap_send_paging(amf_ue);
-                ogs_expect(r == OGS_OK);
-                ogs_assert(r != OGS_ERROR);
-            }
+            r = ngap_send_paging(amf_ue);
+            ogs_expect(r == OGS_OK);
+            ogs_assert(r != OGS_ERROR);
 
         } else if (CM_CONNECTED(amf_ue)) {
             r = nas_send_pdu_session_modification_command(sess, n1buf, n2buf);
@@ -378,18 +368,53 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
         }
 
         if (CM_IDLE(amf_ue)) {
-            if (n1buf)
-                ogs_pkbuf_free(n1buf);
-            if (n2buf)
-                ogs_pkbuf_free(n2buf);
-
             if (N1N2MessageTransferReqData->is_skip_ind == true &&
                 N1N2MessageTransferReqData->skip_ind == true) {
+
+                if (n1buf)
+                    ogs_pkbuf_free(n1buf);
+                if (n2buf)
+                    ogs_pkbuf_free(n2buf);
+
                 N1N2MessageTransferRspData.cause =
                     OpenAPI_n1_n2_message_transfer_cause_N1_MSG_NOT_TRANSFERRED;
+
             } else {
-                ogs_fatal("[%s] No skipInd", amf_ue->supi);
-                ogs_assert_if_reached();
+                ogs_sbi_server_t *server = NULL;
+                ogs_sbi_header_t header;
+
+                status = OGS_SBI_HTTP_STATUS_ACCEPTED;
+                N1N2MessageTransferRspData.cause =
+                    OpenAPI_n1_n2_message_transfer_cause_ATTEMPTING_TO_REACH_UE;
+
+                /* Location */
+                server = ogs_sbi_server_from_stream(stream);
+                ogs_assert(server);
+
+                memset(&header, 0, sizeof(header));
+                header.service.name = (char *)OGS_SBI_SERVICE_NAME_NAMF_COMM;
+                header.api.version = (char *)OGS_SBI_API_V1;
+                header.resource.component[0] =
+                    (char *)OGS_SBI_RESOURCE_NAME_UE_CONTEXTS;
+                header.resource.component[1] = amf_ue->supi;
+                header.resource.component[2] =
+                    (char *)OGS_SBI_RESOURCE_NAME_N1_N2_MESSAGES;
+                header.resource.component[3] = sess->sm_context_ref;
+
+                sendmsg.http.location = ogs_sbi_server_uri(server, &header);
+
+                /* Store Paging Info */
+                AMF_SESS_STORE_PAGING_INFO(
+                        sess, sendmsg.http.location, NULL);
+
+                /* Store 5GSM Message */
+                AMF_SESS_STORE_5GSM_MESSAGE(sess,
+                        OGS_NAS_5GS_PDU_SESSION_RELEASE_COMMAND,
+                        n1buf, n2buf);
+
+                r = ngap_send_paging(amf_ue);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
             }
 
         } else if (CM_CONNECTED(amf_ue)) {
@@ -400,6 +425,36 @@ int amf_namf_comm_handle_n1_n2_message_transfer(
             ogs_fatal("[%s] Invalid AMF-UE state", amf_ue->supi);
             ogs_assert_if_reached();
         }
+        break;
+
+    case OpenAPI_ngap_ie_type_NULL:
+        /*
+         * No n2InfoContainer. According to TS23.502, this means that SMF has
+         * encountered an error and is rejecting the session.
+         *
+         * TS23.502
+         * 6.3.1.7 4.3.2.2 UE Requested PDU Session Establishment
+         * p100
+         * 11.  ...
+         * If the PDU session establishment failed anywhere between step 5
+         * and step 11, then the Namf_Communication_N1N2MessageTransfer
+         * request shall include the N1 SM container with a PDU Session
+         * Establishment Reject message ...
+         */
+        if (!n1buf) {
+            ogs_error("[%s] No N1 SM Content", amf_ue->supi);
+            return OGS_ERROR;
+        }
+
+        ogs_error("[%d:%d] PDU session establishment reject",
+                sess->psi, sess->pti);
+
+        r = nas_5gs_send_gsm_reject(sess,
+                OGS_NAS_PAYLOAD_CONTAINER_N1_SM_INFORMATION, n1buf);
+        ogs_expect(r == OGS_OK);
+        ogs_assert(r != OGS_ERROR);
+
+        amf_sess_remove(sess);
         break;
 
     default:
@@ -498,11 +553,15 @@ int amf_namf_callback_handle_sm_context_status(
      * If NOTIFICATION comes after the CLIENT response is received,
      * sync is done. So, the session context can be removed.
      */
+    ogs_info("[%s:%d][%d:%d:%s] "
+            "/namf-callback/v1/{supi}/sm-context-status/{psi}",
+            amf_ue->supi, sess->psi,
+            sess->n1_released, sess->n2_released,
+            OpenAPI_resource_status_ToString(sess->resource_status));
+
     if (sess->n1_released == true &&
         sess->n2_released == true &&
         sess->resource_status == OpenAPI_resource_status_RELEASED) {
-
-        ogs_debug("[%s:%d] SM context remove", amf_ue->supi, sess->psi);
         amf_nsmf_pdusession_handle_release_sm_context(
                 sess, AMF_RELEASE_SM_CONTEXT_NO_STATE);
     }
@@ -851,10 +910,9 @@ int amf_namf_callback_handle_sdm_data_change_notify(
     ModificationNotification = recvmsg->ModificationNotification;
     if (!ModificationNotification) {
         status = OGS_SBI_HTTP_STATUS_BAD_REQUEST;
-        ogs_error("[%s] No ModificationNotification", amf_ue->supi);
+        ogs_error("No ModificationNotification");
         goto cleanup;
     }
-
 
     OpenAPI_list_for_each(ModificationNotification->notify_items, node) {
         OpenAPI_notify_item_t *item = node->data;
@@ -909,66 +967,68 @@ int amf_namf_callback_handle_sdm_data_change_notify(
         res_name = NULL;
     }
 
-    if (amf_ue_is_rat_restricted(amf_ue)) {
-        /*
-         * - AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED
-         * 1. UDM_UECM_DeregistrationNotification
-         * 2. Deregistration request
-         * 3. UDM_SDM_Unsubscribe
-         * 4. UDM_UECM_Deregisration
-         * 5. PDU session release request
-         * 6. PDUSessionResourceReleaseCommand +
-         *    PDU session release command
-         * 7. PDUSessionResourceReleaseResponse
-         * 8. AM_Policy_Association_Termination
-         * 9.  Deregistration accept
-         * 10. Signalling Connecion Release
-         */
-        if (CM_CONNECTED(amf_ue)) {
-            r = nas_5gs_send_de_registration_request(
-                    amf_ue,
-                    OpenAPI_deregistration_reason_REREGISTRATION_REQUIRED, 0);
+    if (amf_ue) {
+        ran_ue_t *ran_ue = ran_ue_cycle(amf_ue->ran_ue);
+        if ((!ran_ue) || (amf_ue_is_rat_restricted(amf_ue))) {
+
+            if (!ran_ue) {
+                ogs_error("NG context has already been removed");
+                /* ran_ue is required for amf_ue_is_rat_restricted() */
+
+                ogs_error("Not implemented : Use Implicit De-registration");
+                state = AMF_NETWORK_INITIATED_IMPLICIT_DE_REGISTERED;
+            }
+            else {
+                /*
+                * - AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED
+                * 1. UDM_UECM_DeregistrationNotification
+                * 2. Deregistration request
+                * 3. UDM_SDM_Unsubscribe
+                * 4. UDM_UECM_Deregistration
+                * 5. PDU session release request
+                * 6. PDUSessionResourceReleaseCommand +
+                *    PDU session release command
+                * 7. PDUSessionResourceReleaseResponse
+                * 8. AM_Policy_Association_Termination
+                * 9.  Deregistration accept
+                * 10. Signalling Connection Release
+                */
+                r = nas_5gs_send_de_registration_request(
+                        amf_ue,
+                        OpenAPI_deregistration_reason_REREGISTRATION_REQUIRED, 0);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
+
+                state = AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED;
+            }
+
+            if (UDM_SDM_SUBSCRIBED(amf_ue)) {
+                r = amf_ue_sbi_discover_and_send(
+                        OGS_SBI_SERVICE_TYPE_NUDM_SDM, NULL,
+                        amf_nudm_sdm_build_subscription_delete,
+                        amf_ue, state, NULL);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
+            } else if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
+                r = amf_ue_sbi_discover_and_send(
+                        OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
+                        NULL,
+                        amf_npcf_am_policy_control_build_delete,
+                        amf_ue, state, NULL);
+                ogs_expect(r == OGS_OK);
+                ogs_assert(r != OGS_ERROR);
+            }
+
+        } else if (ambr_changed) {
+            ogs_pkbuf_t *ngapbuf;
+
+            ngapbuf = ngap_build_ue_context_modification_request(amf_ue);
+            ogs_assert(ngapbuf);
+
+            r = nas_5gs_send_to_gnb(amf_ue, ngapbuf);
             ogs_expect(r == OGS_OK);
             ogs_assert(r != OGS_ERROR);
-
-            state = AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED;
-
-        } else if (CM_IDLE(amf_ue)) {
-            ogs_error("Not implemented : Use Implicit De-registration");
-
-            state = AMF_NETWORK_INITIATED_IMPLICIT_DE_REGISTERED;
-
-        } else {
-            ogs_fatal("Invalid State");
-            ogs_assert_if_reached();
         }
-
-        if (UDM_SDM_SUBSCRIBED(amf_ue)) {
-            r = amf_ue_sbi_discover_and_send(
-                    OGS_SBI_SERVICE_TYPE_NUDM_SDM, NULL,
-                    amf_nudm_sdm_build_subscription_delete,
-                    amf_ue, state, NULL);
-            ogs_expect(r == OGS_OK);
-            ogs_assert(r != OGS_ERROR);
-        } else if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
-            r = amf_ue_sbi_discover_and_send(
-                    OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
-                    NULL,
-                    amf_npcf_am_policy_control_build_delete,
-                    amf_ue, state, NULL);
-            ogs_expect(r == OGS_OK);
-            ogs_assert(r != OGS_ERROR);
-        }
-
-    } else if (ambr_changed) {
-        ogs_pkbuf_t *ngapbuf;
-
-        ngapbuf = ngap_build_ue_context_modification_request(amf_ue);
-        ogs_assert(ngapbuf);
-
-        r = nas_5gs_send_to_gnb(amf_ue, ngapbuf);
-        ogs_expect(r == OGS_OK);
-        ogs_assert(r != OGS_ERROR);
     }
 
 cleanup:

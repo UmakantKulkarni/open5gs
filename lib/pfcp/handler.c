@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -24,7 +24,27 @@ bool ogs_pfcp_handle_heartbeat_request(
         ogs_pfcp_heartbeat_request_t *req)
 {
     int rv;
+    ogs_assert(node);
     ogs_assert(xact);
+    ogs_assert(req);
+
+    if (req->recovery_time_stamp.presence == 0) {
+        ogs_error("No Recovery Time Stamp");
+        return false;
+    }
+
+    if (node->remote_recovery == 0 ||
+        node->remote_recovery == req->recovery_time_stamp.u32) {
+    } else if (node->remote_recovery < req->recovery_time_stamp.u32) {
+        ogs_error("Remote PFCP restarted [%u<%u] in Heartbeat REQ",
+            node->remote_recovery, req->recovery_time_stamp.u32);
+        node->restoration_required = true;
+    } else if (node->remote_recovery > req->recovery_time_stamp.u32) {
+        ogs_error("Invalid Recovery Time Stamp [%u>%u] in Heartbeat REQ",
+        node->remote_recovery, req->recovery_time_stamp.u32);
+    }
+
+    node->remote_recovery = req->recovery_time_stamp.u32;
 
     rv = ogs_pfcp_send_heartbeat_response(xact);
     if (rv != OGS_OK) {
@@ -39,8 +59,29 @@ bool ogs_pfcp_handle_heartbeat_response(
         ogs_pfcp_node_t *node, ogs_pfcp_xact_t *xact,
         ogs_pfcp_heartbeat_response_t *rsp)
 {
+    ogs_assert(node);
     ogs_assert(xact);
+    ogs_assert(rsp);
+
     ogs_pfcp_xact_commit(xact);
+
+    if (rsp->recovery_time_stamp.presence == 0) {
+        ogs_error("No Recovery Time Stamp");
+        return false;
+    }
+
+    if (node->remote_recovery == 0 ||
+        node->remote_recovery == rsp->recovery_time_stamp.u32) {
+    } else if (node->remote_recovery < rsp->recovery_time_stamp.u32) {
+        ogs_error("Remote PFCP restarted [%u<%u] in Heartbeat RSP",
+            node->remote_recovery, rsp->recovery_time_stamp.u32);
+        node->restoration_required = true;
+    } else if (node->remote_recovery > rsp->recovery_time_stamp.u32) {
+        ogs_error("Invalid Recovery Time Stamp [%u>%u] in Heartbeat RSP",
+        node->remote_recovery, rsp->recovery_time_stamp.u32);
+    }
+
+    node->remote_recovery = rsp->recovery_time_stamp.u32;
 
     ogs_timer_start(node->t_no_heartbeat,
             ogs_app()->time.message.pfcp.no_heartbeat_duration);
@@ -177,7 +218,8 @@ bool ogs_pfcp_up_handle_association_setup_response(
 }
 
 bool ogs_pfcp_up_handle_pdr(
-        ogs_pfcp_pdr_t *pdr, uint8_t type, ogs_pkbuf_t *recvbuf,
+        ogs_pfcp_pdr_t *pdr, uint8_t type,
+        ogs_gtp2_header_desc_t *recvhdr, ogs_pkbuf_t *recvbuf,
         ogs_pfcp_user_plane_report_t *report)
 {
     ogs_pfcp_far_t *far = NULL;
@@ -207,9 +249,27 @@ bool ogs_pfcp_up_handle_pdr(
 
     } else {
         if (far->apply_action & OGS_PFCP_APPLY_ACTION_FORW) {
+            ogs_gtp2_header_desc_t sendhdr;
 
             /* Forward packet */
-            ogs_pfcp_send_g_pdu(pdr, type, sendbuf);
+            memset(&sendhdr, 0, sizeof(sendhdr));
+            sendhdr.type = type;
+
+            if (recvhdr) {
+                /*
+                 * Issue #2584
+                 * Discussion #2477
+                 *
+                 * Forward PDCP Number via Indirect Tunnel during Handover
+                 */
+                if (recvhdr->pdcp_number_presence == true) {
+                    sendhdr.pdcp_number_presence =
+                        recvhdr->pdcp_number_presence;
+                    sendhdr.pdcp_number = recvhdr->pdcp_number;
+                }
+            }
+
+            ogs_pfcp_send_g_pdu(pdr, &sendhdr, sendbuf);
 
         } else if (far->apply_action & OGS_PFCP_APPLY_ACTION_BUFF) {
 
@@ -279,6 +339,7 @@ bool ogs_pfcp_up_handle_error_indication(
 
 ogs_pfcp_pdr_t *ogs_pfcp_handle_create_pdr(ogs_pfcp_sess_t *sess,
         ogs_pfcp_tlv_create_pdr_t *message,
+        ogs_pfcp_sereq_flags_t *sereq_flags,
         uint8_t *cause_value, uint8_t *offending_ie_value)
 {
     ogs_pfcp_pdr_t *pdr = NULL;
@@ -335,6 +396,18 @@ ogs_pfcp_pdr_t *ogs_pfcp_handle_create_pdr(ogs_pfcp_sess_t *sess,
             *offending_ie_value = OGS_PFCP_F_TEID_TYPE;
             return NULL;
         }
+
+        if (f_teid.ch == 0) {
+            if (sereq_flags && sereq_flags->restoration_indication == 1) {
+                f_teid.teid = be32toh(f_teid.teid);
+                if (ogs_pfcp_object_find_by_teid(f_teid.teid)) {
+                    ogs_error("TEID:%x had already been allocated", f_teid.teid);
+                    *cause_value = OGS_PFCP_CAUSE_INVALID_F_TEID_ALLOCATION_OPTION;
+                    *offending_ie_value = OGS_PFCP_F_TEID_TYPE;
+                    return NULL;
+                }
+            }
+        }
     }
 
     pdr->src_if = message->pdi.source_interface.u8;
@@ -357,7 +430,6 @@ ogs_pfcp_pdr_t *ogs_pfcp_handle_create_pdr(ogs_pfcp_sess_t *sess,
         if (sdf_filter.bid) {
             oppsite_direction_rule = ogs_pfcp_rule_find_by_sdf_filter_id(
                         sess, sdf_filter.sdf_filter_id);
-
         }
 
         if (!oppsite_direction_rule && !sdf_filter.fd) {
@@ -1073,7 +1145,7 @@ ogs_pfcp_qer_t *ogs_pfcp_handle_create_qer(ogs_pfcp_sess_t *sess,
     if (message->qer_id.presence == 0) {
         ogs_error("No QER-ID");
         *cause_value = OGS_PFCP_CAUSE_MANDATORY_IE_MISSING;
-        *offending_ie_value = OGS_PFCP_FAR_ID_TYPE;
+        *offending_ie_value = OGS_PFCP_QER_ID_TYPE;
         return NULL;
     }
 
@@ -1081,7 +1153,7 @@ ogs_pfcp_qer_t *ogs_pfcp_handle_create_qer(ogs_pfcp_sess_t *sess,
     if (!qer) {
         ogs_error("Cannot find QER-ID[%d] in PDR", message->qer_id.u32);
         *cause_value = OGS_PFCP_CAUSE_MANDATORY_IE_INCORRECT;
-        *offending_ie_value = OGS_PFCP_FAR_ID_TYPE;
+        *offending_ie_value = OGS_PFCP_QER_ID_TYPE;
         return NULL;
     }
 
@@ -1125,7 +1197,7 @@ ogs_pfcp_qer_t *ogs_pfcp_handle_update_qer(ogs_pfcp_sess_t *sess,
     if (message->qer_id.presence == 0) {
         ogs_error("No QER-ID");
         *cause_value = OGS_PFCP_CAUSE_MANDATORY_IE_MISSING;
-        *offending_ie_value = OGS_PFCP_FAR_ID_TYPE;
+        *offending_ie_value = OGS_PFCP_QER_ID_TYPE;
         return NULL;
     }
 
@@ -1133,7 +1205,7 @@ ogs_pfcp_qer_t *ogs_pfcp_handle_update_qer(ogs_pfcp_sess_t *sess,
     if (!qer) {
         ogs_error("Cannot find QER-ID[%d] in PDR", message->qer_id.u32);
         *cause_value = OGS_PFCP_CAUSE_MANDATORY_IE_INCORRECT;
-        *offending_ie_value = OGS_PFCP_FAR_ID_TYPE;
+        *offending_ie_value = OGS_PFCP_QER_ID_TYPE;
         return NULL;
     }
 

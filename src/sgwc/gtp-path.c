@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -80,7 +80,6 @@ static void _gtpv2_c_recv_cb(short when, ogs_socket_t fd, void *data)
         ogs_assert(e);
         e->gnode = gnode;
     } else {
-        e = sgwc_event_new(SGWC_EVT_S11_MESSAGE);
         gnode = ogs_gtp_node_find_by_addr(&sgwc_self()->mme_s11_list, &from);
         if (!gnode) {
             gnode = ogs_gtp_node_add_by_addr(&sgwc_self()->mme_s11_list, &from);
@@ -92,6 +91,7 @@ static void _gtpv2_c_recv_cb(short when, ogs_socket_t fd, void *data)
             }
             gnode->sock = data;
         }
+        e = sgwc_event_new(SGWC_EVT_S11_MESSAGE);
         ogs_assert(e);
         e->gnode = gnode;
     }

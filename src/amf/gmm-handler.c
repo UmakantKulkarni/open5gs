@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019,2020 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -32,11 +32,14 @@ static ogs_nas_5gmm_cause_t gmm_handle_nas_message_container(
         amf_ue_t *amf_ue, uint8_t message_type,
         ogs_nas_message_container_t *nas_message_container);
 
+static uint8_t gmm_cause_from_access_control(ogs_plmn_id_t *plmn_id);
+
 ogs_nas_5gmm_cause_t gmm_handle_registration_request(amf_ue_t *amf_ue,
         ogs_nas_security_header_type_t h, NGAP_ProcedureCode_t ngap_code,
         ogs_nas_5gs_registration_request_t *registration_request)
 {
     int served_tai_index = 0;
+    uint8_t gmm_cause;
 
     ran_ue_t *ran_ue = NULL;
     ogs_nas_5gs_registration_type_t *registration_type = NULL;
@@ -134,7 +137,12 @@ ogs_nas_5gmm_cause_t gmm_handle_registration_request(amf_ue_t *amf_ue,
     case OGS_NAS_5GS_MOBILE_IDENTITY_SUCI:
         mobile_identity_suci =
             (ogs_nas_5gs_mobile_identity_suci_t *)mobile_identity->buffer;
-
+        if (mobile_identity_suci->h.supi_format !=
+                OGS_NAS_5GS_SUPI_FORMAT_IMSI) {
+            ogs_error("Not implemented SUPI format [%d]",
+                mobile_identity_suci->h.supi_format);
+            return OGS_5GMM_CAUSE_SEMANTICALLY_INCORRECT_MESSAGE;
+        }
         if (mobile_identity_suci->protection_scheme_id !=
                 OGS_PROTECTION_SCHEME_NULL &&
             mobile_identity_suci->protection_scheme_id !=
@@ -281,6 +289,18 @@ ogs_nas_5gmm_cause_t gmm_handle_registration_request(amf_ue_t *amf_ue,
     memcpy(&amf_ue->nr_cgi, &ran_ue->saved.nr_cgi, sizeof(ogs_nr_cgi_t));
     amf_ue->ue_location_timestamp = ogs_time_now();
 
+    /* Check PLMN-ID access control */
+    gmm_cause = gmm_cause_from_access_control(&amf_ue->nr_tai.plmn_id);
+    if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
+        ogs_error("Rejected by PLMN-ID(in TAI) access control");
+        return gmm_cause;
+    }
+    gmm_cause = gmm_cause_from_access_control(&amf_ue->nr_cgi.plmn_id);
+    if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
+        ogs_error("Rejected by PLMN-ID(in CGI) access control");
+        return gmm_cause;
+    }
+
     /* Check TAI */
     served_tai_index = amf_find_served_tai(&amf_ue->nr_tai);
     if (served_tai_index < 0) {
@@ -321,7 +341,7 @@ ogs_nas_5gmm_cause_t gmm_handle_registration_update(amf_ue_t *amf_ue,
 {
     amf_sess_t *sess = NULL;
     uint16_t psimask;
-    int i = 0;
+    int i = 0, served_tai_index = 0;
 
     ogs_nas_5gs_tracking_area_identity_t *last_visited_registered_tai = NULL;
     ogs_nas_uplink_data_status_t *uplink_data_status = NULL;
@@ -340,6 +360,14 @@ ogs_nas_5gmm_cause_t gmm_handle_registration_update(amf_ue_t *amf_ue,
     ogs_assert(pdu_session_status);
     update_type = &registration_request->update_type;
     ogs_assert(update_type);
+
+    served_tai_index = amf_find_served_tai(&amf_ue->nr_tai);
+    if (served_tai_index < 0) {
+        ogs_error("Cannot find Served TAI[PLMN_ID:%06x,TAC:%d]",
+            ogs_plmn_id_hexdump(&amf_ue->nr_tai.plmn_id), amf_ue->nr_tai.tac.v);
+        return OGS_5GMM_CAUSE_TRACKING_AREA_NOT_ALLOWED;
+    }
+    ogs_debug("    SERVED_TAI_INDEX[%d]", served_tai_index);
 
     if (registration_request->presencemask &
         OGS_NAS_5GS_REGISTRATION_REQUEST_NAS_MESSAGE_CONTAINER_PRESENT) {
@@ -511,6 +539,7 @@ ogs_nas_5gmm_cause_t gmm_handle_service_request(amf_ue_t *amf_ue,
         ogs_nas_5gs_service_request_t *service_request)
 {
     int served_tai_index = 0;
+    uint8_t gmm_cause;
 
     ran_ue_t *ran_ue = NULL;
     ogs_nas_key_set_identifier_t *ngksi = NULL;
@@ -521,6 +550,9 @@ ogs_nas_5gmm_cause_t gmm_handle_service_request(amf_ue_t *amf_ue,
 
     ngksi = &service_request->ngksi;
     ogs_assert(ngksi);
+
+    if (ngksi->type == OGS_NAS_SERVICE_TYPE_MOBILE_TERMINATED_SERVICES)
+        amf_metrics_inst_global_inc(AMF_METR_GLOB_CTR_MM_PAGING_5G_SUCC);
 
     /*
      * TS24.501
@@ -601,6 +633,18 @@ ogs_nas_5gmm_cause_t gmm_handle_service_request(amf_ue_t *amf_ue,
     memcpy(&amf_ue->nr_tai, &ran_ue->saved.nr_tai, sizeof(ogs_5gs_tai_t));
     memcpy(&amf_ue->nr_cgi, &ran_ue->saved.nr_cgi, sizeof(ogs_nr_cgi_t));
     amf_ue->ue_location_timestamp = ogs_time_now();
+
+    /* Check PLMN-ID access control */
+    gmm_cause = gmm_cause_from_access_control(&amf_ue->nr_tai.plmn_id);
+    if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
+        ogs_error("Rejected by PLMN-ID(in TAI) access control");
+        return gmm_cause;
+    }
+    gmm_cause = gmm_cause_from_access_control(&amf_ue->nr_cgi.plmn_id);
+    if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
+        ogs_error("Rejected by PLMN-ID(in CGI) access control");
+        return gmm_cause;
+    }
 
     /* Check TAI */
     served_tai_index = amf_find_served_tai(&amf_ue->nr_tai);
@@ -863,6 +907,12 @@ int gmm_handle_identity_response(amf_ue_t *amf_ue,
     if (mobile_identity_header->type == OGS_NAS_5GS_MOBILE_IDENTITY_SUCI) {
         mobile_identity_suci =
             (ogs_nas_5gs_mobile_identity_suci_t *)mobile_identity->buffer;
+        if (mobile_identity_suci->h.supi_format !=
+                OGS_NAS_5GS_SUPI_FORMAT_IMSI) {
+            ogs_error("Not implemented SUPI format [%d]",
+                mobile_identity_suci->h.supi_format);
+            return OGS_ERROR;
+        }
         if (mobile_identity_suci->protection_scheme_id !=
                 OGS_PROTECTION_SCHEME_NULL &&
             mobile_identity_suci->protection_scheme_id !=
@@ -1067,6 +1117,20 @@ int gmm_handle_ul_nas_transport(amf_ue_t *amf_ue,
                 return OGS_ERROR;
             }
         }
+
+        /*
+         * To check if Reactivation Request has been used.
+         *
+         * During the PFCP recovery process,
+         * when a Reactivation Request is sent to PDU session release command,
+         * the UE simultaneously sends PDU session release complete and
+         * PDU session establishment request.
+         *
+         * In this case, old_gsm_type is PDU session release command and
+         * current_gsm_type is PDU session establishment request.
+         */
+        sess->old_gsm_type = sess->current_gsm_type;
+        sess->current_gsm_type = gsm_header->message_type;
 
         if (sess->payload_container)
             ogs_pkbuf_free(sess->payload_container);
@@ -1407,4 +1471,30 @@ static ogs_nas_5gmm_cause_t gmm_handle_nas_message_container(
 
     ogs_pkbuf_free(nasbuf);
     return gmm_cause;
+}
+
+static uint8_t gmm_cause_from_access_control(ogs_plmn_id_t *plmn_id)
+{
+    int i;
+
+    ogs_assert(plmn_id);
+
+    /* No Access Control */
+    if (amf_self()->num_of_access_control == 0)
+        return OGS_5GMM_CAUSE_REQUEST_ACCEPTED;
+
+    for (i = 0; i < amf_self()->num_of_access_control; i++) {
+        if (memcmp(&amf_self()->access_control[i].plmn_id,
+                        plmn_id, OGS_PLMN_ID_LEN) == 0) {
+            if (amf_self()->access_control[i].reject_cause)
+                return amf_self()->access_control[i].reject_cause;
+            else
+                return OGS_5GMM_CAUSE_REQUEST_ACCEPTED;
+        }
+    }
+
+    if (amf_self()->default_reject_cause)
+        return amf_self()->default_reject_cause;
+
+    return OGS_5GMM_CAUSE_PLMN_NOT_ALLOWED;
 }

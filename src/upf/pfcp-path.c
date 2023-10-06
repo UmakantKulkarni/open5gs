@@ -108,7 +108,12 @@ static void pfcp_recv_cb(short when, ogs_socket_t fd, void *data)
     node = ogs_pfcp_node_find(&ogs_pfcp_self()->pfcp_peer_list, &from);
     if (!node) {
         node = ogs_pfcp_node_add(&ogs_pfcp_self()->pfcp_peer_list, &from);
-        ogs_assert(node);
+        if (!node) {
+            ogs_error("No memory: ogs_pfcp_node_add() failed");
+            ogs_pkbuf_free(e->pkbuf);
+            ogs_event_free(e);
+            return;
+        }
 
         node->sock = data;
         pfcp_node_fsm_init(node, false);
@@ -159,6 +164,9 @@ void upf_pfcp_close(void)
     ogs_list_for_each(&ogs_pfcp_self()->pfcp_peer_list, pfcp_node)
         pfcp_node_fsm_fini(pfcp_node);
 
+    ogs_freeaddrinfo(ogs_pfcp_self()->pfcp_advertise);
+    ogs_freeaddrinfo(ogs_pfcp_self()->pfcp_advertise6);
+
     ogs_socknode_remove_all(&ogs_pfcp_self()->pfcp_list);
     ogs_socknode_remove_all(&ogs_pfcp_self()->pfcp_list6);
 }
@@ -205,7 +213,6 @@ int upf_pfcp_send_session_modification_response(
     ogs_pfcp_header_t h;
 
     ogs_assert(xact);
-    ogs_assert(created_pdr);
 
     memset(&h, 0, sizeof(ogs_pfcp_header_t));
     h.type = OGS_PFCP_SESSION_MODIFICATION_RESPONSE_TYPE;

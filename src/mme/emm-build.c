@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -138,15 +138,11 @@ ogs_pkbuf_t *emm_build_attach_accept(
         }
     }
 
-    /* Set T3412 */
-    t3412_value->unit = OGS_NAS_GPRS_TIMER_UNIT_MULTIPLES_OF_DECI_HH;
-    t3412_value->value = 9;
-
-    if (mme_self()->time.t3412.value) {
-        rv = ogs_nas_gprs_timer_from_sec(
-                t3412_value, mme_self()->time.t3412.value);
-        ogs_assert(rv == OGS_OK);
-    }
+    /* Set T3412 : Mandatory in Open5GS */
+    ogs_assert(mme_self()->time.t3412.value);
+    rv = ogs_nas_gprs_timer_from_sec(
+            t3412_value, mme_self()->time.t3412.value);
+    ogs_assert(rv == OGS_OK);
 
     ogs_debug("    TAI[PLMN_ID:%06x,TAC:%d]",
             ogs_plmn_id_hexdump(&mme_ue->tai.plmn_id),
@@ -161,6 +157,7 @@ ogs_pkbuf_t *emm_build_attach_accept(
     ogs_assert(OGS_OK ==
         ogs_nas_tai_list_build(&attach_accept->tai_list,
             &mme_self()->served_tai[served_tai_index].list0,
+            &mme_self()->served_tai[served_tai_index].list1,
             &mme_self()->served_tai[served_tai_index].list2));
 
     attach_accept->esm_message_container.buffer = esmbuf->data;
@@ -562,6 +559,7 @@ ogs_pkbuf_t *emm_build_tau_accept(mme_ue_t *mme_ue)
     ogs_assert(OGS_OK ==
         ogs_nas_tai_list_build(&tau_accept->tai_list,
             &mme_self()->served_tai[served_tai_index].list0,
+            &mme_self()->served_tai[served_tai_index].list1,
             &mme_self()->served_tai[served_tai_index].list2));
 
     /* Set EPS bearer context status */

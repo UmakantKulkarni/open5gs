@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -103,6 +103,7 @@ void mme_s11_handle_create_session_response(
     ogs_assert(rsp);
 
     ogs_debug("Create Session Response");
+    MME_UE_LIST_CHECK;
 
     /********************
      * Check Transaction
@@ -111,8 +112,18 @@ void mme_s11_handle_create_session_response(
     create_action = xact->create_action;
     sess = xact->data;
     ogs_assert(sess);
-    mme_ue = sess->mme_ue;
-    ogs_assert(mme_ue);
+    mme_ue = mme_ue_cycle(sess->mme_ue);
+
+    rv = ogs_gtp_xact_commit(xact);
+    if (rv != OGS_OK) {
+        ogs_error("ogs_gtp_xact_commit() failed");
+        return;
+    }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
     source_ue = sgw_ue_cycle(mme_ue->sgw_ue);
     ogs_assert(source_ue);
 
@@ -122,12 +133,6 @@ void mme_s11_handle_create_session_response(
     } else {
         target_ue = source_ue;
         ogs_assert(target_ue);
-    }
-
-    rv = ogs_gtp_xact_commit(xact);
-    if (rv != OGS_OK) {
-        ogs_error("ogs_gtp_xact_commit() failed");
-        return;
     }
 
     /************************
@@ -369,8 +374,13 @@ void mme_s11_handle_create_session_response(
                 rsp->pdn_address_allocation.len);
     }
 
+    /* ePCO */
+    if (rsp->extended_protocol_configuration_options.presence) {
+        OGS_TLV_STORE_DATA(&sess->pgw_epco,
+                &rsp->extended_protocol_configuration_options);
+
     /* PCO */
-    if (rsp->protocol_configuration_options.presence) {
+    } else if (rsp->protocol_configuration_options.presence) {
         OGS_TLV_STORE_DATA(&sess->pgw_pco,
                 &rsp->protocol_configuration_options);
     }
@@ -452,22 +462,27 @@ void mme_s11_handle_modify_bearer_response(
     ogs_assert(rsp);
 
     ogs_debug("Modify Bearer Response");
+    MME_UE_LIST_CHECK;
 
     /********************
      * Check Transaction
      ********************/
     ogs_assert(xact);
     modify_action = xact->modify_action;
-    mme_ue = xact->data;
-    ogs_assert(mme_ue);
-    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
-    ogs_assert(sgw_ue);
+    mme_ue = mme_ue_cycle(xact->data);
 
     rv = ogs_gtp_xact_commit(xact);
     if (rv != OGS_OK) {
         ogs_error("ogs_gtp_xact_commit() failed");
         return;
     }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
+    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
+    ogs_assert(sgw_ue);
 
     /************************
      * Getting Cause Value
@@ -559,6 +574,7 @@ void mme_s11_handle_delete_session_response(
     ogs_assert(rsp);
 
     ogs_debug("Delete Session Response");
+    MME_UE_LIST_CHECK;
 
     /********************
      * Check Transaction
@@ -568,8 +584,18 @@ void mme_s11_handle_delete_session_response(
     ogs_assert(action);
     sess = xact->data;
     ogs_assert(sess);
-    mme_ue = sess->mme_ue;
-    ogs_assert(mme_ue);
+    mme_ue = mme_ue_cycle(sess->mme_ue);
+
+    rv = ogs_gtp_xact_commit(xact);
+    if (rv != OGS_OK) {
+        ogs_error("ogs_gtp_xact_commit() failed");
+        return;
+    }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
     target_ue = sgw_ue_cycle(mme_ue->sgw_ue);
     ogs_assert(target_ue);
 
@@ -581,17 +607,24 @@ void mme_s11_handle_delete_session_response(
         ogs_assert(source_ue);
     }
 
-    rv = ogs_gtp_xact_commit(xact);
-    if (rv != OGS_OK) {
-        ogs_error("ogs_gtp_xact_commit() failed");
-        return;
-    }
-
     /************************
      * Check MME-UE Context
      ************************/
     if (!mme_ue_from_teid) {
-        ogs_error("No Context in TEID");
+        /*
+         * In mme_ue_set_imsi(),
+         * OLD MME-UE Context could be switched to NEW MME-UE Context
+         *
+         * OLD/NEW MME-UE Contexts have different MME-S11-TEID.
+         * Since MME has NEW MME-S11-TEID and SGW-C has OLD MME-S11-TEID.
+         *
+         * At this time, if the MME receives OLD MME-S11-TEID from SGW-C
+         * in the Delete Session Response, MME cannot find MME-UE Context.
+         *
+         * Since there is such a case,
+         * Delete Session Response treats this as a WARNING.
+         */
+        ogs_warn("No Context in TEID");
     }
 
     /********************
@@ -645,12 +678,7 @@ void mme_s11_handle_delete_session_response(
         ogs_expect(r == OGS_OK);
         ogs_assert(r != OGS_ERROR);
 
-        /*
-         * mme_sess_remove() should not be called here.
-         *
-         * if Deactivate bearer context accept is received,
-         * Session will be removed */
-        CLEAR_SGW_S1U_PATH(sess);
+        /* mme_sess_remove() should not be called here. */
         return;
 
     } else if (action == OGS_GTP_DELETE_SEND_RELEASE_WITH_UE_CONTEXT_REMOVE) {
@@ -659,7 +687,6 @@ void mme_s11_handle_delete_session_response(
                 if (mme_ue->location_updated_but_not_canceled_yet == true) {
                     mme_s6a_send_pur(mme_ue);
                 } else {
-                    mme_ue_hash_remove(mme_ue);
                     mme_ue_remove(mme_ue);
                 }
             } else {
@@ -702,12 +729,6 @@ void mme_s11_handle_delete_session_response(
             }
         }
 
-    } else if (action == OGS_GTP_DELETE_UE_CONTEXT_REMOVE_PARTIAL) {
-
-        /* Remove MME-UE Context with Session Context since IMSI duplicated */
-        mme_ue_remove(mme_ue);
-        return;
-
     } else if (action == OGS_GTP_DELETE_IN_PATH_SWITCH_REQUEST) {
 
         /* Don't have to remove Session in X2 Handover with SGW relocation */
@@ -727,10 +748,7 @@ void mme_s11_handle_delete_session_response(
         ogs_assert_if_reached();
     }
 
-    if (mme_sess_count(mme_ue) == 1) /* Last Session */
-        CLEAR_SESSION_CONTEXT(mme_ue);
-
-    mme_sess_remove(sess);
+    MME_SESS_CLEAR(sess);
 }
 
 void mme_s11_handle_create_bearer_request(
@@ -904,33 +922,19 @@ void mme_s11_handle_create_bearer_request(
 
     if (OGS_FSM_CHECK(&default_bearer->sm, esm_state_active)) {
         if (ECM_IDLE(mme_ue)) {
-            if (ogs_timer_running(mme_ue->t_implicit_detach.timer)) {
-                /*
-                * TS 24.301 5.3.7
-                * If ISR is not activated, the network behaviour upon expiry of
-                * the mobile reachable timer is network dependent, but typically
-                * the network stops sending paging messages to the UE on the
-                * first expiry, and may take other appropriate actions
-                */
-                ogs_debug("[%s] Paging stopped: Mobile Reachable timer expiry",
-                    mme_ue->imsi_bcd);
-
-                ogs_assert(OGS_OK ==
-                    mme_gtp_send_create_bearer_response(
-                        bearer, OGS_GTP2_CAUSE_UNABLE_TO_PAGE_UE));
-            } else {
-                MME_STORE_PAGING_INFO(mme_ue,
-                    MME_PAGING_TYPE_CREATE_BEARER, bearer);
-                r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
-                ogs_expect(r == OGS_OK);
-                ogs_assert(r != OGS_ERROR);
-            }
+            MME_STORE_PAGING_INFO(mme_ue,
+                MME_PAGING_TYPE_CREATE_BEARER, bearer);
+            r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
+            ogs_expect(r == OGS_OK);
+            ogs_assert(r != OGS_ERROR);
         } else {
+            MME_CLEAR_PAGING_INFO(mme_ue);
             r = nas_eps_send_activate_dedicated_bearer_context_request(bearer);
             ogs_expect(r == OGS_OK);
             ogs_assert(r != OGS_ERROR);
         }
     } else {
+        MME_CLEAR_PAGING_INFO(mme_ue);
         /*
          * After received Activate EPS default bearer context accept
          * Invoke nas_eps_send_activate_all_dedicated_bearers()
@@ -1052,28 +1056,13 @@ void mme_s11_handle_update_bearer_request(
     if (req->bearer_contexts.bearer_level_qos.presence == 1 ||
         req->bearer_contexts.tft.presence == 1) {
         if (ECM_IDLE(mme_ue)) {
-            if (ogs_timer_running(mme_ue->t_implicit_detach.timer)) {
-                /*
-                * TS 24.301 5.3.7
-                * If ISR is not activated, the network behaviour upon expiry of
-                * the mobile reachable timer is network dependent, but typically
-                * the network stops sending paging messages to the UE on the
-                * first expiry, and may take other appropriate actions
-                */
-                ogs_debug("[%s] Paging stopped: Mobile Reachable timer expiry",
-                    mme_ue->imsi_bcd);
-
-                ogs_assert(OGS_OK ==
-                    mme_gtp_send_update_bearer_response(
-                        bearer, OGS_GTP2_CAUSE_UNABLE_TO_PAGE_UE));
-            } else {
-                MME_STORE_PAGING_INFO(mme_ue,
-                    MME_PAGING_TYPE_UPDATE_BEARER, bearer);
-                r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
-                ogs_expect(r == OGS_OK);
-                ogs_assert(r != OGS_ERROR);
-            }
+            MME_STORE_PAGING_INFO(mme_ue,
+                MME_PAGING_TYPE_UPDATE_BEARER, bearer);
+            r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
+            ogs_expect(r == OGS_OK);
+            ogs_assert(r != OGS_ERROR);
         } else {
+            MME_CLEAR_PAGING_INFO(mme_ue);
             r = nas_eps_send_modify_bearer_context_request(bearer,
                     req->bearer_contexts.bearer_level_qos.presence,
                     req->bearer_contexts.tft.presence);
@@ -1081,6 +1070,7 @@ void mme_s11_handle_update_bearer_request(
             ogs_assert(r != OGS_ERROR);
         }
     } else {
+        MME_CLEAR_PAGING_INFO(mme_ue);
         ogs_error("[IGNORE] Update Bearer Request : "
                 "Both QoS and TFT is NULL");
 
@@ -1207,28 +1197,13 @@ void mme_s11_handle_delete_bearer_request(
     bearer->delete.xact = xact;
 
     if (ECM_IDLE(mme_ue)) {
-        if (ogs_timer_running(mme_ue->t_implicit_detach.timer)) {
-            /*
-            * TS 24.301 5.3.7
-            * If ISR is not activated, the network behaviour upon expiry of
-            * the mobile reachable timer is network dependent, but typically
-            * the network stops sending paging messages to the UE on the
-            * first expiry, and may take other appropriate actions
-            */
-            ogs_debug("[%s] Paging stopped: Mobile Reachable timer expiry",
-                mme_ue->imsi_bcd);
-
-            ogs_assert(OGS_OK ==
-                mme_gtp_send_delete_bearer_response(
-                    bearer, OGS_GTP2_CAUSE_UNABLE_TO_PAGE_UE));
-        } else {
-            MME_STORE_PAGING_INFO(mme_ue,
-                MME_PAGING_TYPE_DELETE_BEARER, bearer);
-            r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
-            ogs_expect(r == OGS_OK);
-            ogs_assert(r != OGS_ERROR);
-        }
+        MME_STORE_PAGING_INFO(mme_ue,
+            MME_PAGING_TYPE_DELETE_BEARER, bearer);
+        r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
+        ogs_expect(r == OGS_OK);
+        ogs_assert(r != OGS_ERROR);
     } else {
+        MME_CLEAR_PAGING_INFO(mme_ue);
         r = nas_eps_send_deactivate_bearer_context_request(bearer);
         ogs_expect(r == OGS_OK);
         ogs_assert(r != OGS_ERROR);
@@ -1252,6 +1227,7 @@ void mme_s11_handle_release_access_bearers_response(
     ogs_assert(rsp);
 
     ogs_debug("Release Access Bearers Response");
+    MME_UE_LIST_CHECK;
 
     /********************
      * Check Transaction
@@ -1259,16 +1235,20 @@ void mme_s11_handle_release_access_bearers_response(
     ogs_assert(xact);
     action = xact->release_action;
     ogs_assert(action);
-    mme_ue = xact->data;
-    ogs_assert(mme_ue);
-    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
-    ogs_assert(sgw_ue);
+    mme_ue = mme_ue_cycle(xact->data);
 
     rv = ogs_gtp_xact_commit(xact);
     if (rv != OGS_OK) {
         ogs_error("ogs_gtp_xact_commit() failed");
         return;
     }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
+    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
+    ogs_assert(sgw_ue);
 
     /***********************
      * Check MME-UE Context
@@ -1484,27 +1464,13 @@ void mme_s11_handle_downlink_data_notification(
  * before step 9, the MME shall not send S1 interface paging messages
  */
     if (ECM_IDLE(mme_ue)) {
-        if (ogs_timer_running(mme_ue->t_implicit_detach.timer)) {
-            /*
-            * TS 24.301 5.3.7
-            * If ISR is not activated, the network behaviour upon expiry of
-            * the mobile reachable timer is network dependent, but typically
-            * the network stops sending paging messages to the UE on the
-            * first expiry, and may take other appropriate actions
-            */
-            ogs_debug("[%s] Paging stopped: Mobile Reachable timer expiry",
-                mme_ue->imsi_bcd);
-            ogs_assert(OGS_OK ==
-                mme_gtp_send_downlink_data_notification_ack(
-                    bearer, OGS_GTP2_CAUSE_UNABLE_TO_PAGE_UE));
-        } else {
-            MME_STORE_PAGING_INFO(mme_ue,
-                MME_PAGING_TYPE_DOWNLINK_DATA_NOTIFICATION, bearer);
-            r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
-            ogs_expect(r == OGS_OK);
-            ogs_assert(r != OGS_ERROR);
-        }
+        MME_STORE_PAGING_INFO(mme_ue,
+            MME_PAGING_TYPE_DOWNLINK_DATA_NOTIFICATION, bearer);
+        r = s1ap_send_paging(mme_ue, S1AP_CNDomain_ps);
+        ogs_expect(r == OGS_OK);
+        ogs_assert(r != OGS_ERROR);
     } else if (ECM_CONNECTED(mme_ue)) {
+        MME_CLEAR_PAGING_INFO(mme_ue);
         if (cause_value == OGS_GTP2_CAUSE_ERROR_INDICATION_RECEIVED) {
 
 /*
@@ -1573,16 +1539,20 @@ void mme_s11_handle_create_indirect_data_forwarding_tunnel_response(
      * Check Transaction
      ********************/
     ogs_assert(xact);
-    mme_ue = xact->data;
-    ogs_assert(mme_ue);
-    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
-    ogs_assert(sgw_ue);
+    mme_ue = mme_ue_cycle(xact->data);
 
     rv = ogs_gtp_xact_commit(xact);
     if (rv != OGS_OK) {
         ogs_error("ogs_gtp_xact_commit() failed");
         return;
     }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
+    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
+    ogs_assert(sgw_ue);
 
     /************************
      * Getting Cause Value
@@ -1704,16 +1674,20 @@ void mme_s11_handle_delete_indirect_data_forwarding_tunnel_response(
     ogs_assert(xact);
     action = xact->delete_indirect_action;
     ogs_assert(action);
-    mme_ue = xact->data;
-    ogs_assert(mme_ue);
-    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
-    ogs_assert(sgw_ue);
+    mme_ue = mme_ue_cycle(xact->data);
 
     rv = ogs_gtp_xact_commit(xact);
     if (rv != OGS_OK) {
         ogs_error("ogs_gtp_xact_commit() failed");
         return;
     }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
+    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
+    ogs_assert(sgw_ue);
 
     /************************
      * Getting Cause Value
@@ -1811,16 +1785,20 @@ void mme_s11_handle_bearer_resource_failure_indication(
     ogs_assert(ind);
     sess = bearer->sess;
     ogs_assert(sess);
-    mme_ue = sess->mme_ue;
-    ogs_assert(mme_ue);
-    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
-    ogs_assert(sgw_ue);
+    mme_ue = mme_ue_cycle(sess->mme_ue);
 
     rv = ogs_gtp_xact_commit(xact);
     if (rv != OGS_OK) {
         ogs_error("ogs_gtp_xact_commit() failed");
         return;
     }
+
+    if (!mme_ue) {
+        ogs_error("MME-UE Context has already been removed");
+        return;
+    }
+    sgw_ue = sgw_ue_cycle(mme_ue->sgw_ue);
+    ogs_assert(sgw_ue);
 
     if (!mme_ue_from_teid)
         ogs_error("No Context in TEID");
