@@ -17,6 +17,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include "app/ogs-app.h"
 #include "ogs-pfcp.h"
 
@@ -136,7 +139,11 @@ ogs_pfcp_context_t *ogs_pfcp_self(void)
 
 static int ogs_pfcp_context_prepare(void)
 {
-    self.pfcp_port = OGS_PFCP_UDP_PORT;
+    //self.pfcp_port = OGS_PFCP_UDP_PORT;
+    const char *suk;
+    suk = getenv("OGS_PFCP_UDP_PORT");
+	if (suk && atoi(suk) > 0)
+		self.pfcp_port = atoi(suk);
 
     self.tun_ifname = "ogstun";
 
