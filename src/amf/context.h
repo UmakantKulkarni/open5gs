@@ -246,6 +246,9 @@ struct amf_ue_s {
     char            *supi; /* TS33.501 : SUPI */
     ogs_nas_5gs_mobile_identity_suci_t nas_mobile_identity_suci;
 
+    /* Home PLMN ID */
+    ogs_plmn_id_t   home_plmn_id;
+
     char            *pei;
     uint8_t         masked_imeisv[OGS_MAX_IMEISV_LEN];
     int             masked_imeisv_len;
@@ -302,6 +305,12 @@ struct amf_ue_s {
     ((__aMF)->security_context_available == 1) && \
      ((__aMF)->mac_failed == 0) && \
      ((__aMF)->nas.ue.ksi != OGS_NAS_KSI_NO_KEY_IS_AVAILABLE))
+#define CLEAR_SECURITY_CONTEXT(__aMF) \
+    do { \
+        ogs_assert((__aMF)); \
+        (__aMF)->security_context_available = 0; \
+        (__aMF)->mac_failed = 0; \
+    } while(0)
     int             security_context_available;
     int             mac_failed;
 
