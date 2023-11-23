@@ -139,11 +139,15 @@ ogs_pfcp_context_t *ogs_pfcp_self(void)
 
 static int ogs_pfcp_context_prepare(void)
 {
-    //self.pfcp_port = OGS_PFCP_UDP_PORT;
-    const char *suk;
-    suk = getenv("OGS_PFCP_UDP_PORT");
-	if (suk && atoi(suk) > 0)
+    self.pfcp_port = OGS_PFCP_UDP_PORT;
+    
+    if(getenv("OGS_PFCP_UDP_PORT")) {
+	const char *suk;
+        suk = getenv("OGS_PFCP_UDP_PORT");
+	    if (suk && atoi(suk) > 0) {
 		self.pfcp_port = atoi(suk);
+	    }
+    }
 
     self.tun_ifname = "ogstun";
 
