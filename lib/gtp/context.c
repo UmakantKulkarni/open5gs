@@ -64,6 +64,22 @@ static int ogs_gtp_context_prepare(void)
     self.gtpc_port = OGS_GTPV2_C_UDP_PORT;
     self.gtpu_port = OGS_GTPV1_U_UDP_PORT;
 
+    if(getenv("OGS_GTPV2_C_UDP_PORT")) {
+	    const char *suk;
+        suk = getenv("OGS_GTPV2_C_UDP_PORT");
+	    if (suk && atoi(suk) > 0) {
+		    self.gtpc_port = atoi(suk);
+	    }
+    }
+
+    if(getenv("OGS_GTPV1_U_UDP_PORT")) {
+	    const char *suk;
+        suk = getenv("OGS_GTPV1_U_UDP_PORT");
+	    if (suk && atoi(suk) > 0) {
+		    self.gtpu_port = atoi(suk);
+	    }
+    }
+
     return OGS_OK;
 }
 
