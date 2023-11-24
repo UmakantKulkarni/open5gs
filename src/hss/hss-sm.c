@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2022 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -20,24 +20,23 @@
 #include "hss-sm.h"
 #include "hss-context.h"
 #include "hss-event.h"
-#include "hss-timer.h"
 
 #define DB_POLLING_TIME ogs_time_from_msec(100)
 
 static ogs_timer_t *t_db_polling = NULL;
 
-void hss_state_initial(ogs_fsm_t *s, hss_event_t *e)
+void hss_state_initial(ogs_fsm_t *s, ogs_event_t *e)
 {
     hss_sm_debug(e);
 
     ogs_assert(s);
 
 #if MONGOC_MAJOR_VERSION >= 1 && MONGOC_MINOR_VERSION >= 9
-    if (hss_self()->use_mongodb_change_stream) {
+    if (ogs_app()->use_mongodb_change_stream) {
         ogs_dbi_collection_watch_init();
 
         t_db_polling = ogs_timer_add(ogs_app()->timer_mgr,
-                hss_timer_dbi_poll_change_stream, 0);
+                ogs_timer_dbi_poll_change_stream, 0);
         ogs_assert(t_db_polling);
         ogs_timer_start(t_db_polling, DB_POLLING_TIME);
 
@@ -46,7 +45,7 @@ void hss_state_initial(ogs_fsm_t *s, hss_event_t *e)
 #endif
 }
 
-void hss_state_final(ogs_fsm_t *s, hss_event_t *e)
+void hss_state_final(ogs_fsm_t *s, ogs_event_t *e)
 {
     hss_sm_debug(e);
 
@@ -56,7 +55,7 @@ void hss_state_final(ogs_fsm_t *s, hss_event_t *e)
     ogs_assert(s);
 }
 
-void hss_state_operational(ogs_fsm_t *s, hss_event_t *e)
+void hss_state_operational(ogs_fsm_t *s, ogs_event_t *e)
 {
     hss_sm_debug(e);
 
@@ -72,11 +71,11 @@ void hss_state_operational(ogs_fsm_t *s, hss_event_t *e)
         }
         break;
 
-    case HSS_EVENT_DBI_POLL_TIMER:
+    case OGS_EVENT_DBI_POLL_TIMER:
         ogs_assert(e);
 
         switch(e->timer_id) {
-        case HSS_TIMER_DBI_POLL_CHANGE_STREAM:
+        case OGS_TIMER_DBI_POLL_CHANGE_STREAM:
             hss_db_poll_change_stream();
             ogs_timer_start(t_db_polling, DB_POLLING_TIME);
             break;
@@ -87,7 +86,7 @@ void hss_state_operational(ogs_fsm_t *s, hss_event_t *e)
         }
         break;
 
-    case HSS_EVENT_DBI_MESSAGE:
+    case OGS_EVENT_DBI_MESSAGE:
         ogs_assert(e);
 
         ogs_assert(e->dbi.document);
@@ -97,7 +96,7 @@ void hss_state_operational(ogs_fsm_t *s, hss_event_t *e)
         break;
 
     default:
-        ogs_error("No handler for event %s", hss_event_get_name(e));
+        ogs_error("No handler for event %s", ogs_event_get_name(e));
         break;
     }
 }

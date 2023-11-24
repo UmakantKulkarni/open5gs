@@ -24,11 +24,8 @@ typedef struct OpenAPI_session_rule_s {
     struct OpenAPI_ambr_s *auth_sess_ambr;
     struct OpenAPI_authorized_default_qos_s *auth_def_qos;
     char *sess_rule_id;
-    bool is_ref_um_data_null;
     char *ref_um_data;
-    bool is_ref_um_n3g_data_null;
     char *ref_um_n3g_data;
-    bool is_ref_cond_data_null;
     char *ref_cond_data;
 } OpenAPI_session_rule_t;
 
@@ -36,11 +33,8 @@ OpenAPI_session_rule_t *OpenAPI_session_rule_create(
     OpenAPI_ambr_t *auth_sess_ambr,
     OpenAPI_authorized_default_qos_t *auth_def_qos,
     char *sess_rule_id,
-    bool is_ref_um_data_null,
     char *ref_um_data,
-    bool is_ref_um_n3g_data_null,
     char *ref_um_n3g_data,
-    bool is_ref_cond_data_null,
     char *ref_cond_data
 );
 void OpenAPI_session_rule_free(OpenAPI_session_rule_t *session_rule);

@@ -133,15 +133,10 @@ OpenAPI_scp_domain_cond_t *OpenAPI_scp_domain_cond_parseFromJSON(cJSON *scp_doma
             }
             localEnum = OpenAPI_nf_type_FromString(nf_type_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"nf_type_list\" is not supported. Ignoring it ...",
-                         nf_type_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(nf_type_listList, (void *)localEnum);
+                ogs_error("OpenAPI_nf_type_FromString(nf_type_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (nf_type_listList->count == 0) {
-            ogs_error("OpenAPI_scp_domain_cond_parseFromJSON() failed: Expected nf_type_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(nf_type_listList, (void *)localEnum);
         }
     }
 

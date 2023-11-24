@@ -275,46 +275,6 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
                     if (amf_ue->confirmation_url_for_5g_aka)
                         ogs_free(amf_ue->confirmation_url_for_5g_aka);
                     amf_ue->confirmation_url_for_5g_aka = NULL;
-
-                    if (state == AMF_RELEASE_SM_CONTEXT_NO_STATE ||
-                        state == AMF_UE_INITIATED_DE_REGISTERED) {
-
-                        if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
-                            r = amf_ue_sbi_discover_and_send(
-                                    OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
-                                    NULL,
-                                    amf_npcf_am_policy_control_build_delete,
-                                    amf_ue, state, NULL);
-                            ogs_expect(r == OGS_OK);
-                            ogs_assert(r != OGS_ERROR);
-                        } else {
-                            r = nas_5gs_send_de_registration_accept(amf_ue);
-                            ogs_expect(r == OGS_OK);
-                            ogs_assert(r != OGS_ERROR);
-                        }
-
-                    } else if (state ==
-                            AMF_NETWORK_INITIATED_IMPLICIT_DE_REGISTERED ||
-                               state ==
-                            AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED) {
-
-                        int xact_count = amf_sess_xact_count(amf_ue);
-                        amf_sbi_send_release_all_sessions(amf_ue, state);
-
-                        if (!AMF_SESSION_RELEASE_PENDING(amf_ue) &&
-                            amf_sess_xact_count(amf_ue) == xact_count) {
-
-                            if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
-                                r = amf_ue_sbi_discover_and_send(
-                                        OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
-                                        NULL,
-                                        amf_npcf_am_policy_control_build_delete,
-                                        amf_ue, state, NULL);
-                                ogs_expect(r == OGS_OK);
-                                ogs_assert(r != OGS_ERROR);
-                            }
-                        }
-                    }
                     break;
                 DEFAULT
                     ogs_error("[%s] Invalid HTTP method [%s]",
@@ -444,16 +404,7 @@ void gmm_state_de_registered(ogs_fsm_t *s, amf_event_t *e)
                          */
                         if (state == AMF_RELEASE_SM_CONTEXT_NO_STATE ||
                             state == AMF_UE_INITIATED_DE_REGISTERED) {
-
-                            if (amf_ue->confirmation_url_for_5g_aka) {
-                                r = amf_ue_sbi_discover_and_send(
-                                    OGS_SBI_SERVICE_TYPE_NAUSF_AUTH,
-                                    NULL,
-                                    amf_nausf_auth_build_authenticate_delete,
-                                    amf_ue, state, NULL);
-                                ogs_expect(r == OGS_OK);
-                                ogs_assert(r != OGS_ERROR);
-                            } else if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
+                            if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
                                 r = amf_ue_sbi_discover_and_send(
                                         OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
                                         NULL,
@@ -805,46 +756,6 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
                     if (amf_ue->confirmation_url_for_5g_aka)
                         ogs_free(amf_ue->confirmation_url_for_5g_aka);
                     amf_ue->confirmation_url_for_5g_aka = NULL;
-
-                    if (state == AMF_RELEASE_SM_CONTEXT_NO_STATE ||
-                        state == AMF_UE_INITIATED_DE_REGISTERED) {
-
-                        if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
-                            r = amf_ue_sbi_discover_and_send(
-                                    OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
-                                    NULL,
-                                    amf_npcf_am_policy_control_build_delete,
-                                    amf_ue, state, NULL);
-                            ogs_expect(r == OGS_OK);
-                            ogs_assert(r != OGS_ERROR);
-                        } else {
-                            r = nas_5gs_send_de_registration_accept(amf_ue);
-                            ogs_expect(r == OGS_OK);
-                            ogs_assert(r != OGS_ERROR);
-                        }
-
-                    } else if (state ==
-                            AMF_NETWORK_INITIATED_IMPLICIT_DE_REGISTERED ||
-                               state ==
-                            AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED) {
-
-                        int xact_count = amf_sess_xact_count(amf_ue);
-                        amf_sbi_send_release_all_sessions(amf_ue, state);
-
-                        if (!AMF_SESSION_RELEASE_PENDING(amf_ue) &&
-                            amf_sess_xact_count(amf_ue) == xact_count) {
-
-                            if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
-                                r = amf_ue_sbi_discover_and_send(
-                                        OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
-                                        NULL,
-                                        amf_npcf_am_policy_control_build_delete,
-                                        amf_ue, state, NULL);
-                                ogs_expect(r == OGS_OK);
-                                ogs_assert(r != OGS_ERROR);
-                            }
-                        }
-                    }
                     break;
                 DEFAULT
                     ogs_error("[%s] Invalid HTTP method [%s]",
@@ -963,57 +874,42 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
                          * 1. Implicit Timer Expiration
                          * 2. UDM_SDM_Unsubscribe
                          * 3. UDM_UECM_Deregisration
-                         * 4. Authentication Result Removal
-                         * 5. PDU session release request
-                         * 6. PDUSessionResourceReleaseCommand +
+                         * 4. PDU session release request
+                         * 5. PDUSessionResourceReleaseCommand +
                          *    PDU session release command
-                         * 7. PDUSessionResourceReleaseResponse
-                         * 8. AM_Policy_Association_Termination
+                         * 6. PDUSessionResourceReleaseResponse
+                         * 7. AM_Policy_Association_Termination
                          *
                          * - AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED
                          * 1. UDM_UECM_DeregistrationNotification
                          * 2. Deregistration request
                          * 3. UDM_SDM_Unsubscribe
                          * 4. UDM_UECM_Deregisration
-                         * 5. Authentication Result Removal
-                         * 6. PDU session release request
-                         * 7. PDUSessionResourceReleaseCommand +
+                         * 5. PDU session release request
+                         * 6. PDUSessionResourceReleaseCommand +
                          *    PDU session release command
-                         * 8. PDUSessionResourceReleaseResponse
-                         * 9. AM_Policy_Association_Termination
-                         * 10. Deregistration accept
-                         * 11. Signalling Connecion Release
+                         * 7. PDUSessionResourceReleaseResponse
+                         * 8. AM_Policy_Association_Termination
+                         * 9.  Deregistration accept
+                         * 10. Signalling Connecion Release
                          */
                         if (state ==
                                 AMF_NETWORK_INITIATED_IMPLICIT_DE_REGISTERED ||
                             state ==
                                 AMF_NETWORK_INITIATED_EXPLICIT_DE_REGISTERED) {
 
-                            if (amf_ue->confirmation_url_for_5g_aka) {
-                                r = amf_ue_sbi_discover_and_send(
-                                        OGS_SBI_SERVICE_TYPE_NAUSF_AUTH,
-                                        NULL,
-                                        amf_nausf_auth_build_authenticate_delete,
-                                        amf_ue, state, NULL);
-                                ogs_expect(r == OGS_OK);
-                                ogs_assert(r != OGS_ERROR);
+                            amf_sbi_send_release_all_sessions(amf_ue, state);
 
-                            } else {
-
-                                amf_sbi_send_release_all_sessions(amf_ue, state);
-
-                                if (!AMF_SESSION_RELEASE_PENDING(amf_ue) &&
-                                    amf_sess_xact_count(amf_ue) == xact_count) {
-
-                                    if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
-                                        r = amf_ue_sbi_discover_and_send(
-                                                OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
-                                                NULL,
-                                                amf_npcf_am_policy_control_build_delete,
-                                                amf_ue, state, NULL);
-                                        ogs_expect(r == OGS_OK);
-                                        ogs_assert(r != OGS_ERROR);
-                                    }
+                            if (!AMF_SESSION_RELEASE_PENDING(amf_ue) &&
+                                amf_sess_xact_count(amf_ue) == xact_count) {
+                                if (PCF_AM_POLICY_ASSOCIATED(amf_ue)) {
+                                    r = amf_ue_sbi_discover_and_send(
+                                            OGS_SBI_SERVICE_TYPE_NPCF_AM_POLICY_CONTROL,
+                                            NULL,
+                                            amf_npcf_am_policy_control_build_delete,
+                                            amf_ue, state, NULL);
+                                    ogs_expect(r == OGS_OK);
+                                    ogs_assert(r != OGS_ERROR);
                                 }
                             }
                         } else {
@@ -1128,7 +1024,7 @@ void gmm_state_registered(ogs_fsm_t *s, amf_event_t *e)
 static void common_register_state(ogs_fsm_t *s, amf_event_t *e,
         gmm_common_state_e state)
 {
-    int r, xact_count = 0;
+    int r, rv, xact_count = 0;
     ogs_nas_5gmm_cause_t gmm_cause;
 
     amf_ue_t *amf_ue = NULL;
@@ -1336,24 +1232,16 @@ static void common_register_state(ogs_fsm_t *s, amf_event_t *e,
             CLEAR_AMF_UE_TIMER(amf_ue->t3570);
 
             ogs_info("Identity response");
-            gmm_cause = gmm_handle_identity_response(amf_ue,
+            rv = gmm_handle_identity_response(amf_ue,
                     &nas_message->gmm.identity_response);
-            if (gmm_cause != OGS_5GMM_CAUSE_REQUEST_ACCEPTED) {
-                ogs_error("gmm_handle_identity_response() "
-                            "failed [%d] in type [%d]",
-                            gmm_cause, amf_ue->nas.message_type);
-                r = nas_5gs_send_gmm_reject(amf_ue, gmm_cause);
-                ogs_expect(r == OGS_OK);
-                ogs_assert(r != OGS_ERROR);
+            if (rv != OGS_OK) {
+                ogs_error("gmm_handle_identity_response() failed");
                 OGS_FSM_TRAN(s, gmm_state_exception);
                 break;
             }
 
             if (!AMF_UE_HAVE_SUCI(amf_ue)) {
                 ogs_error("No SUCI");
-                r = nas_5gs_send_gmm_reject(amf_ue, gmm_cause);
-                ogs_expect(r == OGS_OK);
-                ogs_assert(r != OGS_ERROR);
                 OGS_FSM_TRAN(s, gmm_state_exception);
                 break;
             }
@@ -1786,7 +1674,7 @@ void gmm_state_security_mode(ogs_fsm_t *s, amf_event_t *e)
             }
 
             if (!SECURITY_CONTEXT_IS_VALID(amf_ue)) {
-                ogs_error("[%s] No Security Context", amf_ue->supi);
+                ogs_warn("[%s] No Security Context", amf_ue->supi);
                 break;
             }
 

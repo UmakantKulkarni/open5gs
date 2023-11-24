@@ -138,15 +138,10 @@ OpenAPI_protection_policy_t *OpenAPI_protection_policy_parseFromJSON(cJSON *prot
             }
             localEnum = OpenAPI_ie_type_FromString(data_type_enc_policy_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"data_type_enc_policy\" is not supported. Ignoring it ...",
-                         data_type_enc_policy_local->valuestring);
-            } else {
-                OpenAPI_list_add(data_type_enc_policyList, (void *)localEnum);
+                ogs_error("OpenAPI_ie_type_FromString(data_type_enc_policy_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (data_type_enc_policyList->count == 0) {
-            ogs_error("OpenAPI_protection_policy_parseFromJSON() failed: Expected data_type_enc_policyList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(data_type_enc_policyList, (void *)localEnum);
         }
     }
 

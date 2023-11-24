@@ -824,15 +824,10 @@ OpenAPI_events_subsc_put_data_t *OpenAPI_events_subsc_put_data_parseFromJSON(cJS
             }
             localEnum = OpenAPI_requested_qos_monitoring_parameter_FromString(req_qos_mon_params_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"req_qos_mon_params\" is not supported. Ignoring it ...",
-                         req_qos_mon_params_local->valuestring);
-            } else {
-                OpenAPI_list_add(req_qos_mon_paramsList, (void *)localEnum);
+                ogs_error("OpenAPI_requested_qos_monitoring_parameter_FromString(req_qos_mon_params_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (req_qos_mon_paramsList->count == 0) {
-            ogs_error("OpenAPI_events_subsc_put_data_parseFromJSON() failed: Expected req_qos_mon_paramsList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(req_qos_mon_paramsList, (void *)localEnum);
         }
     }
 
@@ -863,15 +858,10 @@ OpenAPI_events_subsc_put_data_t *OpenAPI_events_subsc_put_data_parseFromJSON(cJS
             }
             localEnum = OpenAPI_required_access_info_FromString(req_anis_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"req_anis\" is not supported. Ignoring it ...",
-                         req_anis_local->valuestring);
-            } else {
-                OpenAPI_list_add(req_anisList, (void *)localEnum);
+                ogs_error("OpenAPI_required_access_info_FromString(req_anis_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (req_anisList->count == 0) {
-            ogs_error("OpenAPI_events_subsc_put_data_parseFromJSON() failed: Expected req_anisList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(req_anisList, (void *)localEnum);
         }
     }
 

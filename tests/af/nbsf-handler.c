@@ -68,27 +68,19 @@ void af_nbsf_management_handle_pcf_binding(
 
         if (sess->pcf.num_of_ip < OGS_SBI_MAX_NUM_OF_IP_ADDRESS) {
             if (!IpEndPoint->is_port)
-                port = ogs_sbi_default_client_port(OpenAPI_uri_scheme_NULL);
+                port = ogs_sbi_client_default_port();
             else
                 port = IpEndPoint->port;
 
             if (IpEndPoint->ipv4_address) {
                 rv = ogs_getaddrinfo(&addr, AF_UNSPEC,
                         IpEndPoint->ipv4_address, port, 0);
-                if (rv != OGS_OK) {
-                    ogs_error("ogs_getaddrinfo[%s] failed",
-                                IpEndPoint->ipv4_address);
-                    continue;
-                }
+                if (rv != OGS_OK) continue;
             }
             if (IpEndPoint->ipv6_address) {
                 rv = ogs_getaddrinfo(&addr6, AF_UNSPEC,
                         IpEndPoint->ipv6_address, port, 0);
-                if (rv != OGS_OK) {
-                    ogs_error("ogs_getaddrinfo[%s] failed",
-                                IpEndPoint->ipv6_address);
-                    continue;
-                }
+                if (rv != OGS_OK) continue;
             }
 
             if (addr || addr6) {

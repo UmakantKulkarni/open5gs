@@ -143,15 +143,10 @@ OpenAPI_dnn_route_selection_descriptor_t *OpenAPI_dnn_route_selection_descriptor
             }
             localEnum = OpenAPI_ssc_mode_FromString(ssc_modes_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"ssc_modes\" is not supported. Ignoring it ...",
-                         ssc_modes_local->valuestring);
-            } else {
-                OpenAPI_list_add(ssc_modesList, (void *)localEnum);
+                ogs_error("OpenAPI_ssc_mode_FromString(ssc_modes_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (ssc_modesList->count == 0) {
-            ogs_error("OpenAPI_dnn_route_selection_descriptor_parseFromJSON() failed: Expected ssc_modesList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(ssc_modesList, (void *)localEnum);
         }
     }
 
@@ -173,15 +168,10 @@ OpenAPI_dnn_route_selection_descriptor_t *OpenAPI_dnn_route_selection_descriptor
             }
             localEnum = OpenAPI_pdu_session_type_FromString(pdu_sess_types_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"pdu_sess_types\" is not supported. Ignoring it ...",
-                         pdu_sess_types_local->valuestring);
-            } else {
-                OpenAPI_list_add(pdu_sess_typesList, (void *)localEnum);
+                ogs_error("OpenAPI_pdu_session_type_FromString(pdu_sess_types_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (pdu_sess_typesList->count == 0) {
-            ogs_error("OpenAPI_dnn_route_selection_descriptor_parseFromJSON() failed: Expected pdu_sess_typesList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(pdu_sess_typesList, (void *)localEnum);
         }
     }
 

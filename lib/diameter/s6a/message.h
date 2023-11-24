@@ -85,7 +85,6 @@ extern "C" {
 #define OGS_DIAM_S6A_SUBDATA_UEAMBR                     (1 << 7)
 #define OGS_DIAM_S6A_SUBDATA_APN_CONFIG                 (1 << 8)
 #define OGS_DIAM_S6A_SUBDATA_RAU_TAU_TIMER              (1 << 9)
-#define OGS_DIAM_S6A_SUBDATA_OP_DET_BARRING             (1 << 10)
 #define OGS_DIAM_S6A_SUBDATA_ALL                        0xFFFFFFFF
 
 extern struct dict_object *ogs_diam_s6a_application;
@@ -120,7 +119,6 @@ extern struct dict_object *ogs_diam_s6a_xres;
 extern struct dict_object *ogs_diam_s6a_autn;
 extern struct dict_object *ogs_diam_s6a_kasme;
 extern struct dict_object *ogs_diam_s6a_subscriber_status;
-extern struct dict_object *ogs_diam_s6a_operator_determined_barring;
 extern struct dict_object *ogs_diam_s6a_ambr;
 extern struct dict_object *ogs_diam_s6a_network_access_mode;
 extern struct dict_object *ogs_diam_s6a_access_restriction_data;

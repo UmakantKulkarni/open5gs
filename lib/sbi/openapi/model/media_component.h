@@ -48,10 +48,8 @@ typedef struct OpenAPI_media_component_s {
     OpenAPI_flow_status_e f_status;
     char *mar_bw_dl;
     char *mar_bw_ul;
-    bool is_max_packet_loss_rate_dl_null;
     bool is_max_packet_loss_rate_dl;
     int max_packet_loss_rate_dl;
-    bool is_max_packet_loss_rate_ul_null;
     bool is_max_packet_loss_rate_ul;
     int max_packet_loss_rate_ul;
     char *max_supp_bw_dl;
@@ -74,9 +72,7 @@ typedef struct OpenAPI_media_component_s {
     bool is_sharing_key_ul;
     int sharing_key_ul;
     struct OpenAPI_tsn_qos_container_s *tsn_qos;
-    bool is_tscai_input_dl_null;
     struct OpenAPI_tscai_input_container_s *tscai_input_dl;
-    bool is_tscai_input_ul_null;
     struct OpenAPI_tscai_input_container_s *tscai_input_ul;
     bool is_tscai_time_dom;
     int tscai_time_dom;
@@ -101,10 +97,8 @@ OpenAPI_media_component_t *OpenAPI_media_component_create(
     OpenAPI_flow_status_e f_status,
     char *mar_bw_dl,
     char *mar_bw_ul,
-    bool is_max_packet_loss_rate_dl_null,
     bool is_max_packet_loss_rate_dl,
     int max_packet_loss_rate_dl,
-    bool is_max_packet_loss_rate_ul_null,
     bool is_max_packet_loss_rate_ul,
     int max_packet_loss_rate_ul,
     char *max_supp_bw_dl,
@@ -127,9 +121,7 @@ OpenAPI_media_component_t *OpenAPI_media_component_create(
     bool is_sharing_key_ul,
     int sharing_key_ul,
     OpenAPI_tsn_qos_container_t *tsn_qos,
-    bool is_tscai_input_dl_null,
     OpenAPI_tscai_input_container_t *tscai_input_dl,
-    bool is_tscai_input_ul_null,
     OpenAPI_tscai_input_container_t *tscai_input_ul,
     bool is_tscai_time_dom,
     int tscai_time_dom

@@ -65,7 +65,7 @@ bool nssf_nnrf_nsselection_handle_get(
     }
 
     memset(&NsiInformation, 0, sizeof(NsiInformation));
-    NsiInformation.nrf_id = nsi->nrf_id;
+    NsiInformation.nrf_id = nssf_nsi_nrf_uri(nsi);
     NsiInformation.nsi_id = nsi->nsi_id;
 
     memset(&AuthorizedNetworkSliceInfo, 0, sizeof(AuthorizedNetworkSliceInfo));
@@ -77,6 +77,9 @@ bool nssf_nnrf_nsselection_handle_get(
     response = ogs_sbi_build_response(&sendmsg, OGS_SBI_HTTP_STATUS_OK);
     ogs_assert(response);
     ogs_assert(true == ogs_sbi_server_send_response(stream, response));
+
+    if (NsiInformation.nrf_id)
+        ogs_free(NsiInformation.nrf_id);
 
     return true;
 

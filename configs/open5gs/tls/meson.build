@@ -47,12 +47,10 @@ tls_security = '''
     smf.crt
     udm.crt
     udr.crt
-    sepp1.key
-    sepp1.crt
-    sepp2.key
-    sepp2.crt
-    sepp3.key
-    sepp3.crt
+    testserver.key
+    testserver.crt
+    testclient.key
+    testclient.crt
 '''.split()
 
 foreach file : tls_security

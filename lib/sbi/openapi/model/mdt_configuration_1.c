@@ -517,15 +517,10 @@ OpenAPI_mdt_configuration_1_t *OpenAPI_mdt_configuration_1_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_measurement_lte_for_mdt_FromString(measurement_lte_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"measurement_lte_list\" is not supported. Ignoring it ...",
-                         measurement_lte_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(measurement_lte_listList, (void *)localEnum);
+                ogs_error("OpenAPI_measurement_lte_for_mdt_FromString(measurement_lte_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (measurement_lte_listList->count == 0) {
-            ogs_error("OpenAPI_mdt_configuration_1_parseFromJSON() failed: Expected measurement_lte_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(measurement_lte_listList, (void *)localEnum);
         }
     }
 
@@ -547,15 +542,10 @@ OpenAPI_mdt_configuration_1_t *OpenAPI_mdt_configuration_1_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_measurement_nr_for_mdt_FromString(measurement_nr_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"measurement_nr_list\" is not supported. Ignoring it ...",
-                         measurement_nr_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(measurement_nr_listList, (void *)localEnum);
+                ogs_error("OpenAPI_measurement_nr_for_mdt_FromString(measurement_nr_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (measurement_nr_listList->count == 0) {
-            ogs_error("OpenAPI_mdt_configuration_1_parseFromJSON() failed: Expected measurement_nr_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(measurement_nr_listList, (void *)localEnum);
         }
     }
 
@@ -577,15 +567,10 @@ OpenAPI_mdt_configuration_1_t *OpenAPI_mdt_configuration_1_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_sensor_measurement_FromString(sensor_measurement_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"sensor_measurement_list\" is not supported. Ignoring it ...",
-                         sensor_measurement_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(sensor_measurement_listList, (void *)localEnum);
+                ogs_error("OpenAPI_sensor_measurement_FromString(sensor_measurement_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (sensor_measurement_listList->count == 0) {
-            ogs_error("OpenAPI_mdt_configuration_1_parseFromJSON() failed: Expected sensor_measurement_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(sensor_measurement_listList, (void *)localEnum);
         }
     }
 
@@ -607,15 +592,10 @@ OpenAPI_mdt_configuration_1_t *OpenAPI_mdt_configuration_1_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_reporting_trigger_FromString(reporting_trigger_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"reporting_trigger_list\" is not supported. Ignoring it ...",
-                         reporting_trigger_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(reporting_trigger_listList, (void *)localEnum);
+                ogs_error("OpenAPI_reporting_trigger_FromString(reporting_trigger_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (reporting_trigger_listList->count == 0) {
-            ogs_error("OpenAPI_mdt_configuration_1_parseFromJSON() failed: Expected reporting_trigger_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(reporting_trigger_listList, (void *)localEnum);
         }
     }
 
@@ -696,15 +676,10 @@ OpenAPI_mdt_configuration_1_t *OpenAPI_mdt_configuration_1_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_event_for_mdt_FromString(event_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"event_list\" is not supported. Ignoring it ...",
-                         event_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(event_listList, (void *)localEnum);
+                ogs_error("OpenAPI_event_for_mdt_FromString(event_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (event_listList->count == 0) {
-            ogs_error("OpenAPI_mdt_configuration_1_parseFromJSON() failed: Expected event_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(event_listList, (void *)localEnum);
         }
     }
 
@@ -771,15 +746,10 @@ OpenAPI_mdt_configuration_1_t *OpenAPI_mdt_configuration_1_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_positioning_method_mdt_FromString(add_positioning_method_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"add_positioning_method_list\" is not supported. Ignoring it ...",
-                         add_positioning_method_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(add_positioning_method_listList, (void *)localEnum);
+                ogs_error("OpenAPI_positioning_method_mdt_FromString(add_positioning_method_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (add_positioning_method_listList->count == 0) {
-            ogs_error("OpenAPI_mdt_configuration_1_parseFromJSON() failed: Expected add_positioning_method_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(add_positioning_method_listList, (void *)localEnum);
         }
     }
 

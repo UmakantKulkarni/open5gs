@@ -6,23 +6,18 @@
 
 OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_create(
     OpenAPI_list_t* sess_rules,
-    bool is_pcc_rules_null,
     OpenAPI_list_t* pcc_rules,
     bool is_pcscf_rest_indication,
     int pcscf_rest_indication,
     OpenAPI_list_t* qos_decs,
-    bool is_chg_decs_null,
     OpenAPI_list_t* chg_decs,
     OpenAPI_charging_information_t *charging_info,
     OpenAPI_list_t* traff_cont_decs,
-    bool is_um_decs_null,
     OpenAPI_list_t* um_decs,
     OpenAPI_list_t* qos_chars,
-    bool is_qos_mon_decs_null,
     OpenAPI_list_t* qos_mon_decs,
     bool is_reflective_qo_s_timer,
     int reflective_qo_s_timer,
-    bool is_conds_null,
     OpenAPI_list_t* conds,
     char *revalidation_time,
     bool is_offline,
@@ -31,11 +26,9 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_create(
     int online,
     bool is_offline_ch_only,
     int offline_ch_only,
-    bool is_policy_ctrl_req_triggers_null,
     OpenAPI_list_t *policy_ctrl_req_triggers,
     OpenAPI_list_t *last_req_rule_data,
     OpenAPI_requested_usage_data_t *last_req_usage_data,
-    bool is_pra_infos_null,
     OpenAPI_list_t* pra_infos,
     bool is_ipv4_index,
     int ipv4_index,
@@ -55,23 +48,18 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_create(
     ogs_assert(sm_policy_decision_local_var);
 
     sm_policy_decision_local_var->sess_rules = sess_rules;
-    sm_policy_decision_local_var->is_pcc_rules_null = is_pcc_rules_null;
     sm_policy_decision_local_var->pcc_rules = pcc_rules;
     sm_policy_decision_local_var->is_pcscf_rest_indication = is_pcscf_rest_indication;
     sm_policy_decision_local_var->pcscf_rest_indication = pcscf_rest_indication;
     sm_policy_decision_local_var->qos_decs = qos_decs;
-    sm_policy_decision_local_var->is_chg_decs_null = is_chg_decs_null;
     sm_policy_decision_local_var->chg_decs = chg_decs;
     sm_policy_decision_local_var->charging_info = charging_info;
     sm_policy_decision_local_var->traff_cont_decs = traff_cont_decs;
-    sm_policy_decision_local_var->is_um_decs_null = is_um_decs_null;
     sm_policy_decision_local_var->um_decs = um_decs;
     sm_policy_decision_local_var->qos_chars = qos_chars;
-    sm_policy_decision_local_var->is_qos_mon_decs_null = is_qos_mon_decs_null;
     sm_policy_decision_local_var->qos_mon_decs = qos_mon_decs;
     sm_policy_decision_local_var->is_reflective_qo_s_timer = is_reflective_qo_s_timer;
     sm_policy_decision_local_var->reflective_qo_s_timer = reflective_qo_s_timer;
-    sm_policy_decision_local_var->is_conds_null = is_conds_null;
     sm_policy_decision_local_var->conds = conds;
     sm_policy_decision_local_var->revalidation_time = revalidation_time;
     sm_policy_decision_local_var->is_offline = is_offline;
@@ -80,11 +68,9 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_create(
     sm_policy_decision_local_var->online = online;
     sm_policy_decision_local_var->is_offline_ch_only = is_offline_ch_only;
     sm_policy_decision_local_var->offline_ch_only = offline_ch_only;
-    sm_policy_decision_local_var->is_policy_ctrl_req_triggers_null = is_policy_ctrl_req_triggers_null;
     sm_policy_decision_local_var->policy_ctrl_req_triggers = policy_ctrl_req_triggers;
     sm_policy_decision_local_var->last_req_rule_data = last_req_rule_data;
     sm_policy_decision_local_var->last_req_usage_data = last_req_usage_data;
-    sm_policy_decision_local_var->is_pra_infos_null = is_pra_infos_null;
     sm_policy_decision_local_var->pra_infos = pra_infos;
     sm_policy_decision_local_var->is_ipv4_index = is_ipv4_index;
     sm_policy_decision_local_var->ipv4_index = ipv4_index;
@@ -323,11 +309,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             cJSON_AddItemToObject(localMapObject, localKeyValue->key, itemLocal);
         }
     }
-    } else if (sm_policy_decision->is_pcc_rules_null) {
-        if (cJSON_AddNullToObject(item, "pccRules") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [pcc_rules]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->is_pcscf_rest_indication) {
@@ -395,11 +376,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             cJSON_AddItemToObject(localMapObject, localKeyValue->key, itemLocal);
         }
     }
-    } else if (sm_policy_decision->is_chg_decs_null) {
-        if (cJSON_AddNullToObject(item, "chgDecs") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [chg_decs]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->charging_info) {
@@ -473,11 +449,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             cJSON_AddItemToObject(localMapObject, localKeyValue->key, itemLocal);
         }
     }
-    } else if (sm_policy_decision->is_um_decs_null) {
-        if (cJSON_AddNullToObject(item, "umDecs") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [um_decs]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->qos_chars) {
@@ -538,11 +509,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             cJSON_AddItemToObject(localMapObject, localKeyValue->key, itemLocal);
         }
     }
-    } else if (sm_policy_decision->is_qos_mon_decs_null) {
-        if (cJSON_AddNullToObject(item, "qosMonDecs") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [qos_mon_decs]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->is_reflective_qo_s_timer) {
@@ -580,11 +546,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             cJSON_AddItemToObject(localMapObject, localKeyValue->key, itemLocal);
         }
     }
-    } else if (sm_policy_decision->is_conds_null) {
-        if (cJSON_AddNullToObject(item, "conds") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [conds]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->revalidation_time) {
@@ -627,11 +588,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             goto end;
         }
     }
-    } else if (sm_policy_decision->is_policy_ctrl_req_triggers_null) {
-        if (cJSON_AddNullToObject(item, "policyCtrlReqTriggers") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [policy_ctrl_req_triggers]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->last_req_rule_data) {
@@ -691,11 +647,6 @@ cJSON *OpenAPI_sm_policy_decision_convertToJSON(OpenAPI_sm_policy_decision_t *sm
             cJSON_AddItemToObject(localMapObject, localKeyValue->key, itemLocal);
         }
     }
-    } else if (sm_policy_decision->is_pra_infos_null) {
-        if (cJSON_AddNullToObject(item, "praInfos") == NULL) {
-            ogs_error("OpenAPI_sm_policy_decision_convertToJSON() failed [pra_infos]");
-            goto end;
-        }
     }
 
     if (sm_policy_decision->is_ipv4_index) {
@@ -866,7 +817,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     pcc_rules = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "pccRules");
     if (pcc_rules) {
-    if (!cJSON_IsNull(pcc_rules)) {
         cJSON *pcc_rules_local_map = NULL;
         if (!cJSON_IsObject(pcc_rules) && !cJSON_IsNull(pcc_rules)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [pcc_rules]");
@@ -889,7 +839,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
                 OpenAPI_list_add(pcc_rulesList, localMapKeyPair);
             }
         }
-    }
     }
 
     pcscf_rest_indication = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "pcscfRestIndication");
@@ -928,7 +877,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     chg_decs = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "chgDecs");
     if (chg_decs) {
-    if (!cJSON_IsNull(chg_decs)) {
         cJSON *chg_decs_local_map = NULL;
         if (!cJSON_IsObject(chg_decs) && !cJSON_IsNull(chg_decs)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [chg_decs]");
@@ -951,7 +899,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
                 OpenAPI_list_add(chg_decsList, localMapKeyPair);
             }
         }
-    }
     }
 
     charging_info = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "chargingInfo");
@@ -991,7 +938,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     um_decs = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "umDecs");
     if (um_decs) {
-    if (!cJSON_IsNull(um_decs)) {
         cJSON *um_decs_local_map = NULL;
         if (!cJSON_IsObject(um_decs) && !cJSON_IsNull(um_decs)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [um_decs]");
@@ -1014,7 +960,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
                 OpenAPI_list_add(um_decsList, localMapKeyPair);
             }
         }
-    }
     }
 
     qos_chars = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "qosChars");
@@ -1045,7 +990,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     qos_mon_decs = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "qosMonDecs");
     if (qos_mon_decs) {
-    if (!cJSON_IsNull(qos_mon_decs)) {
         cJSON *qos_mon_decs_local_map = NULL;
         if (!cJSON_IsObject(qos_mon_decs) && !cJSON_IsNull(qos_mon_decs)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [qos_mon_decs]");
@@ -1069,7 +1013,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
             }
         }
     }
-    }
 
     reflective_qo_s_timer = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "reflectiveQoSTimer");
     if (reflective_qo_s_timer) {
@@ -1081,7 +1024,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     conds = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "conds");
     if (conds) {
-    if (!cJSON_IsNull(conds)) {
         cJSON *conds_local_map = NULL;
         if (!cJSON_IsObject(conds) && !cJSON_IsNull(conds)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [conds]");
@@ -1104,7 +1046,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
                 OpenAPI_list_add(condsList, localMapKeyPair);
             }
         }
-    }
     }
 
     revalidation_time = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "revalidationTime");
@@ -1141,7 +1082,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     policy_ctrl_req_triggers = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "policyCtrlReqTriggers");
     if (policy_ctrl_req_triggers) {
-    if (!cJSON_IsNull(policy_ctrl_req_triggers)) {
         cJSON *policy_ctrl_req_triggers_local = NULL;
         if (!cJSON_IsArray(policy_ctrl_req_triggers)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [policy_ctrl_req_triggers]");
@@ -1158,17 +1098,11 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
             }
             localEnum = OpenAPI_policy_control_request_trigger_FromString(policy_ctrl_req_triggers_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"policy_ctrl_req_triggers\" is not supported. Ignoring it ...",
-                         policy_ctrl_req_triggers_local->valuestring);
-            } else {
-                OpenAPI_list_add(policy_ctrl_req_triggersList, (void *)localEnum);
+                ogs_error("OpenAPI_policy_control_request_trigger_FromString(policy_ctrl_req_triggers_local->valuestring) failed");
+                goto end;
             }
+            OpenAPI_list_add(policy_ctrl_req_triggersList, (void *)localEnum);
         }
-        if (policy_ctrl_req_triggersList->count == 0) {
-            ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed: Expected policy_ctrl_req_triggersList to not be empty (after ignoring unsupported enum values).");
-            goto end;
-        }
-    }
     }
 
     last_req_rule_data = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "lastReqRuleData");
@@ -1206,7 +1140,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     pra_infos = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "praInfos");
     if (pra_infos) {
-    if (!cJSON_IsNull(pra_infos)) {
         cJSON *pra_infos_local_map = NULL;
         if (!cJSON_IsObject(pra_infos) && !cJSON_IsNull(pra_infos)) {
             ogs_error("OpenAPI_sm_policy_decision_parseFromJSON() failed [pra_infos]");
@@ -1229,7 +1162,6 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
                 OpenAPI_list_add(pra_infosList, localMapKeyPair);
             }
         }
-    }
     }
 
     ipv4_index = cJSON_GetObjectItemCaseSensitive(sm_policy_decisionJSON, "ipv4Index");
@@ -1326,23 +1258,18 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
 
     sm_policy_decision_local_var = OpenAPI_sm_policy_decision_create (
         sess_rules ? sess_rulesList : NULL,
-        pcc_rules && cJSON_IsNull(pcc_rules) ? true : false,
         pcc_rules ? pcc_rulesList : NULL,
         pcscf_rest_indication ? true : false,
         pcscf_rest_indication ? pcscf_rest_indication->valueint : 0,
         qos_decs ? qos_decsList : NULL,
-        chg_decs && cJSON_IsNull(chg_decs) ? true : false,
         chg_decs ? chg_decsList : NULL,
         charging_info ? charging_info_local_nonprim : NULL,
         traff_cont_decs ? traff_cont_decsList : NULL,
-        um_decs && cJSON_IsNull(um_decs) ? true : false,
         um_decs ? um_decsList : NULL,
         qos_chars ? qos_charsList : NULL,
-        qos_mon_decs && cJSON_IsNull(qos_mon_decs) ? true : false,
         qos_mon_decs ? qos_mon_decsList : NULL,
         reflective_qo_s_timer ? true : false,
         reflective_qo_s_timer ? reflective_qo_s_timer->valuedouble : 0,
-        conds && cJSON_IsNull(conds) ? true : false,
         conds ? condsList : NULL,
         revalidation_time && !cJSON_IsNull(revalidation_time) ? ogs_strdup(revalidation_time->valuestring) : NULL,
         offline ? true : false,
@@ -1351,11 +1278,9 @@ OpenAPI_sm_policy_decision_t *OpenAPI_sm_policy_decision_parseFromJSON(cJSON *sm
         online ? online->valueint : 0,
         offline_ch_only ? true : false,
         offline_ch_only ? offline_ch_only->valueint : 0,
-        policy_ctrl_req_triggers && cJSON_IsNull(policy_ctrl_req_triggers) ? true : false,
         policy_ctrl_req_triggers ? policy_ctrl_req_triggersList : NULL,
         last_req_rule_data ? last_req_rule_dataList : NULL,
         last_req_usage_data ? last_req_usage_data_local_nonprim : NULL,
-        pra_infos && cJSON_IsNull(pra_infos) ? true : false,
         pra_infos ? pra_infosList : NULL,
         ipv4_index ? true : false,
         ipv4_index ? ipv4_index->valuedouble : 0,

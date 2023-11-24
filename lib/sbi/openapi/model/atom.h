@@ -21,7 +21,6 @@ extern "C" {
 typedef struct OpenAPI_atom_s OpenAPI_atom_t;
 typedef struct OpenAPI_atom_s {
     char *attr;
-    bool is_value_null;
     OpenAPI_any_type_t *value;
     bool is_negative;
     int negative;
@@ -29,7 +28,6 @@ typedef struct OpenAPI_atom_s {
 
 OpenAPI_atom_t *OpenAPI_atom_create(
     char *attr,
-    bool is_value_null,
     OpenAPI_any_type_t *value,
     bool is_negative,
     int negative

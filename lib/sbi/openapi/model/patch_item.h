@@ -24,7 +24,6 @@ typedef struct OpenAPI_patch_item_s {
     OpenAPI_patch_operation_e op;
     char *path;
     char *from;
-    bool is_value_null;
     OpenAPI_any_type_t *value;
 } OpenAPI_patch_item_t;
 
@@ -32,7 +31,6 @@ OpenAPI_patch_item_t *OpenAPI_patch_item_create(
     OpenAPI_patch_operation_e op,
     char *path,
     char *from,
-    bool is_value_null,
     OpenAPI_any_type_t *value
 );
 void OpenAPI_patch_item_free(OpenAPI_patch_item_t *patch_item);

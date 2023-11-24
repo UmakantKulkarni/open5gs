@@ -25,7 +25,7 @@ int app_initialize(const char *const argv[])
 
     rv = nrf_initialize();
     if (rv != OGS_OK) {
-        ogs_error("Failed to initialize NRF");
+        ogs_error("Failed to intialize NRF");
         return rv;
     }
     ogs_info("NRF initialize...done");

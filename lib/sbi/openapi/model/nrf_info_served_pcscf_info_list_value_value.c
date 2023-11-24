@@ -290,15 +290,10 @@ OpenAPI_nrf_info_served_pcscf_info_list_value_value_t *OpenAPI_nrf_info_served_p
             }
             localEnum = OpenAPI_access_type_FromString(access_type_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"access_type\" is not supported. Ignoring it ...",
-                         access_type_local->valuestring);
-            } else {
-                OpenAPI_list_add(access_typeList, (void *)localEnum);
+                ogs_error("OpenAPI_access_type_FromString(access_type_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (access_typeList->count == 0) {
-            ogs_error("OpenAPI_nrf_info_served_pcscf_info_list_value_value_parseFromJSON() failed: Expected access_typeList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(access_typeList, (void *)localEnum);
         }
     }
 

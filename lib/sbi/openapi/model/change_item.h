@@ -24,9 +24,7 @@ typedef struct OpenAPI_change_item_s {
     OpenAPI_change_type_e op;
     char *path;
     char *from;
-    bool is_orig_value_null;
     OpenAPI_any_type_t *orig_value;
-    bool is_new_value_null;
     OpenAPI_any_type_t *new_value;
 } OpenAPI_change_item_t;
 
@@ -34,9 +32,7 @@ OpenAPI_change_item_t *OpenAPI_change_item_create(
     OpenAPI_change_type_e op,
     char *path,
     char *from,
-    bool is_orig_value_null,
     OpenAPI_any_type_t *orig_value,
-    bool is_new_value_null,
     OpenAPI_any_type_t *new_value
 );
 void OpenAPI_change_item_free(OpenAPI_change_item_t *change_item);

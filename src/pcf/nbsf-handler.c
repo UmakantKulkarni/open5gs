@@ -122,10 +122,8 @@ bool pcf_nbsf_management_handle_register(
 
     ogs_sbi_header_free(&header);
 
-    rv = pcf_db_qos_data(
-            pcf_ue->supi,
-            sess->home.presence == true ? &sess->home.plmn_id : NULL,
-            &sess->s_nssai, sess->dnn, &session_data);
+    rv = ogs_dbi_session_data(
+            pcf_ue->supi, &sess->s_nssai, sess->dnn, &session_data);
     if (rv != OGS_OK) {
         strerror = ogs_msprintf("[%s:%d] Cannot find SUPI in DB",
                 pcf_ue->supi, sess->psi);
@@ -279,7 +277,6 @@ bool pcf_nbsf_management_handle_register(
         ogs_pcc_rule_t *pcc_rule = &session_data.pcc_rule[i];
 
         ogs_assert(pcc_rule);
-        ogs_assert(pcc_rule->id);
 
         if (!pcc_rule->num_of_flow) {
             /* No Flow */
@@ -390,7 +387,7 @@ bool pcf_nbsf_management_handle_register(
     pcf_metrics_inst_by_slice_add(&sess->pcf_ue->guami.plmn_id,
             &sess->s_nssai, PCF_METR_CTR_PA_POLICYSMASSOSUCC, 1);
 
-    OGS_SESSION_DATA_FREE(&session_data);
+    ogs_session_data_free(&session_data);
 
     return true;
 
@@ -402,7 +399,7 @@ cleanup:
         ogs_sbi_server_send_error(stream, status, recvmsg, strerror, NULL));
     ogs_free(strerror);
 
-    OGS_SESSION_DATA_FREE(&session_data);
+    ogs_session_data_free(&session_data);
 
     return false;
 }

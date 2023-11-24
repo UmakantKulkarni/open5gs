@@ -19,7 +19,6 @@ OpenAPI_sms_management_subscription_data_1_t *OpenAPI_sms_management_subscriptio
     bool is_mo_sms_barring_roaming,
     int mo_sms_barring_roaming,
     OpenAPI_list_t *shared_sms_mng_data_ids,
-    bool is_trace_data_null,
     OpenAPI_trace_data_t *trace_data
 )
 {
@@ -40,7 +39,6 @@ OpenAPI_sms_management_subscription_data_1_t *OpenAPI_sms_management_subscriptio
     sms_management_subscription_data_1_local_var->is_mo_sms_barring_roaming = is_mo_sms_barring_roaming;
     sms_management_subscription_data_1_local_var->mo_sms_barring_roaming = mo_sms_barring_roaming;
     sms_management_subscription_data_1_local_var->shared_sms_mng_data_ids = shared_sms_mng_data_ids;
-    sms_management_subscription_data_1_local_var->is_trace_data_null = is_trace_data_null;
     sms_management_subscription_data_1_local_var->trace_data = trace_data;
 
     return sms_management_subscription_data_1_local_var;
@@ -156,11 +154,6 @@ cJSON *OpenAPI_sms_management_subscription_data_1_convertToJSON(OpenAPI_sms_mana
         ogs_error("OpenAPI_sms_management_subscription_data_1_convertToJSON() failed [trace_data]");
         goto end;
     }
-    } else if (sms_management_subscription_data_1->is_trace_data_null) {
-        if (cJSON_AddNullToObject(item, "traceData") == NULL) {
-            ogs_error("OpenAPI_sms_management_subscription_data_1_convertToJSON() failed [trace_data]");
-            goto end;
-        }
     }
 
 end:
@@ -261,12 +254,10 @@ OpenAPI_sms_management_subscription_data_1_t *OpenAPI_sms_management_subscriptio
 
     trace_data = cJSON_GetObjectItemCaseSensitive(sms_management_subscription_data_1JSON, "traceData");
     if (trace_data) {
-    if (!cJSON_IsNull(trace_data)) {
     trace_data_local_nonprim = OpenAPI_trace_data_parseFromJSON(trace_data);
     if (!trace_data_local_nonprim) {
         ogs_error("OpenAPI_trace_data_parseFromJSON failed [trace_data]");
         goto end;
-    }
     }
     }
 
@@ -285,7 +276,6 @@ OpenAPI_sms_management_subscription_data_1_t *OpenAPI_sms_management_subscriptio
         mo_sms_barring_roaming ? true : false,
         mo_sms_barring_roaming ? mo_sms_barring_roaming->valueint : 0,
         shared_sms_mng_data_ids ? shared_sms_mng_data_idsList : NULL,
-        trace_data && cJSON_IsNull(trace_data) ? true : false,
         trace_data ? trace_data_local_nonprim : NULL
     );
 

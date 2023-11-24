@@ -138,15 +138,10 @@ OpenAPI_requested_rule_data_t *OpenAPI_requested_rule_data_parseFromJSON(cJSON *
             }
             localEnum = OpenAPI_requested_rule_data_type_FromString(req_data_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"req_data\" is not supported. Ignoring it ...",
-                         req_data_local->valuestring);
-            } else {
-                OpenAPI_list_add(req_dataList, (void *)localEnum);
+                ogs_error("OpenAPI_requested_rule_data_type_FromString(req_data_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (req_dataList->count == 0) {
-            ogs_error("OpenAPI_requested_rule_data_parseFromJSON() failed: Expected req_dataList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(req_dataList, (void *)localEnum);
         }
 
     requested_rule_data_local_var = OpenAPI_requested_rule_data_create (

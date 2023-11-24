@@ -586,15 +586,10 @@ OpenAPI_access_and_mobility_data_t *OpenAPI_access_and_mobility_data_parseFromJS
             }
             localEnum = OpenAPI_rat_type_FromString(rat_type_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"rat_type\" is not supported. Ignoring it ...",
-                         rat_type_local->valuestring);
-            } else {
-                OpenAPI_list_add(rat_typeList, (void *)localEnum);
+                ogs_error("OpenAPI_rat_type_FromString(rat_type_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (rat_typeList->count == 0) {
-            ogs_error("OpenAPI_access_and_mobility_data_parseFromJSON() failed: Expected rat_typeList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(rat_typeList, (void *)localEnum);
         }
     }
 

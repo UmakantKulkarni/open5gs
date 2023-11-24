@@ -1195,15 +1195,10 @@ OpenAPI_event_subscription_t *OpenAPI_event_subscription_parseFromJSON(cJSON *ev
             }
             localEnum = OpenAPI_nf_type_FromString(nf_types_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"nf_types\" is not supported. Ignoring it ...",
-                         nf_types_local->valuestring);
-            } else {
-                OpenAPI_list_add(nf_typesList, (void *)localEnum);
+                ogs_error("OpenAPI_nf_type_FromString(nf_types_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (nf_typesList->count == 0) {
-            ogs_error("OpenAPI_event_subscription_parseFromJSON() failed: Expected nf_typesList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(nf_typesList, (void *)localEnum);
         }
     }
 

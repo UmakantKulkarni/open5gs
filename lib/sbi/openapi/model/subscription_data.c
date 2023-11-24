@@ -501,15 +501,10 @@ OpenAPI_subscription_data_t *OpenAPI_subscription_data_parseFromJSON(cJSON *subs
             }
             localEnum = OpenAPI_notification_event_type_FromString(req_notif_events_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"req_notif_events\" is not supported. Ignoring it ...",
-                         req_notif_events_local->valuestring);
-            } else {
-                OpenAPI_list_add(req_notif_eventsList, (void *)localEnum);
+                ogs_error("OpenAPI_notification_event_type_FromString(req_notif_events_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (req_notif_eventsList->count == 0) {
-            ogs_error("OpenAPI_subscription_data_parseFromJSON() failed: Expected req_notif_eventsList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(req_notif_eventsList, (void *)localEnum);
         }
     }
 

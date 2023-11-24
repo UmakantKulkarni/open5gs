@@ -186,15 +186,10 @@ OpenAPI_datalink_reporting_configuration_t *OpenAPI_datalink_reporting_configura
             }
             localEnum = OpenAPI_dl_data_delivery_status_FromString(ddd_status_list_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"ddd_status_list\" is not supported. Ignoring it ...",
-                         ddd_status_list_local->valuestring);
-            } else {
-                OpenAPI_list_add(ddd_status_listList, (void *)localEnum);
+                ogs_error("OpenAPI_dl_data_delivery_status_FromString(ddd_status_list_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (ddd_status_listList->count == 0) {
-            ogs_error("OpenAPI_datalink_reporting_configuration_parseFromJSON() failed: Expected ddd_status_listList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(ddd_status_listList, (void *)localEnum);
         }
     }
 

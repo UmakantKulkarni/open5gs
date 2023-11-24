@@ -89,14 +89,12 @@ ogs_pfcp_xact_t *ogs_pfcp_xact_local_create(ogs_pfcp_node_t *node,
     xact->tm_response = ogs_timer_add(
             ogs_app()->timer_mgr, response_timeout, xact);
     ogs_assert(xact->tm_response);
-    xact->response_rcount =
-        ogs_local_conf()->time.message.pfcp.n1_response_rcount;
+    xact->response_rcount = ogs_app()->time.message.pfcp.n1_response_rcount;
 
     xact->tm_holding = ogs_timer_add(
             ogs_app()->timer_mgr, holding_timeout, xact);
     ogs_assert(xact->tm_holding);
-    xact->holding_rcount =
-        ogs_local_conf()->time.message.pfcp.n1_holding_rcount;
+    xact->holding_rcount = ogs_app()->time.message.pfcp.n1_holding_rcount;
 
     xact->tm_delayed_commit = ogs_timer_add(
             ogs_app()->timer_mgr, delayed_commit_timeout, xact);
@@ -136,14 +134,12 @@ static ogs_pfcp_xact_t *ogs_pfcp_xact_remote_create(
     xact->tm_response = ogs_timer_add(
             ogs_app()->timer_mgr, response_timeout, xact);
     ogs_assert(xact->tm_response);
-    xact->response_rcount =
-        ogs_local_conf()->time.message.pfcp.n1_response_rcount;
+    xact->response_rcount = ogs_app()->time.message.pfcp.n1_response_rcount;
 
     xact->tm_holding = ogs_timer_add(
             ogs_app()->timer_mgr, holding_timeout, xact);
     ogs_assert(xact->tm_holding);
-    xact->holding_rcount =
-        ogs_local_conf()->time.message.pfcp.n1_holding_rcount;
+    xact->holding_rcount = ogs_app()->time.message.pfcp.n1_holding_rcount;
 
     xact->tm_delayed_commit = ogs_timer_add(
             ogs_app()->timer_mgr, delayed_commit_timeout, xact);
@@ -317,7 +313,7 @@ static int ogs_pfcp_xact_update_rx(ogs_pfcp_xact_t *xact, uint8_t type)
                 if (pkbuf) {
                     if (xact->tm_holding)
                         ogs_timer_start(xact->tm_holding,
-                                ogs_local_conf()->time.message.
+                                ogs_app()->time.message.
                                     pfcp.t1_holding_duration);
 
                     ogs_warn("[%d] %s Request Duplicated. Retransmit!"
@@ -352,8 +348,7 @@ static int ogs_pfcp_xact_update_rx(ogs_pfcp_xact_t *xact, uint8_t type)
 
             if (xact->tm_holding)
                 ogs_timer_start(xact->tm_holding,
-                        ogs_local_conf()->time.message.pfcp.
-                        t1_holding_duration);
+                        ogs_app()->time.message.pfcp.t1_holding_duration);
 
             break;
 
@@ -383,7 +378,7 @@ static int ogs_pfcp_xact_update_rx(ogs_pfcp_xact_t *xact, uint8_t type)
                 if (pkbuf) {
                     if (xact->tm_holding)
                         ogs_timer_start(xact->tm_holding,
-                                ogs_local_conf()->time.message.
+                                ogs_app()->time.message.
                                     pfcp.t1_holding_duration);
 
                     ogs_warn("[%d] %s Request Duplicated. Retransmit!"
@@ -417,8 +412,7 @@ static int ogs_pfcp_xact_update_rx(ogs_pfcp_xact_t *xact, uint8_t type)
             }
             if (xact->tm_holding)
                 ogs_timer_start(xact->tm_holding,
-                        ogs_local_conf()->time.message.pfcp.
-                        t1_holding_duration);
+                        ogs_app()->time.message.pfcp.t1_holding_duration);
 
             break;
 
@@ -487,7 +481,7 @@ int ogs_pfcp_xact_commit(ogs_pfcp_xact_t *xact)
 
             if (xact->tm_response)
                 ogs_timer_start(xact->tm_response,
-                        ogs_local_conf()->time.message.pfcp.t1_response_duration);
+                        ogs_app()->time.message.pfcp.t1_response_duration);
 
             break;
 
@@ -529,8 +523,7 @@ int ogs_pfcp_xact_commit(ogs_pfcp_xact_t *xact)
             }
             if (xact->tm_response)
                 ogs_timer_start(xact->tm_response,
-                        ogs_local_conf()->time.message.pfcp.
-                        t1_response_duration);
+                        ogs_app()->time.message.pfcp.t1_response_duration);
 
             break;
 
@@ -596,7 +589,7 @@ static void response_timeout(void *data)
 
         if (xact->tm_response)
             ogs_timer_start(xact->tm_response,
-                    ogs_local_conf()->time.message.pfcp.t1_response_duration);
+                    ogs_app()->time.message.pfcp.t1_response_duration);
 
         pkbuf = xact->seq[xact->step-1].pkbuf;
         ogs_assert(pkbuf);
@@ -637,7 +630,7 @@ static void holding_timeout(void *data)
     if (--xact->holding_rcount > 0) {
         if (xact->tm_holding)
             ogs_timer_start(xact->tm_holding,
-                    ogs_local_conf()->time.message.pfcp.t1_holding_duration);
+                    ogs_app()->time.message.pfcp.t1_holding_duration);
     } else {
         ogs_debug("[%d] %s Delete Transaction "
                 "for step %d type %d peer [%s]:%d",

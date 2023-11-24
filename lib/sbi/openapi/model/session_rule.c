@@ -8,11 +8,8 @@ OpenAPI_session_rule_t *OpenAPI_session_rule_create(
     OpenAPI_ambr_t *auth_sess_ambr,
     OpenAPI_authorized_default_qos_t *auth_def_qos,
     char *sess_rule_id,
-    bool is_ref_um_data_null,
     char *ref_um_data,
-    bool is_ref_um_n3g_data_null,
     char *ref_um_n3g_data,
-    bool is_ref_cond_data_null,
     char *ref_cond_data
 )
 {
@@ -22,11 +19,8 @@ OpenAPI_session_rule_t *OpenAPI_session_rule_create(
     session_rule_local_var->auth_sess_ambr = auth_sess_ambr;
     session_rule_local_var->auth_def_qos = auth_def_qos;
     session_rule_local_var->sess_rule_id = sess_rule_id;
-    session_rule_local_var->is_ref_um_data_null = is_ref_um_data_null;
     session_rule_local_var->ref_um_data = ref_um_data;
-    session_rule_local_var->is_ref_um_n3g_data_null = is_ref_um_n3g_data_null;
     session_rule_local_var->ref_um_n3g_data = ref_um_n3g_data;
-    session_rule_local_var->is_ref_cond_data_null = is_ref_cond_data_null;
     session_rule_local_var->ref_cond_data = ref_cond_data;
 
     return session_rule_local_var;
@@ -117,11 +111,6 @@ cJSON *OpenAPI_session_rule_convertToJSON(OpenAPI_session_rule_t *session_rule)
         ogs_error("OpenAPI_session_rule_convertToJSON() failed [ref_um_data]");
         goto end;
     }
-    } else if (session_rule->is_ref_um_data_null) {
-        if (cJSON_AddNullToObject(item, "refUmData") == NULL) {
-            ogs_error("OpenAPI_session_rule_convertToJSON() failed [ref_um_data]");
-            goto end;
-        }
     }
 
     if (session_rule->ref_um_n3g_data) {
@@ -129,11 +118,6 @@ cJSON *OpenAPI_session_rule_convertToJSON(OpenAPI_session_rule_t *session_rule)
         ogs_error("OpenAPI_session_rule_convertToJSON() failed [ref_um_n3g_data]");
         goto end;
     }
-    } else if (session_rule->is_ref_um_n3g_data_null) {
-        if (cJSON_AddNullToObject(item, "refUmN3gData") == NULL) {
-            ogs_error("OpenAPI_session_rule_convertToJSON() failed [ref_um_n3g_data]");
-            goto end;
-        }
     }
 
     if (session_rule->ref_cond_data) {
@@ -141,11 +125,6 @@ cJSON *OpenAPI_session_rule_convertToJSON(OpenAPI_session_rule_t *session_rule)
         ogs_error("OpenAPI_session_rule_convertToJSON() failed [ref_cond_data]");
         goto end;
     }
-    } else if (session_rule->is_ref_cond_data_null) {
-        if (cJSON_AddNullToObject(item, "refCondData") == NULL) {
-            ogs_error("OpenAPI_session_rule_convertToJSON() failed [ref_cond_data]");
-            goto end;
-        }
     }
 
 end:
@@ -194,31 +173,25 @@ OpenAPI_session_rule_t *OpenAPI_session_rule_parseFromJSON(cJSON *session_ruleJS
 
     ref_um_data = cJSON_GetObjectItemCaseSensitive(session_ruleJSON, "refUmData");
     if (ref_um_data) {
-    if (!cJSON_IsNull(ref_um_data)) {
     if (!cJSON_IsString(ref_um_data) && !cJSON_IsNull(ref_um_data)) {
         ogs_error("OpenAPI_session_rule_parseFromJSON() failed [ref_um_data]");
         goto end;
     }
     }
-    }
 
     ref_um_n3g_data = cJSON_GetObjectItemCaseSensitive(session_ruleJSON, "refUmN3gData");
     if (ref_um_n3g_data) {
-    if (!cJSON_IsNull(ref_um_n3g_data)) {
     if (!cJSON_IsString(ref_um_n3g_data) && !cJSON_IsNull(ref_um_n3g_data)) {
         ogs_error("OpenAPI_session_rule_parseFromJSON() failed [ref_um_n3g_data]");
         goto end;
     }
     }
-    }
 
     ref_cond_data = cJSON_GetObjectItemCaseSensitive(session_ruleJSON, "refCondData");
     if (ref_cond_data) {
-    if (!cJSON_IsNull(ref_cond_data)) {
     if (!cJSON_IsString(ref_cond_data) && !cJSON_IsNull(ref_cond_data)) {
         ogs_error("OpenAPI_session_rule_parseFromJSON() failed [ref_cond_data]");
         goto end;
-    }
     }
     }
 
@@ -226,11 +199,8 @@ OpenAPI_session_rule_t *OpenAPI_session_rule_parseFromJSON(cJSON *session_ruleJS
         auth_sess_ambr ? auth_sess_ambr_local_nonprim : NULL,
         auth_def_qos ? auth_def_qos_local_nonprim : NULL,
         ogs_strdup(sess_rule_id->valuestring),
-        ref_um_data && cJSON_IsNull(ref_um_data) ? true : false,
         ref_um_data && !cJSON_IsNull(ref_um_data) ? ogs_strdup(ref_um_data->valuestring) : NULL,
-        ref_um_n3g_data && cJSON_IsNull(ref_um_n3g_data) ? true : false,
         ref_um_n3g_data && !cJSON_IsNull(ref_um_n3g_data) ? ogs_strdup(ref_um_n3g_data->valuestring) : NULL,
-        ref_cond_data && cJSON_IsNull(ref_cond_data) ? true : false,
         ref_cond_data && !cJSON_IsNull(ref_cond_data) ? ogs_strdup(ref_cond_data->valuestring) : NULL
     );
 

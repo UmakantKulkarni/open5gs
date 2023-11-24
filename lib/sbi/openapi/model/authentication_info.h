@@ -25,7 +25,6 @@ typedef struct OpenAPI_authentication_info_s {
     char *serving_network_name;
     struct OpenAPI_resynchronization_info_s *resynchronization_info;
     char *pei;
-    bool is_trace_data_null;
     struct OpenAPI_trace_data_s *trace_data;
     char *udm_group_id;
     char *routing_indicator;
@@ -46,7 +45,6 @@ OpenAPI_authentication_info_t *OpenAPI_authentication_info_create(
     char *serving_network_name,
     OpenAPI_resynchronization_info_t *resynchronization_info,
     char *pei,
-    bool is_trace_data_null,
     OpenAPI_trace_data_t *trace_data,
     char *udm_group_id,
     char *routing_indicator,

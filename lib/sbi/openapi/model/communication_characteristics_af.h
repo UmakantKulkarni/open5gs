@@ -19,7 +19,6 @@ extern "C" {
 
 typedef struct OpenAPI_communication_characteristics_af_s OpenAPI_communication_characteristics_af_t;
 typedef struct OpenAPI_communication_characteristics_af_s {
-    bool is_pp_dl_packet_count_null;
     bool is_pp_dl_packet_count;
     int pp_dl_packet_count;
     bool is_maximum_response_time;
@@ -29,7 +28,6 @@ typedef struct OpenAPI_communication_characteristics_af_s {
 } OpenAPI_communication_characteristics_af_t;
 
 OpenAPI_communication_characteristics_af_t *OpenAPI_communication_characteristics_af_create(
-    bool is_pp_dl_packet_count_null,
     bool is_pp_dl_packet_count,
     int pp_dl_packet_count,
     bool is_maximum_response_time,

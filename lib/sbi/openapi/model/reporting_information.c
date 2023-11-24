@@ -238,15 +238,10 @@ OpenAPI_reporting_information_t *OpenAPI_reporting_information_parseFromJSON(cJS
             }
             localEnum = OpenAPI_partitioning_criteria_FromString(partition_criteria_local->valuestring);
             if (!localEnum) {
-                ogs_info("Enum value \"%s\" for field \"partition_criteria\" is not supported. Ignoring it ...",
-                         partition_criteria_local->valuestring);
-            } else {
-                OpenAPI_list_add(partition_criteriaList, (void *)localEnum);
+                ogs_error("OpenAPI_partitioning_criteria_FromString(partition_criteria_local->valuestring) failed");
+                goto end;
             }
-        }
-        if (partition_criteriaList->count == 0) {
-            ogs_error("OpenAPI_reporting_information_parseFromJSON() failed: Expected partition_criteriaList to not be empty (after ignoring unsupported enum values).");
-            goto end;
+            OpenAPI_list_add(partition_criteriaList, (void *)localEnum);
         }
     }
 

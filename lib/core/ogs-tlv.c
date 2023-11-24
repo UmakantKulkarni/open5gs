@@ -36,7 +36,7 @@ ogs_tlv_t *ogs_tlv_get(void)
     /* check for error */
     ogs_assert(tlv);
 
-    /* initialize tlv node */
+    /* intialize tlv node */
     memset(tlv, 0, sizeof(ogs_tlv_t));
     return tlv;
 }

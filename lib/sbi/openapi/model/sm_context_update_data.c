@@ -32,7 +32,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_create(
     char *serving_nf_id,
     OpenAPI_guami_t *guami,
     OpenAPI_plmn_id_nid_t *serving_network,
-    bool is_backup_amf_info_null,
     OpenAPI_list_t *backup_amf_info,
     OpenAPI_access_type_e an_type,
     OpenAPI_access_type_e additional_an_type,
@@ -71,7 +70,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_create(
     bool is__5g_mm_cause_value,
     int _5g_mm_cause_value,
     OpenAPI_snssai_t *s_nssai,
-    bool is_trace_data_null,
     OpenAPI_trace_data_t *trace_data,
     OpenAPI_eps_interworking_indication_e eps_interworking_ind,
     bool is_an_type_can_be_changed,
@@ -95,7 +93,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_create(
     int skip_n2_pdu_session_res_rel_ind,
     OpenAPI_list_t *secondary_rat_usage_data_report_container,
     OpenAPI_sm_context_update_data_sm_policy_notify_ind_e sm_policy_notify_ind,
-    bool is_pcf_ue_callback_info_null,
     OpenAPI_pcf_ue_callback_info_t *pcf_ue_callback_info,
     OpenAPI_satellite_backhaul_category_e satellite_backhaul_cat
 )
@@ -107,7 +104,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_create(
     sm_context_update_data_local_var->serving_nf_id = serving_nf_id;
     sm_context_update_data_local_var->guami = guami;
     sm_context_update_data_local_var->serving_network = serving_network;
-    sm_context_update_data_local_var->is_backup_amf_info_null = is_backup_amf_info_null;
     sm_context_update_data_local_var->backup_amf_info = backup_amf_info;
     sm_context_update_data_local_var->an_type = an_type;
     sm_context_update_data_local_var->additional_an_type = additional_an_type;
@@ -146,7 +142,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_create(
     sm_context_update_data_local_var->is__5g_mm_cause_value = is__5g_mm_cause_value;
     sm_context_update_data_local_var->_5g_mm_cause_value = _5g_mm_cause_value;
     sm_context_update_data_local_var->s_nssai = s_nssai;
-    sm_context_update_data_local_var->is_trace_data_null = is_trace_data_null;
     sm_context_update_data_local_var->trace_data = trace_data;
     sm_context_update_data_local_var->eps_interworking_ind = eps_interworking_ind;
     sm_context_update_data_local_var->is_an_type_can_be_changed = is_an_type_can_be_changed;
@@ -170,7 +165,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_create(
     sm_context_update_data_local_var->skip_n2_pdu_session_res_rel_ind = skip_n2_pdu_session_res_rel_ind;
     sm_context_update_data_local_var->secondary_rat_usage_data_report_container = secondary_rat_usage_data_report_container;
     sm_context_update_data_local_var->sm_policy_notify_ind = sm_policy_notify_ind;
-    sm_context_update_data_local_var->is_pcf_ue_callback_info_null = is_pcf_ue_callback_info_null;
     sm_context_update_data_local_var->pcf_ue_callback_info = pcf_ue_callback_info;
     sm_context_update_data_local_var->satellite_backhaul_cat = satellite_backhaul_cat;
 
@@ -397,11 +391,6 @@ cJSON *OpenAPI_sm_context_update_data_convertToJSON(OpenAPI_sm_context_update_da
         }
         cJSON_AddItemToArray(backup_amf_infoList, itemLocal);
     }
-    } else if (sm_context_update_data->is_backup_amf_info_null) {
-        if (cJSON_AddNullToObject(item, "backupAmfInfo") == NULL) {
-            ogs_error("OpenAPI_sm_context_update_data_convertToJSON() failed [backup_amf_info]");
-            goto end;
-        }
     }
 
     if (sm_context_update_data->an_type != OpenAPI_access_type_NULL) {
@@ -722,11 +711,6 @@ cJSON *OpenAPI_sm_context_update_data_convertToJSON(OpenAPI_sm_context_update_da
         ogs_error("OpenAPI_sm_context_update_data_convertToJSON() failed [trace_data]");
         goto end;
     }
-    } else if (sm_context_update_data->is_trace_data_null) {
-        if (cJSON_AddNullToObject(item, "traceData") == NULL) {
-            ogs_error("OpenAPI_sm_context_update_data_convertToJSON() failed [trace_data]");
-            goto end;
-        }
     }
 
     if (sm_context_update_data->eps_interworking_ind != OpenAPI_eps_interworking_indication_NULL) {
@@ -897,11 +881,6 @@ cJSON *OpenAPI_sm_context_update_data_convertToJSON(OpenAPI_sm_context_update_da
         ogs_error("OpenAPI_sm_context_update_data_convertToJSON() failed [pcf_ue_callback_info]");
         goto end;
     }
-    } else if (sm_context_update_data->is_pcf_ue_callback_info_null) {
-        if (cJSON_AddNullToObject(item, "pcfUeCallbackInfo") == NULL) {
-            ogs_error("OpenAPI_sm_context_update_data_convertToJSON() failed [pcf_ue_callback_info]");
-            goto end;
-        }
     }
 
     if (sm_context_update_data->satellite_backhaul_cat != OpenAPI_satellite_backhaul_category_NULL) {
@@ -1049,7 +1028,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
 
     backup_amf_info = cJSON_GetObjectItemCaseSensitive(sm_context_update_dataJSON, "backupAmfInfo");
     if (backup_amf_info) {
-    if (!cJSON_IsNull(backup_amf_info)) {
         cJSON *backup_amf_info_local = NULL;
         if (!cJSON_IsArray(backup_amf_info)) {
             ogs_error("OpenAPI_sm_context_update_data_parseFromJSON() failed [backup_amf_info]");
@@ -1070,7 +1048,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
             }
             OpenAPI_list_add(backup_amf_infoList, backup_amf_infoItem);
         }
-    }
     }
 
     an_type = cJSON_GetObjectItemCaseSensitive(sm_context_update_dataJSON, "anType");
@@ -1405,12 +1382,10 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
 
     trace_data = cJSON_GetObjectItemCaseSensitive(sm_context_update_dataJSON, "traceData");
     if (trace_data) {
-    if (!cJSON_IsNull(trace_data)) {
     trace_data_local_nonprim = OpenAPI_trace_data_parseFromJSON(trace_data);
     if (!trace_data_local_nonprim) {
         ogs_error("OpenAPI_trace_data_parseFromJSON failed [trace_data]");
         goto end;
-    }
     }
     }
 
@@ -1586,12 +1561,10 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
 
     pcf_ue_callback_info = cJSON_GetObjectItemCaseSensitive(sm_context_update_dataJSON, "pcfUeCallbackInfo");
     if (pcf_ue_callback_info) {
-    if (!cJSON_IsNull(pcf_ue_callback_info)) {
     pcf_ue_callback_info_local_nonprim = OpenAPI_pcf_ue_callback_info_parseFromJSON(pcf_ue_callback_info);
     if (!pcf_ue_callback_info_local_nonprim) {
         ogs_error("OpenAPI_pcf_ue_callback_info_parseFromJSON failed [pcf_ue_callback_info]");
         goto end;
-    }
     }
     }
 
@@ -1609,7 +1582,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
         serving_nf_id && !cJSON_IsNull(serving_nf_id) ? ogs_strdup(serving_nf_id->valuestring) : NULL,
         guami ? guami_local_nonprim : NULL,
         serving_network ? serving_network_local_nonprim : NULL,
-        backup_amf_info && cJSON_IsNull(backup_amf_info) ? true : false,
         backup_amf_info ? backup_amf_infoList : NULL,
         an_type ? an_typeVariable : 0,
         additional_an_type ? additional_an_typeVariable : 0,
@@ -1648,7 +1620,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
         _5g_mm_cause_value ? true : false,
         _5g_mm_cause_value ? _5g_mm_cause_value->valuedouble : 0,
         s_nssai ? s_nssai_local_nonprim : NULL,
-        trace_data && cJSON_IsNull(trace_data) ? true : false,
         trace_data ? trace_data_local_nonprim : NULL,
         eps_interworking_ind ? eps_interworking_indVariable : 0,
         an_type_can_be_changed ? true : false,
@@ -1672,7 +1643,6 @@ OpenAPI_sm_context_update_data_t *OpenAPI_sm_context_update_data_parseFromJSON(c
         skip_n2_pdu_session_res_rel_ind ? skip_n2_pdu_session_res_rel_ind->valueint : 0,
         secondary_rat_usage_data_report_container ? secondary_rat_usage_data_report_containerList : NULL,
         sm_policy_notify_ind ? sm_policy_notify_indVariable : 0,
-        pcf_ue_callback_info && cJSON_IsNull(pcf_ue_callback_info) ? true : false,
         pcf_ue_callback_info ? pcf_ue_callback_info_local_nonprim : NULL,
         satellite_backhaul_cat ? satellite_backhaul_catVariable : 0
     );
