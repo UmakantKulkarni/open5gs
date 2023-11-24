@@ -151,6 +151,14 @@ static int ogs_pfcp_context_prepare(void)
 
     self.tun_ifname = "ogstun";
 
+    if(getenv("OGS_TUN_INTERFACE")) {
+	const char *suk;
+        suk = getenv("OGS_TUN_INTERFACE");
+	    if (suk) {
+		self.tun_ifname = suk;
+	    }
+    }
+
     return OGS_OK;
 }
 
