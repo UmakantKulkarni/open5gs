@@ -39,6 +39,7 @@ void bsf_state_final(ogs_fsm_t *s, bsf_event_t *e)
 
 void bsf_state_operational(ogs_fsm_t *s, bsf_event_t *e)
 {
+    ogs_info("PCS BSF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
 
     bsf_sess_t *sess = NULL;

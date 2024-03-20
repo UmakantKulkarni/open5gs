@@ -39,6 +39,7 @@ void nssf_state_final(ogs_fsm_t *s, nssf_event_t *e)
 
 void nssf_state_operational(ogs_fsm_t *s, nssf_event_t *e)
 {
+    ogs_info("PCS NSSF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
     const char *api_version = NULL;
 

@@ -36,6 +36,7 @@ void udm_state_final(ogs_fsm_t *s, udm_event_t *e)
 
 void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
 {
+    ogs_info("PCS UDM ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
     const char *api_version = NULL;
 

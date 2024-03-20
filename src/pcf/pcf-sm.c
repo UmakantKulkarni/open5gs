@@ -36,6 +36,7 @@ void pcf_state_final(ogs_fsm_t *s, pcf_event_t *e)
 
 void pcf_state_operational(ogs_fsm_t *s, pcf_event_t *e)
 {
+    ogs_info("PCS PCF ogs_queue_size is %d",ogs_queue_size(ogs_app()->queue));
     int rv;
 
     ogs_sbi_stream_t *stream = NULL;
