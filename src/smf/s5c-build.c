@@ -101,7 +101,7 @@ ogs_pkbuf_t *smf_s5c_build_create_session_response(
         len = len;
 
     /* PDN Address Allocation */
-    rsp->pdn_address_allocation.data = &sess->session.paa;
+    rsp->pdn_address_allocation.data = &sess->paa;
     if (sess->ipv4 && sess->ipv6)
         rsp->pdn_address_allocation.len = OGS_PAA_IPV4V6_LEN;
     else if (sess->ipv4)
@@ -337,7 +337,7 @@ ogs_pkbuf_t *smf_s5c_build_modify_bearer_response(
     smf_bearer_t *bearer = NULL;
 
     ogs_assert(sess);
-    smf_ue = sess->smf_ue;
+    smf_ue = smf_ue_find_by_id(sess->smf_ue_id);
     ogs_assert(smf_ue);
     ogs_assert(req);
 
@@ -410,7 +410,7 @@ ogs_pkbuf_t *smf_s5c_build_create_bearer_request(
     char tft_buf[OGS_GTP2_MAX_TRAFFIC_FLOW_TEMPLATE];
 
     ogs_assert(bearer);
-    sess = bearer->sess;
+    sess = smf_sess_find_by_id(bearer->sess_id);
     ogs_assert(sess);
     linked_bearer = smf_default_bearer_in_sess(sess);
     ogs_assert(linked_bearer);
@@ -433,7 +433,17 @@ ogs_pkbuf_t *smf_s5c_build_create_bearer_request(
 
     /* Data Plane(UL) : PGW-S5U */
     memset(&pgw_s5u_teid, 0, sizeof(ogs_gtp2_f_teid_t));
-    pgw_s5u_teid.interface_type = OGS_GTP2_F_TEID_S5_S8_PGW_GTP_U;
+    switch (sess->gtp_rat_type) {
+    case OGS_GTP2_RAT_TYPE_EUTRAN:
+        pgw_s5u_teid.interface_type = OGS_GTP2_F_TEID_S5_S8_PGW_GTP_U;
+        break;
+    case OGS_GTP2_RAT_TYPE_WLAN:
+        pgw_s5u_teid.interface_type = OGS_GTP2_F_TEID_S2B_U_PGW_GTP_U;
+        break;
+    default:
+        ogs_error("Unknown RAT Type [%d]", sess->gtp_rat_type);
+        ogs_assert_if_reached();
+    }
     pgw_s5u_teid.teid = htobe32(bearer->pgw_s5u_teid);
     ogs_assert(bearer->pgw_s5u_addr || bearer->pgw_s5u_addr6);
     rv = ogs_gtp2_sockaddr_to_f_teid(
@@ -489,7 +499,7 @@ ogs_pkbuf_t *smf_s5c_build_update_bearer_request(
     char tft_buf[OGS_GTP2_MAX_TRAFFIC_FLOW_TEMPLATE];
 
     ogs_assert(bearer);
-    sess = bearer->sess;
+    sess = smf_sess_find_by_id(bearer->sess_id);
     ogs_assert(sess);
 
     ogs_debug("[SMF] Update Bearer Request");
@@ -567,7 +577,7 @@ ogs_pkbuf_t *smf_s5c_build_delete_bearer_request(
     ogs_gtp2_cause_t cause;
 
     ogs_assert(bearer);
-    sess = bearer->sess;
+    sess = smf_sess_find_by_id(bearer->sess_id);
     ogs_assert(sess);
     linked_bearer = smf_default_bearer_in_sess(sess);
     ogs_assert(linked_bearer);

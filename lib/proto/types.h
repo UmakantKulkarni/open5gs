@@ -34,20 +34,45 @@ extern "C" {
 #define OGS_MAX_NUM_OF_PACKET_BUFFER    64  /* Num of PacketBuffer per UE */
 
 /*
- * The array of TLV messages is limited to 8.
- * So, Flow(PDI.SDF_Filter) in PDR is limited to 8.
+ * TS24.008
+ * 10.5.6.12 Traffic Flow Template
+ * Table 10.5.162: Traffic flow template information element
  *
- * However, the number of flow in bearer context seems to need more than 16.
+ * Number of packet filters (octet 3)
+ * The number of packet filters contains the binary coding
+ * for the number of packet filters in the packet filter list.
+ * The number of packet filters field is encoded in bits 4
+ * through 1 of octet 3 where bit 4 is the most significant
+ * and bit 1 is the least significant bit.
  *
- * Therefore, the maximum number of flows of messages is defined as 8,
- * and the maximum number of flows stored by the context is 16.
+ * For the "delete existing TFT" operation and
+ * for the "no TFT operation", the number of packet filters shall be
+ * coded as 0. For all other operations, the number of packet filters
+ * shall be greater than 0 and less than or equal to 15.
+ *
+ * TS24.501
+ * 9.11.4.13 QoS rules
+ * Table 9.11.4.13.1: QoS rules information element
+ *
+ * For the "delete existing QoS rule" operation and for the "modify existing
+ * QoS rule without modifying packet filters" operation, the number of packet
+ * filters shall be coded as 0. For the "create new QoS rule" operation
+ * and the "modify existing QoS rule and replace all packet filters" operation,
+ * the number of packet filters shall be greater than or equal to 0
+ * and less than or equal to 15. For all other operations, the number of packet
+ * filters shall be greater than 0 and less than or equal to 15.
+ *
+ * The array of TLV messages is limited to 15.
+ * So, Flow(PDI.SDF_Filter) in PDR is limited to 15.
+ *
+ * Therefore, we defined the maximum number of flows as 15.
  */
-#define OGS_MAX_NUM_OF_FLOW_IN_PDR      8
+#define OGS_MAX_NUM_OF_FLOW_IN_PDR      15
 #define OGS_MAX_NUM_OF_FLOW_IN_GTP      OGS_MAX_NUM_OF_FLOW_IN_PDR
 #define OGS_MAX_NUM_OF_FLOW_IN_NAS      OGS_MAX_NUM_OF_FLOW_IN_PDR
 #define OGS_MAX_NUM_OF_FLOW_IN_PCC_RULE OGS_MAX_NUM_OF_FLOW_IN_PDR
 #define OGS_MAX_NUM_OF_FLOW_IN_MEDIA_SUB_COMPONENT OGS_MAX_NUM_OF_FLOW_IN_PDR
-#define OGS_MAX_NUM_OF_FLOW_IN_BEARER   16
+#define OGS_MAX_NUM_OF_FLOW_IN_BEARER   15
 
 #define OGS_MAX_NUM_OF_GTPU_RESOURCE    4
 #define OGS_MAX_NUM_OF_FRAMED_ROUTES_IN_PDI 8
@@ -217,6 +242,7 @@ char *ogs_plmn_id_to_string(const ogs_plmn_id_t *plmn_id, char *buf);
 
 char *ogs_serving_network_name_from_plmn_id(const ogs_plmn_id_t *plmn_id);
 char *ogs_home_network_domain_from_plmn_id(const ogs_plmn_id_t *plmn_id);
+char *ogs_epc_domain_from_plmn_id(const ogs_plmn_id_t *plmn_id);
 char *ogs_nrf_fqdn_from_plmn_id(const ogs_plmn_id_t *plmn_id);
 char *ogs_nssf_fqdn_from_plmn_id(const ogs_plmn_id_t *plmn_id);
 char *ogs_home_network_domain_from_fqdn(char *fqdn);
@@ -379,11 +405,6 @@ ED2(uint8_t spare:4;,
 typedef struct ogs_paa_s {
 ED2(uint8_t spare:5;,
 /* 8.34 PDN Type  */
-#define OGS_PDU_SESSION_TYPE_IS_VALID(x) \
-        ((x) == OGS_PDU_SESSION_TYPE_IPV4 || \
-         (x) == OGS_PDU_SESSION_TYPE_IPV6 || \
-         (x) == OGS_PDU_SESSION_TYPE_IPV4V6) \
-
     uint8_t session_type:3;)
     union {
         /* PDU_SESSION_TYPE_IPV4 */
@@ -608,7 +629,6 @@ typedef struct ogs_session_s {
     ogs_qos_t qos;
     ogs_bitrate_t ambr; /* APN-AMBR */
 
-    ogs_paa_t paa;
     ogs_ip_t ue_ip;
     char **ipv4_framed_routes;
     char **ipv6_framed_routes;
@@ -679,7 +699,7 @@ typedef struct ogs_pco_id_s {
     void *data;
 } ogs_pco_id_t;
 
-#define OGS_MAX_NUM_OF_PROTOCOL_OR_CONTAINER_ID    16
+#define OGS_MAX_NUM_OF_PROTOCOL_OR_CONTAINER_ID    32
 typedef struct ogs_pco_s {
 ED3(uint8_t ext:1;,
     uint8_t spare:4;,

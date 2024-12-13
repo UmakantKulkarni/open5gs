@@ -105,7 +105,7 @@ ogs_app_local_conf_t *ogs_local_conf(void)
     return &local_conf;
 }
 
-static int global_conf_prepare(void)
+int ogs_app_global_conf_prepare(void)
 {
     global_conf.sockopt.no_delay = true;
 
@@ -134,15 +134,36 @@ static int global_conf_validation(void)
     return OGS_OK;
 }
 
+int ogs_app_count_nf_conf_sections(const char *conf_section)
+{
+    if (!strcmp(conf_section, "amf"))
+        global_conf.parameter.amf_count++;
+    else if (!strcmp(conf_section, "smf"))
+        global_conf.parameter.smf_count++;
+    else if (!strcmp(conf_section, "upf"))
+        global_conf.parameter.upf_count++;
+    else if (!strcmp(conf_section, "ausf"))
+        global_conf.parameter.ausf_count++;
+    else if (!strcmp(conf_section, "udm"))
+        global_conf.parameter.udm_count++;
+    else if (!strcmp(conf_section, "pcf"))
+        global_conf.parameter.pcf_count++;
+    else if (!strcmp(conf_section, "nssf"))
+        global_conf.parameter.nssf_count++;
+    else if (!strcmp(conf_section, "bsf"))
+        global_conf.parameter.bsf_count++;
+    else if (!strcmp(conf_section, "udr"))
+        global_conf.parameter.udr_count++;
+
+    return OGS_OK;
+}
+
 int ogs_app_parse_global_conf(ogs_yaml_iter_t *parent)
 {
     int rv;
     ogs_yaml_iter_t global_iter;
 
     ogs_assert(parent);
-
-    rv = global_conf_prepare();
-    if (rv != OGS_OK) return rv;
 
     ogs_yaml_iter_recurse(parent, &global_iter);
     while (ogs_yaml_iter_next(&global_iter)) {
@@ -225,6 +246,12 @@ int ogs_app_parse_global_conf(ogs_yaml_iter_t *parent)
                         ogs_yaml_iter_bool(&parameter_iter);
                 } else if (!strcmp(parameter_key, "use_openair")) {
                     global_conf.parameter.use_openair =
+                        ogs_yaml_iter_bool(&parameter_iter);
+                } else if (!strcmp(parameter_key, "use_upg_vpp")) {
+                    global_conf.parameter.use_upg_vpp =
+                        ogs_yaml_iter_bool(&parameter_iter);
+                } else if (!strcmp(parameter_key, "fake_csfb")) {
+                    global_conf.parameter.fake_csfb =
                         ogs_yaml_iter_bool(&parameter_iter);
                 } else if (!strcmp(parameter_key,
                             "no_ipv4v6_local_addr_in_packet_filter")) {
@@ -408,8 +435,8 @@ static int local_conf_prepare(void)
      *  Heartbeat Interval(e.g: 10 seconds) + No Heartbeat Margin(1 second) */
     local_conf.time.nf_instance.no_heartbeat_margin = 1;
 
-    /* 3600 seconds = 1 hour */
-    local_conf.time.nf_instance.validity_duration = 3600;
+    /* 30 seconds */
+    local_conf.time.nf_instance.validity_duration = 30;
 
     /* 86400 seconds = 1 day */
     local_conf.time.subscription.validity_duration = 86400;
@@ -459,6 +486,7 @@ int ogs_app_parse_local_conf(const char *local)
     int rv;
     yaml_document_t *document = NULL;
     ogs_yaml_iter_t root_iter;
+    int idx = 0;
 
     document = ogs_app()->document;
     ogs_assert(document);
@@ -470,7 +498,8 @@ int ogs_app_parse_local_conf(const char *local)
     while (ogs_yaml_iter_next(&root_iter)) {
         const char *root_key = ogs_yaml_iter_key(&root_iter);
         ogs_assert(root_key);
-        if (!strcmp(root_key, local)) {
+        if (!strcmp(root_key, local) &&
+            (idx++ == ogs_app()->config_section_id)) {
             ogs_yaml_iter_t local_iter;
             ogs_yaml_iter_recurse(&root_iter, &local_iter);
             while (ogs_yaml_iter_next(&local_iter)) {

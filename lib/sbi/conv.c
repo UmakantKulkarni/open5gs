@@ -94,9 +94,16 @@ char *ogs_supi_from_suci(char *suci)
         return NULL;
     }
 
+    /* Clang scan-build SA: Branch condition evaluates to a garbage value: If array "array" is not fully populated
+     * in the while loop below then later access in the following switch-case may check uninitialized values.
+     * Initialize "array" to NULL pointers to fix the issue. */
+    for (i = 0; i < MAX_SUCI_TOKEN; i++) {
+        array[i] = NULL;
+    }
+
     p = tmp;
     i = 0;
-    while((array[i++] = strsep(&p, "-"))) {
+    while((i < MAX_SUCI_TOKEN) && (array[i++] = strsep(&p, "-"))) {
         /* Empty Body */
     }
 
@@ -715,12 +722,12 @@ char *ogs_sbi_bitrate_to_string(uint64_t bitrate, int unit)
 uint64_t ogs_sbi_bitrate_from_string(char *str)
 {
     char *unit = NULL;
-    uint64_t bitrate = 0;
+    double bitrate = 0;
     ogs_assert(str);
     uint64_t mul = 1;
 
     unit = strrchr(str, ' ');
-    bitrate = atoll(str);
+    bitrate = atof(str);
 
     if (!unit) {
         ogs_error("No Unit [%s]", str);
@@ -748,7 +755,7 @@ uint64_t ogs_sbi_bitrate_from_string(char *str)
     else
         bitrate *= mul;
 
-    return bitrate;
+    return (uint64_t) bitrate;
 }
 
 #define MAX_TIMESTR_LEN 128

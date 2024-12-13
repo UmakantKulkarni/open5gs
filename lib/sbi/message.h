@@ -48,7 +48,7 @@ extern "C" {
 #define OGS_SBI_HTTP_STATUS_UNAUTHORIZED            401 /* ALL */
 #define OGS_SBI_HTTP_STATUS_FORBIDDEN               403 /* ALL */
 #define OGS_SBI_HTTP_STATUS_NOT_FOUND               404 /* ALL */
-#define OGS_SBI_HTTP_STATUS_MEHTOD_NOT_ALLOWED      405 /* ALL */
+#define OGS_SBI_HTTP_STATUS_METHOD_NOT_ALLOWED      405 /* ALL */
 #define OGS_SBI_HTTP_STATUS_NOT_ACCEPTABLE          406 /* GET OPTIONS */
 #define OGS_SBI_HTTP_STATUS_REQUEST_TIMEOUT         408 /* ALL */
 #define OGS_SBI_HTTP_STATUS_CONFLICT                409 /* PATCH POST PUT */
@@ -125,6 +125,7 @@ extern "C" {
 #define OGS_SBI_RESOURCE_NAME_UE_CONTEXTS           "ue-contexts"
 #define OGS_SBI_RESOURCE_NAME_N1_N2_MESSAGES        "n1-n2-messages"
 #define OGS_SBI_RESOURCE_NAME_TRANSFER              "transfer"
+#define OGS_SBI_RESOURCE_NAME_TRANSFER_UPDATE       "transfer-update"
 
 #define OGS_SBI_RESOURCE_NAME_SM_CONTEXT_STATUS     "sm-context-status"
 #define OGS_SBI_RESOURCE_NAME_AM_POLICY_NOTIFY      "am-policy-notify"
@@ -168,6 +169,13 @@ extern "C" {
 #define OGS_SBI_NPCF_AM_POLICY_CONTROL_DNN_REPLACEMENT_CONTROL 4
 #define OGS_SBI_NPCF_AM_POLICY_CONTROL_MULTIPLE_ACCESS_TYPES 5
 #define OGS_SBI_NPCF_AM_POLICY_CONTROL_WIRELINE_WIRELESS_CONVERGE 6
+
+#define OGS_SBI_NUDM_SDM_SHARED_DATA 1
+#define OGS_SBI_NUDM_SDM_IMMEDIATE_REPORT 2
+#define OGS_SBI_NUDM_SDM_PATCH_REPORT 3
+#define OGS_SBI_NUDM_SDM_NSSAA 4
+#define OGS_SBI_NUDM_SDM_CAG_FEATURE 5
+#define OGS_SBI_NUDM_SDM_LIMITED_SUBSCRIPTIONS 13
 
 #define OGS_SBI_NPCF_SMPOLICYCONTROL_TSC 1
 #define OGS_SBI_NPCF_SMPOLICYCONTROL_RES_SHARE 2
@@ -435,7 +443,8 @@ typedef struct ogs_sbi_discovery_option_s {
     bool tai_presence;
     ogs_5gs_tai_t tai;
 
-    ogs_guami_t *target_guami;
+    bool guami_presence;
+    ogs_guami_t guami;
 
     int num_of_target_plmn_list;
     ogs_plmn_id_t target_plmn_list[OGS_MAX_NUM_OF_PLMN];
@@ -550,6 +559,8 @@ typedef struct ogs_sbi_message_s {
     OpenAPI_sec_negotiate_rsp_data_t *SecNegotiateRspData;
     OpenAPI_ue_context_transfer_req_data_t *UeContextTransferReqData;
     OpenAPI_ue_context_transfer_rsp_data_t *UeContextTransferRspData;
+    OpenAPI_ue_reg_status_update_req_data_t *UeRegStatusUpdateReqData;
+    OpenAPI_ue_reg_status_update_rsp_data_t *UeRegStatusUpdateRspData;
 
     ogs_sbi_links_t *links;
 
@@ -649,6 +660,8 @@ char *ogs_sbi_discovery_option_build_snssais(
 void ogs_sbi_discovery_option_parse_snssais(
         ogs_sbi_discovery_option_t *discovery_option, char *snssais);
 
+void ogs_sbi_discovery_option_set_guami(
+        ogs_sbi_discovery_option_t *discovery_option, ogs_guami_t *guami);
 char *ogs_sbi_discovery_option_build_guami(
         ogs_sbi_discovery_option_t *discovery_option);
 void ogs_sbi_discovery_option_parse_guami(

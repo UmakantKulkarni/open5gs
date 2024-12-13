@@ -54,6 +54,15 @@ void ogs_nnrf_nfm_handle_nf_register(
         OpenAPI_list_for_each(NFProfile->plmn_list, node) {
             OpenAPI_plmn_id_t *PlmnId = node->data;
             if (PlmnId) {
+                if (ogs_local_conf()->num_of_serving_plmn_id >=
+                        OGS_ARRAY_SIZE(ogs_local_conf()->serving_plmn_id)) {
+                    ogs_error("OVERFLOW NFProfile->plmn_list [%d:%d:%d]",
+                            ogs_local_conf()->num_of_serving_plmn_id,
+                            OGS_MAX_NUM_OF_PLMN,
+                            (int)OGS_ARRAY_SIZE(
+                                ogs_local_conf()->serving_plmn_id));
+                    break;
+                }
                 ogs_sbi_parse_plmn_id(
                     &ogs_local_conf()->serving_plmn_id[
                         ogs_local_conf()->num_of_serving_plmn_id], PlmnId);
@@ -96,6 +105,13 @@ void ogs_nnrf_nfm_handle_nf_profile(
     OpenAPI_list_for_each(NFProfile->plmn_list, node) {
         OpenAPI_plmn_id_t *PlmnId = node->data;
         if (PlmnId) {
+            if (nf_instance->num_of_plmn_id >=
+                    OGS_ARRAY_SIZE(nf_instance->plmn_id)) {
+                ogs_error("OVERFLOW NFProfile->plmn_list [%d:%d:%d]",
+                        nf_instance->num_of_plmn_id, OGS_MAX_NUM_OF_PLMN,
+                        (int)OGS_ARRAY_SIZE(nf_instance->plmn_id));
+                break;
+            }
             ogs_sbi_parse_plmn_id(
                 &nf_instance->plmn_id[nf_instance->num_of_plmn_id], PlmnId);
             nf_instance->num_of_plmn_id++;
@@ -467,8 +483,12 @@ static void handle_smf_info(
         TaiRangeItem = node->data;
         if (TaiRangeItem && TaiRangeItem->plmn_id &&
                 TaiRangeItem->tac_range_list) {
-            ogs_assert(nf_info->smf.num_of_nr_tai_range <
-                    OGS_MAX_NUM_OF_TAI);
+
+            if (nf_info->smf.num_of_nr_tai_range >= OGS_MAX_NUM_OF_TAI) {
+                ogs_error("OVERFLOW TaiRangeItem [%d:%d]",
+                        nf_info->smf.num_of_nr_tai_range, OGS_MAX_NUM_OF_TAI);
+                break;
+            }
 
             ogs_sbi_parse_plmn_id(
                 &nf_info->smf.nr_tai_range
@@ -709,7 +729,13 @@ static void handle_amf_info(
         TaiItem = node->data;
         if (TaiItem && TaiItem->plmn_id && TaiItem->tac) {
             ogs_5gs_tai_t *nr_tai = NULL;
-            ogs_assert(nf_info->amf.num_of_nr_tai < OGS_MAX_NUM_OF_TAI);
+
+            if (nf_info->amf.num_of_nr_tai >= OGS_MAX_NUM_OF_TAI) {
+                ogs_error("OVERFLOW TaiItem [%d:%d]",
+                        nf_info->amf.num_of_nr_tai, OGS_MAX_NUM_OF_TAI);
+                break;
+            }
+
             nr_tai = &nf_info->amf.nr_tai[nf_info->amf.num_of_nr_tai];
             ogs_assert(nr_tai);
             ogs_sbi_parse_plmn_id(&nr_tai->plmn_id, TaiItem->plmn_id);
@@ -725,6 +751,12 @@ static void handle_amf_info(
                 TaiRangeItem->tac_range_list) {
             ogs_assert(nf_info->amf.num_of_nr_tai_range <
                     OGS_MAX_NUM_OF_TAI);
+
+            if (nf_info->amf.num_of_nr_tai_range >= OGS_MAX_NUM_OF_TAI) {
+                ogs_error("OVERFLOW TaiRangeItem [%d:%d]",
+                        nf_info->amf.num_of_nr_tai_range, OGS_MAX_NUM_OF_TAI);
+                break;
+            }
 
             ogs_sbi_parse_plmn_id(
                 &nf_info->amf.nr_tai_range
@@ -761,32 +793,45 @@ static void handle_validity_time(
         char *validity_time, const char *action)
 {
     ogs_time_t time, validity, patch;
+    char *validity_time_string = NULL;
 
-    ogs_assert(validity_time);
     ogs_assert(subscription_data);
     ogs_assert(action);
 
-    if (ogs_sbi_time_from_string(&time, validity_time) == false) {
-        ogs_error("[%s] Subscription %s until %s [parser error]",
-                subscription_data->id, action, validity_time);
-        return;
-    }
-
-    validity = time - ogs_time_now();
-    if (validity < 0) {
-        ogs_error("[%s] Subscription %s until %s [validity:%d.%06d]",
-                subscription_data->id, action, validity_time,
-                (int)ogs_time_sec(validity), (int)ogs_time_usec(validity));
-        return;
-    }
-
     /*
-     * Store subscription_data->time.validity_duration to derive NRF validity.
-     * It will be used in ogs_nnrf_nfm_build_status_update().
+     * If there is a validity_time, then the NRF is updating
+     * the validity_time by sending HTTP_STATUS to 200.
+     * Therefore, change subscription_data->valdity_duration
+     * according to this value.
      *
-     * So, you should not remove the following lines.
+     * If validity_time is NULL, NRF sent an HTTP_STATUS of 204 (No content).
+     * In this case, use the existing subscription_data->validity_duration.
      */
-    subscription_data->time.validity_duration = OGS_SBI_VALIDITY_SEC(validity);
+    if (validity_time) {
+        if (ogs_sbi_time_from_string(&time, validity_time) == false) {
+            ogs_error("[%s] Subscription %s until %s [parser error]",
+                    subscription_data->id, action, validity_time);
+            return;
+        }
+
+        validity = time - ogs_time_now();
+        if (validity < 0) {
+            ogs_error("[%s] Subscription %s until %s [validity:%d.%06d]",
+                    subscription_data->id, action, validity_time,
+                    (int)ogs_time_sec(validity), (int)ogs_time_usec(validity));
+            return;
+        }
+
+        /*
+         * Store subscription_data->validity_duration to derive NRF validity.
+         * It will be used in ogs_nnrf_nfm_build_status_update().
+         *
+         * So, you should not remove the following lines.
+         */
+        subscription_data->validity_duration =
+            /* Normalize seconds */
+            ogs_time_from_sec(ogs_time_to_sec(validity));
+    }
 
     if (!subscription_data->t_validity) {
         subscription_data->t_validity =
@@ -794,13 +839,14 @@ static void handle_validity_time(
                 ogs_timer_subscription_validity, subscription_data);
         ogs_assert(subscription_data->t_validity);
     }
-    ogs_timer_start(subscription_data->t_validity, validity);
+    ogs_timer_start(subscription_data->t_validity,
+            subscription_data->validity_duration);
 
     /*
      * PATCH request will be sent before VALIDITY is expired.
      */
 #define PATCH_TIME_FROM_VALIDITY(x) ((x) / 2)
-    patch = PATCH_TIME_FROM_VALIDITY(validity);
+    patch = PATCH_TIME_FROM_VALIDITY(subscription_data->validity_duration);
 
     if (!subscription_data->t_patch) {
         subscription_data->t_patch =
@@ -810,12 +856,24 @@ static void handle_validity_time(
     }
     ogs_timer_start(subscription_data->t_patch, patch);
 
+    if (validity_time) {
+        validity_time_string = ogs_strdup(validity_time);
+        ogs_assert(validity_time_string);
+    } else {
+        validity_time_string = ogs_sbi_localtime_string(
+                ogs_time_now() + subscription_data->validity_duration);
+        ogs_assert(validity_time_string);
+    }
+
     ogs_info("[%s] Subscription %s until %s "
-            "[duration:%d,validity:%d.%06d,patch:%d.%06d]",
-            subscription_data->id, action, validity_time,
-            subscription_data->time.validity_duration,
-            (int)ogs_time_sec(validity), (int)ogs_time_usec(validity),
+            "[duration:%lld,validity:%d.%06d,patch:%d.%06d]",
+            subscription_data->id, action, validity_time_string,
+            (long long)subscription_data->validity_duration,
+            (int)ogs_time_sec(subscription_data->validity_duration),
+            (int)ogs_time_usec(subscription_data->validity_duration),
             (int)ogs_time_sec(patch), (int)ogs_time_usec(patch));
+
+    ogs_free(validity_time_string);
 }
 
 void ogs_nnrf_nfm_handle_nf_status_subscribe(
@@ -823,6 +881,17 @@ void ogs_nnrf_nfm_handle_nf_status_subscribe(
         ogs_sbi_message_t *recvmsg)
 {
     OpenAPI_subscription_data_t *SubscriptionData = NULL;
+
+    int rv;
+    ogs_sbi_message_t message;
+    ogs_sbi_header_t header;
+
+    bool rc;
+    ogs_sbi_client_t *client = NULL;
+    OpenAPI_uri_scheme_e scheme = OpenAPI_uri_scheme_NULL;
+    char *fqdn = NULL;
+    uint16_t fqdn_port = 0;
+    ogs_sockaddr_t *addr = NULL, *addr6 = NULL;
 
     ogs_assert(recvmsg);
     ogs_assert(subscription_data);
@@ -833,44 +902,62 @@ void ogs_nnrf_nfm_handle_nf_status_subscribe(
         return;
     }
 
-    if (recvmsg->http.location) {
-        int rv;
-        ogs_sbi_message_t message;
-        ogs_sbi_header_t header;
-
-        memset(&header, 0, sizeof(header));
-        header.uri = recvmsg->http.location;
-
-        rv = ogs_sbi_parse_header(&message, &header);
-        if (rv != OGS_OK) {
-            ogs_error("Cannot parse http.location [%s]",
-                recvmsg->http.location);
-            return;
-        }
-
-        if (!message.h.resource.component[1]) {
-            ogs_error("No Subscription ID [%s]", recvmsg->http.location);
-            ogs_sbi_header_free(&header);
-            return;
-        }
-
-        ogs_sbi_subscription_data_set_id(
-                subscription_data, message.h.resource.component[1]);
-
-        ogs_sbi_header_free(&header);
-
-    } else if (SubscriptionData->subscription_id) {
-        /*
-         * For compatibility with v2.5.x and lower versions
-         *
-         * Deprecated : It will be removed soon.
-         */
-        ogs_sbi_subscription_data_set_id(
-            subscription_data, SubscriptionData->subscription_id);
-    } else {
-        ogs_error("No Subscription ID");
+    if (!recvmsg->http.location) {
+        ogs_error("No http.location");
         return;
     }
+
+    memset(&header, 0, sizeof(header));
+    header.uri = recvmsg->http.location;
+
+    rv = ogs_sbi_parse_header(&message, &header);
+    if (rv != OGS_OK) {
+        ogs_error("Cannot parse http.location [%s]",
+            recvmsg->http.location);
+        return;
+    }
+
+    if (!message.h.resource.component[1]) {
+        ogs_error("No Subscription ID [%s]", recvmsg->http.location);
+        ogs_sbi_header_free(&header);
+        return;
+    }
+
+    rc = ogs_sbi_getaddr_from_uri(
+            &scheme, &fqdn, &fqdn_port, &addr, &addr6, header.uri);
+    if (rc == false || scheme == OpenAPI_uri_scheme_NULL) {
+        ogs_error("Invalid URI [%s]", header.uri);
+        ogs_sbi_header_free(&header);
+        return;
+    }
+
+    client = ogs_sbi_client_find(scheme, fqdn, fqdn_port, addr, addr6);
+    if (!client) {
+        ogs_debug("%s: ogs_sbi_client_add()", OGS_FUNC);
+        client = ogs_sbi_client_add(scheme, fqdn, fqdn_port, addr, addr6);
+        if (!client) {
+            ogs_error("%s: ogs_sbi_client_add() failed", OGS_FUNC);
+
+            ogs_sbi_header_free(&header);
+            ogs_free(fqdn);
+            ogs_freeaddrinfo(addr);
+            ogs_freeaddrinfo(addr6);
+
+            return;
+        }
+    }
+    OGS_SBI_SETUP_CLIENT(subscription_data, client);
+
+    ogs_free(fqdn);
+    ogs_freeaddrinfo(addr);
+    ogs_freeaddrinfo(addr6);
+
+    ogs_sbi_subscription_data_set_resource_uri(
+            subscription_data, header.uri);
+    ogs_sbi_subscription_data_set_id(
+            subscription_data, message.h.resource.component[1]);
+
+    ogs_sbi_header_free(&header);
 
     /* SBI Features */
     if (SubscriptionData->nrf_supported_features) {
@@ -891,20 +978,37 @@ void ogs_nnrf_nfm_handle_nf_status_update(
         ogs_sbi_message_t *recvmsg)
 {
     OpenAPI_subscription_data_t *SubscriptionData = NULL;
+    char *validity_time = NULL;
+    const char *action = NULL;
 
     ogs_assert(recvmsg);
     ogs_assert(subscription_data);
 
-    SubscriptionData = recvmsg->SubscriptionData;
-    if (!SubscriptionData) {
-        ogs_error("No SubscriptionData");
-        return;
+    if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_OK) {
+        SubscriptionData = recvmsg->SubscriptionData;
+        if (!SubscriptionData) {
+            ogs_error("No SubscriptionData");
+            return;
+        }
+        if (!SubscriptionData->validity_time) {
+            ogs_error("No validityTime");
+            return;
+        }
+
+        validity_time = SubscriptionData->validity_time;
+        action = "updated(200 OK)";
+    } else if (recvmsg->res_status == OGS_SBI_HTTP_STATUS_NO_CONTENT) {
+        /* No valdityTime. Re-use current subscription_data->valdity_duration */
+        action = "updated(204 No Content)";
+    } else {
+        ogs_fatal("[%s] HTTP response error [%d]",
+                subscription_data->id ?  subscription_data->id : "Unknown",
+                recvmsg->res_status);
+        ogs_assert_if_reached();
     }
 
-    /* Subscription Validity Time */
-    if (SubscriptionData->validity_time)
-        handle_validity_time(
-                subscription_data, SubscriptionData->validity_time, "updated");
+    /* Update Subscription Validity Time */
+    handle_validity_time(subscription_data, validity_time, action);
 }
 
 bool ogs_nnrf_nfm_handle_nf_status_notify(
@@ -927,7 +1031,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
         ogs_error("No NotificationData");
         ogs_assert(true ==
             ogs_sbi_server_send_error(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                recvmsg, "No NotificationData", NULL));
+                recvmsg, "No NotificationData", NULL, NULL));
         return false;
     }
 
@@ -935,7 +1039,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
         ogs_error("No nfInstanceUri");
         ogs_assert(true ==
             ogs_sbi_server_send_error(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                recvmsg, "No nfInstanceUri", NULL));
+                recvmsg, "No nfInstanceUri", NULL, NULL));
         return false;
     }
 
@@ -947,7 +1051,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
         ogs_error("Cannot parse nfInstanceUri [%s]", header.uri);
         ogs_assert(true ==
             ogs_sbi_server_send_error(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                recvmsg, "Cannot parse nfInstanceUri", header.uri));
+                recvmsg, "Cannot parse nfInstanceUri", header.uri, NULL));
         return false;
     }
 
@@ -955,7 +1059,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
         ogs_error("No nfInstanceId [%s]", header.uri);
         ogs_assert(true ==
             ogs_sbi_server_send_error(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                recvmsg, "Cannot parse nfInstanceUri", header.uri));
+                recvmsg, "Cannot parse nfInstanceUri", header.uri, NULL));
         ogs_sbi_header_free(&header);
         return false;
     }
@@ -966,7 +1070,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
         ogs_assert(true ==
             ogs_sbi_server_send_error(stream, OGS_SBI_HTTP_STATUS_FORBIDDEN,
                 recvmsg, "The notification is not allowed",
-                message.h.resource.component[1]));
+                message.h.resource.component[1], NULL));
         ogs_sbi_header_free(&header);
         return false;
     }
@@ -982,7 +1086,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
             ogs_assert(true ==
                 ogs_sbi_server_send_error(
                     stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                    recvmsg, "No NFProfile", NULL));
+                    recvmsg, "No NFProfile", NULL, NULL));
             ogs_sbi_header_free(&header);
             return false;
         }
@@ -992,7 +1096,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
             ogs_assert(true ==
                 ogs_sbi_server_send_error(
                     stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                    recvmsg, "No NFProfile.NFInstanceId", NULL));
+                    recvmsg, "No NFProfile.NFInstanceId", NULL, NULL));
             ogs_sbi_header_free(&header);
             return false;
         }
@@ -1002,7 +1106,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
             ogs_assert(true ==
                 ogs_sbi_server_send_error(
                     stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                    recvmsg, "No NFProfile.NFType", NULL));
+                    recvmsg, "No NFProfile.NFType", NULL, NULL));
             ogs_sbi_header_free(&header);
             return false;
         }
@@ -1012,7 +1116,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
             ogs_assert(true ==
                 ogs_sbi_server_send_error(
                     stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
-                    recvmsg, "No NFProfile.NFStatus", NULL));
+                    recvmsg, "No NFProfile.NFStatus", NULL, NULL));
             ogs_sbi_header_free(&header);
             return false;
         }
@@ -1026,24 +1130,23 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
                     nf_instance, message.h.resource.component[1]);
             ogs_sbi_nf_fsm_init(nf_instance);
 
-            ogs_info("(NRF-notify) NF registered [%s:%d]",
-                    nf_instance->id, nf_instance->reference_count);
+            ogs_info("[%s] (NRF-notify) NF registered", nf_instance->id);
         } else {
-            ogs_warn("[%s] (NRF-notify) NF has already been added [%s:%d]",
-                    nf_instance->nf_type ?
-                        OpenAPI_nf_type_ToString(nf_instance->nf_type) : "NULL",
-                    nf_instance->id, nf_instance->reference_count);
-
-            ogs_assert(OGS_FSM_STATE(&nf_instance->sm));
-            ogs_sbi_nf_fsm_tran(nf_instance, ogs_sbi_nf_state_registered);
+            ogs_warn("[%s] (NRF-notify) NF has already been added [type:%s]",
+                    nf_instance->id,
+                    OpenAPI_nf_type_ToString(nf_instance->nf_type));
+            if (!OGS_FSM_CHECK(&nf_instance->sm, ogs_sbi_nf_state_registered)) {
+                ogs_error("[%s] (NRF-notify) NF invalid state [type:%s]",
+                        nf_instance->id,
+                        OpenAPI_nf_type_ToString(nf_instance->nf_type));
+            }
         }
 
         ogs_nnrf_nfm_handle_nf_profile(nf_instance, NFProfile);
 
-        ogs_info("[%s] (NRF-notify) NF Profile updated [%s:%d]",
-                    nf_instance->nf_type ?
-                        OpenAPI_nf_type_ToString(nf_instance->nf_type) : "NULL",
-                    nf_instance->id, nf_instance->reference_count);
+        ogs_info("[%s] (NRF-notify) NF Profile updated [type:%s]",
+                    nf_instance->id,
+                    OpenAPI_nf_type_ToString(nf_instance->nf_type));
 
         ogs_sbi_client_associate(nf_instance);
 
@@ -1059,34 +1162,19 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
             OpenAPI_notification_event_type_NF_DEREGISTERED) {
         nf_instance = ogs_sbi_nf_instance_find(message.h.resource.component[1]);
         if (nf_instance) {
-            if (OGS_OBJECT_IS_REF(nf_instance)) {
-                /* There are references to other contexts. */
-                ogs_warn("[%s] (NRF-notify) NF was referenced "
-                        "in other contexts [%s:%d]",
-                        nf_instance->nf_type ?
-                            OpenAPI_nf_type_ToString(nf_instance->nf_type) :
-                            "NULL",
-                        nf_instance->id, nf_instance->reference_count);
-
-                ogs_assert(OGS_FSM_STATE(&nf_instance->sm));
-                ogs_sbi_nf_fsm_tran(
-                        nf_instance, ogs_sbi_nf_state_de_registered);
-            } else {
-                ogs_info("[%s] (NRF-notify) NF_DEREGISTERED event [%s:%d]",
-                        nf_instance->nf_type ?
-                            OpenAPI_nf_type_ToString(nf_instance->nf_type) :
-                            "NULL",
-                        nf_instance->id, nf_instance->reference_count);
-                ogs_sbi_nf_fsm_fini((nf_instance));
-                ogs_sbi_nf_instance_remove(nf_instance);
-            }
+            ogs_info("[%s] (NRF-notify) NF_DEREGISTERED event [type:%s]",
+                    nf_instance->id,
+                    OpenAPI_nf_type_ToString(nf_instance->nf_type));
+            ogs_sbi_nf_fsm_fini(nf_instance);
+            ogs_sbi_nf_instance_remove(nf_instance);
         } else {
             ogs_warn("[%s] (NRF-notify) Not found",
                     message.h.resource.component[1]);
             ogs_assert(true ==
                 ogs_sbi_server_send_error(stream,
                     OGS_SBI_HTTP_STATUS_NOT_FOUND,
-                    recvmsg, "Not found", message.h.resource.component[1]));
+                    recvmsg, "Not found", message.h.resource.component[1],
+                    NULL));
             ogs_sbi_header_free(&header);
             return false;
         }
@@ -1098,7 +1186,7 @@ bool ogs_nnrf_nfm_handle_nf_status_notify(
         ogs_assert(true ==
             ogs_sbi_server_send_error(stream, OGS_SBI_HTTP_STATUS_BAD_REQUEST,
                 recvmsg, "Not supported event",
-                eventstr ? eventstr : "Unknown"));
+                eventstr ? eventstr : "Unknown", NULL));
         ogs_sbi_header_free(&header);
         return false;
     }
@@ -1154,18 +1242,18 @@ void ogs_nnrf_disc_handle_nf_discover_search_result(
             ogs_sbi_nf_instance_set_id(nf_instance, NFProfile->nf_instance_id);
             ogs_sbi_nf_fsm_init(nf_instance);
 
-            ogs_info("[%s] (NRF-discover) NF registered [%s:%d]",
-                    nf_instance->nf_type ?
-                        OpenAPI_nf_type_ToString(nf_instance->nf_type) : "NULL",
-                    nf_instance->id, nf_instance->reference_count);
+            ogs_info("[%s] (NRF-discover) NF registered [type:%s]",
+                    nf_instance->id,
+                    OpenAPI_nf_type_ToString(nf_instance->nf_type));
         } else {
-            ogs_warn("[%s] (NRF-discover) NF has already been added [%s:%d]",
-                    nf_instance->nf_type ?
-                        OpenAPI_nf_type_ToString(nf_instance->nf_type) : "NULL",
-                    nf_instance->id, nf_instance->reference_count);
-
-            ogs_assert(OGS_FSM_STATE(&nf_instance->sm));
-            ogs_sbi_nf_fsm_tran(nf_instance, ogs_sbi_nf_state_registered);
+            ogs_warn("[%s] (NRF-discover) NF has already been added [type:%s]",
+                    nf_instance->id,
+                    OpenAPI_nf_type_ToString(nf_instance->nf_type));
+            if (!OGS_FSM_CHECK(&nf_instance->sm, ogs_sbi_nf_state_registered)) {
+                ogs_error("[%s] (NRF-notify) NF invalid state [type:%s]",
+                        nf_instance->id,
+                        OpenAPI_nf_type_ToString(nf_instance->nf_type));
+            }
         }
 
         if (NF_INSTANCE_ID_IS_OTHERS(nf_instance->id)) {
@@ -1192,15 +1280,18 @@ void ogs_nnrf_disc_handle_nf_discover_search_result(
                     ogs_time_from_sec(nf_instance->time.validity_duration));
 
             } else
-                ogs_warn("[%s] NF Instance validity-time should not 0 [%s:%d]",
+                ogs_warn("[%s] NF Instance validity-time should not 0 "
+                        "[type:%s]",
+                    nf_instance->id,
                     nf_instance->nf_type ?
-                        OpenAPI_nf_type_ToString(nf_instance->nf_type) : "NULL",
-                    nf_instance->id, nf_instance->reference_count);
+                        OpenAPI_nf_type_ToString(nf_instance->nf_type) :
+                        "NULL");
 
-            ogs_info("[%s] (NF-discover) NF Profile updated [%s:%d]",
-                    nf_instance->nf_type ?
-                        OpenAPI_nf_type_ToString(nf_instance->nf_type) : "NULL",
-                    nf_instance->id, nf_instance->reference_count);
+            ogs_info("[%s] (NF-discover) NF Profile updated "
+                    "[type:%s validity:%ds]",
+                    nf_instance->id,
+                    OpenAPI_nf_type_ToString(nf_instance->nf_type),
+                    nf_instance->time.validity_duration);
         }
     }
 }

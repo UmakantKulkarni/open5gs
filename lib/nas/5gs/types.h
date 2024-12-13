@@ -1020,7 +1020,7 @@ typedef struct ogs_nas_qos_rule_s {
 #define OGS_NAS_QOS_CODE_CREATE_NEW_QOS_RULE 1
 #define OGS_NAS_QOS_CODE_DELETE_EXISTING_QOS_RULE 2
 #define OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_AND_ADD_PACKET_FILTERS 3
-#define OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_AND_REPLACE_PACKET_FILTERS 4
+#define OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_AND_REPLACE_ALL_PACKET_FILTERS 4
 #define OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_AND_DELETE_PACKET_FILTERS 5
 #define OGS_NAS_QOS_CODE_MODIFY_EXISTING_QOS_RULE_WITHOUT_MODIFYING_PACKET_FILTERS 6
         ED3(uint8_t code:3;,
@@ -1191,8 +1191,6 @@ typedef struct ogs_nas_rsn_s {
     uint8_t length;
     uint8_t value;
 } __attribute__ ((packed)) ogs_nas_rsn_t;
-
-bool ogs_nas_5gs_guti_is_valid(ogs_nas_5gs_guti_t *guti);
 
 #ifdef __cplusplus
 }

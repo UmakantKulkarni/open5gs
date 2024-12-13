@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2024 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -39,7 +39,6 @@ static uint8_t mme_ue_session_from_slice_data(mme_ue_t *mme_ue,
 uint8_t mme_s6a_handle_aia(
         mme_ue_t *mme_ue, ogs_diam_s6a_message_t *s6a_message)
 {
-    int r;
     ogs_diam_s6a_aia_message_t *aia_message = NULL;
     ogs_diam_e_utran_vector_t *e_utran_vector = NULL;
 
@@ -66,10 +65,6 @@ uint8_t mme_s6a_handle_aia(
 
     if (mme_ue->nas_eps.ksi == OGS_NAS_KSI_NO_KEY_IS_AVAILABLE)
         mme_ue->nas_eps.ksi = 0;
-
-    r = nas_eps_send_authentication_request(mme_ue);
-    ogs_expect(r == OGS_OK);
-    ogs_assert(r != OGS_ERROR);
 
     return OGS_NAS_EMM_CAUSE_REQUEST_ACCEPTED;
 }
@@ -128,10 +123,26 @@ uint8_t mme_s6a_handle_ula(
             return OGS_NAS_EMM_CAUSE_NO_EPS_BEARER_CONTEXT_ACTIVATED;
         }
 
-        r = nas_eps_send_tau_accept(mme_ue,
-                S1AP_ProcedureCode_id_InitialContextSetup);
-        ogs_expect(r == OGS_OK);
-        ogs_assert(r != OGS_ERROR);
+        /* Update CSMAP from Tracking area update request */
+        mme_ue->csmap = mme_csmap_find_by_tai(&mme_ue->tai);
+        if (mme_ue->csmap &&
+            mme_ue->network_access_mode ==
+                OGS_NETWORK_ACCESS_MODE_PACKET_AND_CIRCUIT &&
+            (mme_ue->nas_eps.update.value ==
+             OGS_NAS_EPS_UPDATE_TYPE_COMBINED_TA_LA_UPDATING ||
+             mme_ue->nas_eps.update.value ==
+             OGS_NAS_EPS_UPDATE_TYPE_COMBINED_TA_LA_UPDATING_WITH_IMSI_ATTACH)) {
+
+            mme_ue->tracking_area_update_request_type =
+                MME_TAU_TYPE_UNPROTECTED_INGERITY;
+            ogs_assert(OGS_OK == sgsap_send_location_update_request(mme_ue));
+
+        } else {
+            r = nas_eps_send_tau_accept(mme_ue,
+                    S1AP_ProcedureCode_id_InitialContextSetup);
+            ogs_expect(r == OGS_OK);
+            ogs_assert(r != OGS_ERROR);
+        }
     } else {
         ogs_error("Invalid Type[%d]", mme_ue->nas_eps.type);
         return OGS_NAS_EMM_CAUSE_PROTOCOL_ERROR_UNSPECIFIED;
@@ -153,7 +164,6 @@ uint8_t mme_s6a_handle_pua(
     if (s6a_message->result_code != ER_DIAMETER_SUCCESS) {
         ogs_error("Purge UE failed for IMSI[%s] [%d]", mme_ue->imsi_bcd,
             s6a_message->result_code);
-        MME_UE_CHECK(OGS_LOG_ERROR, mme_ue);
         mme_ue_remove(mme_ue);
         return OGS_ERROR;
     }
@@ -161,7 +171,6 @@ uint8_t mme_s6a_handle_pua(
     if (pua_message->pua_flags & OGS_DIAM_S6A_PUA_FLAGS_FREEZE_MTMSI)
         ogs_debug("Freeze M-TMSI requested but not implemented.");
 
-    MME_UE_CHECK(OGS_LOG_DEBUG, mme_ue);
     mme_ue_remove(mme_ue);
 
     return OGS_OK;
@@ -220,7 +229,6 @@ void mme_s6a_handle_clr(mme_ue_t *mme_ue, ogs_diam_s6a_message_t *s6a_message)
     clr_message = &s6a_message->clr_message;
     ogs_assert(clr_message);
 
-    mme_ue = mme_ue_cycle(mme_ue);
     if (!mme_ue) {
         ogs_warn("UE(mme-ue) context has already been removed");
         return;
@@ -236,7 +244,6 @@ void mme_s6a_handle_clr(mme_ue_t *mme_ue, ogs_diam_s6a_message_t *s6a_message)
      */
     if (OGS_FSM_CHECK(&mme_ue->sm, emm_state_de_registered)) {
         ogs_warn("UE has already been de-registered");
-        MME_UE_CHECK(OGS_LOG_ERROR, mme_ue);
         mme_ue_remove(mme_ue);
         return;
     }
@@ -284,10 +291,14 @@ void mme_s6a_handle_clr(mme_ue_t *mme_ue, ogs_diam_s6a_message_t *s6a_message)
             r = nas_eps_send_detach_request(mme_ue);
             ogs_expect(r == OGS_OK);
             ogs_assert(r != OGS_ERROR);
-            if (MME_P_TMSI_IS_AVAILABLE(mme_ue)) {
+            if (MME_CURRENT_P_TMSI_IS_AVAILABLE(mme_ue)) {
                 ogs_assert(OGS_OK == sgsap_send_detach_indication(mme_ue));
             } else {
-                mme_send_delete_session_or_detach(mme_ue);
+                enb_ue_t *enb_ue = enb_ue_find_by_id(mme_ue->enb_ue_id);
+                if (enb_ue)
+                    mme_send_delete_session_or_detach(enb_ue, mme_ue);
+                else
+                    ogs_error("ENB-S1 Context has already been removed");
             }
         }
         break;
@@ -309,10 +320,14 @@ void mme_s6a_handle_clr(mme_ue_t *mme_ue, ogs_diam_s6a_message_t *s6a_message)
          * There is no need to send NAS or S1AP message to the UE.
          * So, we don't have to check whether UE is IDLE or not.
          */
-        if (MME_P_TMSI_IS_AVAILABLE(mme_ue)) {
+        if (MME_CURRENT_P_TMSI_IS_AVAILABLE(mme_ue)) {
             ogs_assert(OGS_OK == sgsap_send_detach_indication(mme_ue));
         } else {
-            mme_send_delete_session_or_detach(mme_ue);
+            enb_ue_t *enb_ue = enb_ue_find_by_id(mme_ue->enb_ue_id);
+            if (enb_ue)
+                mme_send_delete_session_or_detach(enb_ue, mme_ue);
+            else
+                ogs_error("ENB-S1 Context has already been removed");
         }
         break;
     default:
@@ -355,8 +370,8 @@ static uint8_t mme_ue_session_from_slice_data(mme_ue_t *mme_ue,
                 ogs_free(mme_ue->session[i].name);
             break;
         }
-        memcpy(&mme_ue->session[i].paa, &slice_data->session[i].paa,
-                sizeof(mme_ue->session[i].paa));
+        memcpy(&mme_ue->session[i].ue_ip, &slice_data->session[i].ue_ip,
+                sizeof(mme_ue->session[i].ue_ip));
 
         memcpy(&mme_ue->session[i].qos, &slice_data->session[i].qos,
                 sizeof(mme_ue->session[i].qos));

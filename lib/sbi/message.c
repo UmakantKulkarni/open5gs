@@ -193,6 +193,10 @@ void ogs_sbi_message_free(ogs_sbi_message_t *message)
         OpenAPI_ue_context_transfer_req_data_free(message->UeContextTransferReqData);
     if (message->UeContextTransferRspData)
         OpenAPI_ue_context_transfer_rsp_data_free(message->UeContextTransferRspData);
+    if (message->UeRegStatusUpdateReqData)
+        OpenAPI_ue_reg_status_update_req_data_free(message->UeRegStatusUpdateReqData);
+    if (message->UeRegStatusUpdateRspData)
+        OpenAPI_ue_reg_status_update_rsp_data_free(message->UeRegStatusUpdateRspData);
 
     /* HTTP Part */
     for (i = 0; i < message->num_of_part; i++) {
@@ -394,16 +398,18 @@ ogs_sbi_request_t *ogs_sbi_build_request(ogs_sbi_message_t *message)
                     OGS_SBI_PARAM_REQUESTER_NF_INSTANCE_ID,
                     discovery_option->requester_nf_instance_id);
         }
-        if (discovery_option->target_guami) {
+        if (discovery_option->guami_presence) {
             char *v = ogs_sbi_discovery_option_build_guami(discovery_option);
             if (v) {
                 ogs_sbi_header_set(request->http.params,
                         OGS_SBI_PARAM_GUAMI, v);
                 ogs_free(v);
             } else {
-                ogs_warn("build failed: service-names[%d:%s]",
-                            discovery_option->num_of_service_names,
-                            discovery_option->service_names[0]);
+                ogs_error("build failed: guami[PLMN_ID:%06x,AMF_ID:%d]",
+                            ogs_plmn_id_hexdump(
+                                &discovery_option->guami.plmn_id),
+                            ogs_amf_id_hexdump(
+                                &discovery_option->guami.amf_id));
             }
         }
         if (ogs_sbi_self()->discovery_config.no_service_names == false &&
@@ -1370,6 +1376,14 @@ static char *build_json(ogs_sbi_message_t *message)
         item = OpenAPI_ue_context_transfer_rsp_data_convertToJSON(
                 message->UeContextTransferRspData);
         ogs_assert(item);
+    } else if (message->UeRegStatusUpdateReqData) {
+        item = OpenAPI_ue_reg_status_update_req_data_convertToJSON(
+                message->UeRegStatusUpdateReqData);
+        ogs_assert(item);
+    } else if (message->UeRegStatusUpdateRspData) {
+        item = OpenAPI_ue_reg_status_update_rsp_data_convertToJSON(
+                message->UeRegStatusUpdateRspData);
+        ogs_assert(item);
     }
 
     if (item) {
@@ -2133,6 +2147,27 @@ static int parse_json(ogs_sbi_message_t *message,
                     }
                     break;
 
+                CASE(OGS_SBI_RESOURCE_NAME_TRANSFER_UPDATE)
+                    if (message->res_status == 0) {
+                        message->UeRegStatusUpdateReqData =
+                            OpenAPI_ue_reg_status_update_req_data_parseFromJSON(item);
+                        if (!message->UeRegStatusUpdateReqData) {
+                            rv = OGS_ERROR;
+                            ogs_error("JSON parse error");
+                        }
+                    } else if (message->res_status == OGS_SBI_HTTP_STATUS_OK) {
+                        message->UeRegStatusUpdateRspData =
+                            OpenAPI_ue_reg_status_update_rsp_data_parseFromJSON(item);
+                        if (!message->UeRegStatusUpdateRspData) {
+                            rv = OGS_ERROR;
+                            ogs_error("JSON parse error");
+                        }
+                    } else {
+                        ogs_error("HTTP ERROR Status : %d",
+                            message->res_status);
+                    }
+                    break;
+
                 DEFAULT
                     rv = OGS_ERROR;
                     ogs_error("Unknown resource name [%s]",
@@ -2486,6 +2521,19 @@ static int parse_json(ogs_sbi_message_t *message,
                     ogs_error("Unknown resource name [%s]",
                             message->h.resource.component[2]);
                 END
+                break;
+
+            CASE(OGS_SBI_RESOURCE_NAME_SDMSUBSCRIPTION_NOTIFY)
+                if (message->res_status < 300) {
+                    message->ModificationNotification =
+                        OpenAPI_modification_notification_parseFromJSON(item);
+                    if (!message->ModificationNotification) {
+                        rv = OGS_ERROR;
+                        ogs_error("JSON parse error");
+                    }
+                } else {
+                    ogs_error("HTTP ERROR Status : %d", message->res_status);
+                }
                 break;
 
             DEFAULT
@@ -2940,8 +2988,6 @@ void ogs_sbi_discovery_option_free(
         ogs_free(discovery_option->requester_nf_instance_id);
     if (discovery_option->dnn)
         ogs_free(discovery_option->dnn);
-    if (discovery_option->target_guami)
-        ogs_free(discovery_option->target_guami);
 
     for (i = 0; i < discovery_option->num_of_service_names; i++)
         ogs_free(discovery_option->service_names[i]);
@@ -3182,6 +3228,18 @@ void ogs_sbi_discovery_option_parse_snssais(
     ogs_free(v);
 }
 
+void ogs_sbi_discovery_option_set_guami(
+        ogs_sbi_discovery_option_t *discovery_option, ogs_guami_t *guami)
+{
+    ogs_assert(discovery_option);
+    ogs_assert(guami);
+
+    ogs_assert(discovery_option->guami_presence == false);
+
+    memcpy(&discovery_option->guami, guami, sizeof(ogs_guami_t));
+    discovery_option->guami_presence = true;
+}
+
 char *ogs_sbi_discovery_option_build_guami(
         ogs_sbi_discovery_option_t *discovery_option)
 {
@@ -3190,9 +3248,9 @@ char *ogs_sbi_discovery_option_build_guami(
     char *v = NULL;
 
     ogs_assert(discovery_option);
-    ogs_assert(discovery_option->target_guami);
+    ogs_assert(discovery_option->guami_presence);
 
-    Guami = ogs_sbi_build_guami(discovery_option->target_guami);
+    Guami = ogs_sbi_build_guami(&discovery_option->guami);
     ogs_assert(Guami);
     guamiItem = OpenAPI_guami_convertToJSON(Guami);
     ogs_assert(guamiItem);
@@ -3231,12 +3289,9 @@ void ogs_sbi_discovery_option_parse_guami(
     Guami = OpenAPI_guami_parseFromJSON(guamItem);
 
     if (Guami) {
-        ogs_guami_t *ogs_guami = NULL;
-
-        discovery_option->target_guami = ogs_malloc(sizeof(*ogs_guami));
-        ogs_assert(discovery_option->target_guami);
-
-        ogs_sbi_parse_guami(discovery_option->target_guami, Guami);
+        ogs_guami_t guami;
+        ogs_sbi_parse_guami(&guami, Guami);
+        ogs_sbi_discovery_option_set_guami(discovery_option, &guami);
         OpenAPI_guami_free(Guami);
     } else {
         ogs_error("OpenAPI_guami_parseFromJSON() failed : guami[%s]",

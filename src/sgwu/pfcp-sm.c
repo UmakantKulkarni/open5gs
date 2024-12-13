@@ -117,7 +117,7 @@ void sgwu_pfcp_state_will_associate(ogs_fsm_t *s, sgwu_event_t *e)
     case SGWU_EVT_SXA_MESSAGE:
         message = e->pfcp_message;
         ogs_assert(message);
-        xact = e->pfcp_xact;
+        xact = ogs_pfcp_xact_find_by_id(e->pfcp_xact_id);
         ogs_assert(xact);
 
         switch (message->h.type) {
@@ -199,7 +199,7 @@ void sgwu_pfcp_state_associated(ogs_fsm_t *s, sgwu_event_t *e)
     case SGWU_EVT_SXA_MESSAGE:
         message = e->pfcp_message;
         ogs_assert(message);
-        xact = e->pfcp_xact;
+        xact = ogs_pfcp_xact_find_by_id(e->pfcp_xact_id);
         ogs_assert(xact);
 
         if (message->h.seid_presence && message->h.seid != 0)
@@ -318,10 +318,6 @@ void sgwu_pfcp_state_associated(ogs_fsm_t *s, sgwu_event_t *e)
         }
         break;
     case SGWU_EVT_SXA_NO_HEARTBEAT:
-
-        /* 'node' context was removed in ogs_pfcp_xact_delete(xact)
-         * So, we should not use PFCP node here */
-
         ogs_warn("No Heartbeat from SGW-C [%s]:%d",
                     OGS_ADDR(addr, buf), OGS_PORT(addr));
         OGS_FSM_TRAN(s, sgwu_pfcp_state_will_associate);

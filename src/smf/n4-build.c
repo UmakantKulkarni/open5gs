@@ -44,7 +44,7 @@ ogs_pkbuf_t *smf_n4_build_session_establishment_request(
 
     ogs_debug("Session Establishment Request");
     ogs_assert(sess);
-    smf_ue = sess->smf_ue;
+    smf_ue = smf_ue_find_by_id(sess->smf_ue_id);
     ogs_assert(smf_ue);
     ogs_assert(xact);
 
@@ -489,13 +489,13 @@ ogs_pkbuf_t *smf_n4_build_qos_flow_to_modify_list(
                 if (qos_flow->dl_pdr) {
                     ogs_pfcp_build_update_pdr(
                             &req->update_pdr[num_of_update_pdr],
-                            num_of_update_pdr, qos_flow->dl_pdr);
+                            num_of_update_pdr, qos_flow->dl_pdr, modify_flags);
                     num_of_update_pdr++;
                 }
                 if (qos_flow->ul_pdr) {
                     ogs_pfcp_build_update_pdr(
                             &req->update_pdr[num_of_update_pdr],
-                            num_of_update_pdr, qos_flow->ul_pdr);
+                            num_of_update_pdr, qos_flow->ul_pdr, modify_flags);
                     num_of_update_pdr++;
                 }
                 if (qos_flow->urr) {

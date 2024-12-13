@@ -130,6 +130,7 @@ int upf_context_parse_config(void)
     int rv;
     yaml_document_t *document = NULL;
     ogs_yaml_iter_t root_iter;
+    int idx = 0;
 
     document = ogs_app()->document;
     ogs_assert(document);
@@ -141,7 +142,8 @@ int upf_context_parse_config(void)
     while (ogs_yaml_iter_next(&root_iter)) {
         const char *root_key = ogs_yaml_iter_key(&root_iter);
         ogs_assert(root_key);
-        if (!strcmp(root_key, "upf")) {
+        if ((!strcmp(root_key, "upf")) &&
+            (idx++ == ogs_app()->config_section_id)) {
             ogs_yaml_iter_t upf_iter;
             ogs_yaml_iter_recurse(&root_iter, &upf_iter);
             while (ogs_yaml_iter_next(&upf_iter)) {
@@ -175,9 +177,8 @@ upf_sess_t *upf_sess_add(ogs_pfcp_f_seid_t *cp_f_seid)
 
     ogs_assert(cp_f_seid);
 
-    ogs_pool_alloc(&upf_sess_pool, &sess);
+    ogs_pool_id_calloc(&upf_sess_pool, &sess);
     ogs_assert(sess);
-    memset(sess, 0, sizeof *sess);
 
     ogs_pfcp_pool_init(&sess->pfcp);
 
@@ -244,7 +245,7 @@ int upf_sess_remove(upf_sess_t *sess)
     ogs_pfcp_pool_final(&sess->pfcp);
 
     ogs_pool_free(&upf_n4_seid_pool, sess->upf_n4_seid_node);
-    ogs_pool_free(&upf_sess_pool, sess);
+    ogs_pool_id_free(&upf_sess_pool, sess);
     if (sess->apn_dnn)
         ogs_free(sess->apn_dnn);
     upf_metrics_inst_global_dec(UPF_METR_GLOB_GAUGE_UPF_SESSIONNBR);
@@ -352,6 +353,11 @@ upf_sess_t *upf_sess_find_by_ipv6(uint32_t *addr6)
     return ret;
 }
 
+upf_sess_t *upf_sess_find_by_id(ogs_pool_id_t id)
+{
+    return ogs_pool_find_by_id(&upf_sess_pool, id);
+}
+
 upf_sess_t *upf_sess_add_by_message(ogs_pfcp_message_t *message)
 {
     upf_sess_t *sess = NULL;
@@ -363,6 +369,10 @@ upf_sess_t *upf_sess_add_by_message(ogs_pfcp_message_t *message)
     f_seid = req->cp_f_seid.data;
     if (req->cp_f_seid.presence == 0 || f_seid == NULL) {
         ogs_error("No CP F-SEID");
+        return NULL;
+    }
+    if (f_seid->ipv4 == 0 && f_seid->ipv6 == 0) {
+        ogs_error("No IPv4 or IPv6");
         return NULL;
     }
     f_seid->seid = be64toh(f_seid->seid);
@@ -816,6 +826,7 @@ static void upf_sess_urr_acc_validity_time_setup(upf_sess_t *sess, ogs_pfcp_urr_
     ogs_timer_start(urr_acc->t_validity_time,
             ogs_time_from_sec(urr->quota_validity_time));
 }
+
 static void upf_sess_urr_acc_time_quota_setup(upf_sess_t *sess, ogs_pfcp_urr_t *urr)
 {
     upf_sess_urr_acc_t *urr_acc = &sess->urr_acc[urr->id];
@@ -827,6 +838,7 @@ static void upf_sess_urr_acc_time_quota_setup(upf_sess_t *sess, ogs_pfcp_urr_t *
                                         upf_sess_urr_acc_timers_cb, urr);
     ogs_timer_start(urr_acc->t_time_quota, ogs_time_from_sec(urr->time_quota));
 }
+
 static void upf_sess_urr_acc_time_threshold_setup(upf_sess_t *sess, ogs_pfcp_urr_t *urr)
 {
     upf_sess_urr_acc_t *urr_acc = &sess->urr_acc[urr->id];

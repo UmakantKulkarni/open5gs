@@ -61,6 +61,28 @@ ogs_sbi_request_t *ogs_nnrf_nfm_build_register(void)
         goto end;
     }
 
+    /*
+     * TS29510
+     * 6.1.6.2 Structured data types
+     * 6.1.6.2.2 Type: NFProfile
+     * Table 6.1.6.2.2-1: Definition of type NFProfile
+     *
+     * NF Profile Changes Support Indicator.
+     * See Annex B.
+     *
+     * This IE may be present in the NFRegister or
+     * NFUpdate (NF Profile Complete Replacement)
+     * request and shall be absent in the response.
+     *
+     * true: the NF Service Consumer supports receiving
+     * NF Profile Changes in the response.
+     *
+     * false (default): the NF Service Consumer does not
+     * support receiving NF Profile Changes in the response.
+     */
+    NFProfile->is_nf_profile_changes_support_ind = true;
+    NFProfile->nf_profile_changes_support_ind = true;
+
     message.NFProfile = NFProfile;
 
     request = ogs_sbi_build_request(&message);
@@ -145,9 +167,6 @@ OpenAPI_nf_profile_t *ogs_nnrf_nfm_build_nf_profile(
         else
             OpenAPI_list_free(PlmnIdList);
     }
-
-    NFProfile->is_nf_profile_changes_support_ind = true;
-    NFProfile->nf_profile_changes_support_ind = true;
 
     if (nf_instance->fqdn)
         NFProfile->fqdn = ogs_strdup(nf_instance->fqdn);
@@ -1712,11 +1731,7 @@ ogs_sbi_request_t *ogs_nnrf_nfm_build_status_update(
 
     memset(&message, 0, sizeof(message));
     message.h.method = (char *)OGS_SBI_HTTP_METHOD_PATCH;
-    message.h.service.name = (char *)OGS_SBI_SERVICE_NAME_NNRF_NFM;
-    message.h.api.version = (char *)OGS_SBI_API_V1;
-    message.h.resource.component[0] =
-        (char *)OGS_SBI_RESOURCE_NAME_SUBSCRIPTIONS;
-    message.h.resource.component[1] = subscription_data->id;
+    message.h.uri = subscription_data->resource_uri;
 
     message.http.content_type = (char *)OGS_SBI_CONTENT_PATCH_TYPE;
 
@@ -1726,10 +1741,9 @@ ogs_sbi_request_t *ogs_nnrf_nfm_build_status_update(
         goto end;
     }
 
-    ogs_assert(subscription_data->time.validity_duration);
+    ogs_assert(subscription_data->validity_duration);
     validity_time = ogs_sbi_localtime_string(
-            ogs_time_now() +
-            ogs_time_from_sec(subscription_data->time.validity_duration));
+            ogs_time_now() + subscription_data->validity_duration);
     ogs_assert(validity_time);
 
     ValidityItem.op = OpenAPI_patch_operation_replace;
@@ -1771,11 +1785,7 @@ ogs_sbi_request_t *ogs_nnrf_nfm_build_status_unsubscribe(
 
     memset(&message, 0, sizeof(message));
     message.h.method = (char *)OGS_SBI_HTTP_METHOD_DELETE;
-    message.h.service.name = (char *)OGS_SBI_SERVICE_NAME_NNRF_NFM;
-    message.h.api.version = (char *)OGS_SBI_API_V1;
-    message.h.resource.component[0] =
-        (char *)OGS_SBI_RESOURCE_NAME_SUBSCRIPTIONS;
-    message.h.resource.component[1] = subscription_data->id;
+    message.h.uri = subscription_data->resource_uri;
 
     message.http.custom.callback =
         (char *)OGS_SBI_CALLBACK_NNRF_NFMANAGEMENT_NF_STATUS_NOTIFY;

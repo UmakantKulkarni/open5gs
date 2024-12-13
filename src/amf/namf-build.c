@@ -19,7 +19,7 @@
 
 #include "namf-build.h"
 
-static char* ogs_guti_to_string(amf_ue_t *amf_ue)
+static char* ogs_guti_to_string(ogs_nas_5gs_guti_t *nas_guti)
 {
     ogs_plmn_id_t plmn_id;
     char plmn_id_buff[OGS_PLMNIDSTRLEN];
@@ -27,11 +27,12 @@ static char* ogs_guti_to_string(amf_ue_t *amf_ue)
     char *tmsi = NULL;
     char *guti = NULL;
 
-    memset(&plmn_id, 0, sizeof(plmn_id));
-    ogs_nas_to_plmn_id(&plmn_id, &amf_ue->current.guti.nas_plmn_id);
+    ogs_assert(nas_guti);
 
-    amf_id = ogs_amf_id_to_string(&amf_ue->current.guti.amf_id);
-    tmsi = ogs_uint32_to_0string(*(amf_ue->current.m_tmsi));
+    memset(&plmn_id, 0, sizeof(plmn_id));
+    ogs_nas_to_plmn_id(&plmn_id, &nas_guti->nas_plmn_id);
+    amf_id = ogs_amf_id_to_string(&nas_guti->amf_id);
+    tmsi = ogs_uint32_to_0string(nas_guti->m_tmsi);
 
     guti = ogs_msprintf("5g-guti-%s%s%s",
             ogs_plmn_id_to_string(&plmn_id, plmn_id_buff),
@@ -56,7 +57,7 @@ static char* amf_ue_to_context_id(amf_ue_t *amf_ue)
     if (amf_ue->supi) {
         ue_context_id = ogs_strdup(amf_ue->supi);
     } else {
-        ue_context_id = ogs_guti_to_string(amf_ue);
+        ue_context_id = ogs_guti_to_string(&amf_ue->old_guti);
     }
 
     return ue_context_id;
@@ -83,12 +84,64 @@ ogs_sbi_request_t *amf_namf_comm_build_ue_context_transfer(
     message.h.method = (char *)OGS_SBI_HTTP_METHOD_POST;
     message.h.service.name = (char *)OGS_SBI_SERVICE_NAME_NAMF_COMM;
     message.h.api.version = (char *)OGS_SBI_API_V1;
+    message.h.resource.component[0] = (char *)OGS_SBI_RESOURCE_NAME_UE_CONTEXTS;
+    message.h.resource.component[1] = ue_context_id;
+    message.h.resource.component[2] = (char *)OGS_SBI_RESOURCE_NAME_TRANSFER;
+    message.UeContextTransferReqData = &UeContextTransferReqData;
+
+    request = ogs_sbi_build_request(&message);
+    ogs_expect(request);
+
+    if (ue_context_id)
+        ogs_free(ue_context_id);
+
+    return request;
+}
+
+ogs_sbi_request_t *amf_namf_comm_build_registration_status_update(
+        amf_ue_t *amf_ue, void *data)
+{
+    ogs_sbi_message_t message;
+    ogs_sbi_request_t *request = NULL;
+
+    OpenAPI_ue_reg_status_update_req_data_t UeRegStatusUpdateReqData;
+    char *ue_context_id = NULL;
+
+    ogs_assert(amf_ue);
+    ogs_assert(data);
+
+    ue_context_id = ogs_guti_to_string(&amf_ue->old_guti);
+    ogs_assert(ue_context_id);
+
+    memset(&message, 0, sizeof(message));
+    message.h.method = (char *)OGS_SBI_HTTP_METHOD_POST;
+    message.h.service.name = (char *)OGS_SBI_SERVICE_NAME_NAMF_COMM;
+    message.h.api.version = (char *)OGS_SBI_API_V1;
     message.h.resource.component[0] =
             (char *)OGS_SBI_RESOURCE_NAME_UE_CONTEXTS;
     message.h.resource.component[1] = ue_context_id;
     message.h.resource.component[2] =
-            (char *)OGS_SBI_RESOURCE_NAME_TRANSFER;
-    message.UeContextTransferReqData = &UeContextTransferReqData;
+            (char *)OGS_SBI_RESOURCE_NAME_TRANSFER_UPDATE;
+    message.UeRegStatusUpdateReqData = &UeRegStatusUpdateReqData;
+
+    memset(&UeRegStatusUpdateReqData, 0, sizeof(UeRegStatusUpdateReqData));
+
+    UeRegStatusUpdateReqData.transfer_status = OGS_POINTER_TO_UINT(data);
+    /*
+     * TS 29.518
+     * 5.2.2.2.2 Registration Status Update
+     * If any network slice(s) become no longer available and there are PDU
+     * Session(s) associated with them, the target AMF shall include these
+     * PDU session(s) in the toReleaseSessionList attribute in the payload.
+     */
+    if (UeRegStatusUpdateReqData.transfer_status ==
+                OpenAPI_ue_context_transfer_status_TRANSFERRED) {
+        ogs_assert(amf_ue->to_release_session_list); /* For safety */
+        if (amf_ue->to_release_session_list->count) {
+            UeRegStatusUpdateReqData.to_release_session_list =
+                    amf_ue->to_release_session_list;
+        }
+    }
 
     request = ogs_sbi_build_request(&message);
     ogs_expect(request);

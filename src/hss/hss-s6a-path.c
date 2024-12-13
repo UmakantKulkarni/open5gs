@@ -49,6 +49,11 @@ struct sess_state {
 
 static void state_cleanup(struct sess_state *sess_data, os0_t sid, void *opaque)
 {
+    if (!sess_data) {
+        ogs_error("No session state");
+        return;
+    }
+
     ogs_free(sess_data);
 }
 
@@ -58,6 +63,9 @@ static int hss_ogs_diam_s6a_fb_cb(struct msg **msg, struct avp *avp,
 {
     /* This CB should never be called */
     ogs_warn("Unexpected message received!");
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_unknown);
+    )
 
     return ENOTSUP;
 }
@@ -96,7 +104,7 @@ static int hss_ogs_diam_s6a_air_cb( struct msg **msg, struct avp *avp,
 
     ogs_assert(msg);
 
-    ogs_debug("Authentication-Information-Request");
+    ogs_debug("Rx Authentication-Information-Request");
 
     /* Create answer header */
     qry = *msg;
@@ -180,7 +188,8 @@ static int hss_ogs_diam_s6a_air_cb( struct msg **msg, struct avp *avp,
     ogs_assert(ret == 0);
     ret = fd_msg_avp_hdr(avp, &hdr);
     ogs_assert(ret == 0);
-    memcpy(&visited_plmn_id, hdr->avp_value->os.data, hdr->avp_value->os.len);
+    memcpy(&visited_plmn_id, hdr->avp_value->os.data,
+            ogs_min(hdr->avp_value->os.len, sizeof(visited_plmn_id)));
 
     milenage_generate(opc, auth_info.amf, auth_info.k,
         ogs_uint64_to_buffer(auth_info.sqn, OGS_SQN_LEN, sqn), auth_info.rand,
@@ -256,12 +265,14 @@ static int hss_ogs_diam_s6a_air_cb( struct msg **msg, struct avp *avp,
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
 
-    ogs_debug("Authentication-Information-Answer");
+    ogs_debug("Tx Authentication-Information-Answer");
 
     /* Add this value to the stats */
-    ogs_assert(pthread_mutex_lock(&ogs_diam_logger_self()->stats_lock) == 0);
-    ogs_diam_logger_self()->stats.nb_echoed++;
-    ogs_assert(pthread_mutex_unlock(&ogs_diam_logger_self()->stats_lock) == 0);
+    OGS_DIAM_STATS_MTX(
+        OGS_DIAM_STATS_INC(nb_echoed);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_air);
+        HSS_DIAM_PRIV_STATS_INC(s6a.tx_aia);
+    )
 
     return 0;
 
@@ -285,6 +296,11 @@ out:
 
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
+
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_air);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_air_error);
+    )
 
     return 0;
 }
@@ -765,7 +781,7 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
 
     ogs_assert(msg);
 
-    ogs_debug("Update-Location-Request");
+    ogs_debug("Rx Update-Location-Request");
 
     memset(&subscription_data, 0, sizeof(ogs_subscription_data_t));
 
@@ -910,7 +926,8 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
     ogs_assert(ret == 0);
     ret = fd_msg_avp_hdr(avp, &hdr);
     ogs_assert(ret == 0);
-    memcpy(&visited_plmn_id, hdr->avp_value->os.data, hdr->avp_value->os.len);
+    memcpy(&visited_plmn_id, hdr->avp_value->os.data,
+            ogs_min(hdr->avp_value->os.len, sizeof(visited_plmn_id)));
 
     ret = fd_msg_search_avp(qry, ogs_diam_s6a_ulr_flags, &avp);
     ogs_assert(ret == 0);
@@ -961,12 +978,14 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
 
-    ogs_debug("Update-Location-Answer");
+    ogs_debug("Tx Update-Location-Answer");
 
     /* Add this value to the stats */
-    ogs_assert( pthread_mutex_lock(&ogs_diam_logger_self()->stats_lock) == 0);
-    ogs_diam_logger_self()->stats.nb_echoed++;
-    ogs_assert( pthread_mutex_unlock(&ogs_diam_logger_self()->stats_lock) == 0);
+    OGS_DIAM_STATS_MTX(
+        OGS_DIAM_STATS_INC(nb_echoed);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_ulr);
+        HSS_DIAM_PRIV_STATS_INC(s6a.tx_ula);
+    )
 
     ogs_subscription_data_free(&subscription_data);
 
@@ -1000,6 +1019,11 @@ out:
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
 
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_ulr);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_ulr_error);
+    )
+
     ogs_subscription_data_free(&subscription_data);
 
     if (imsi_bcd)
@@ -1032,7 +1056,7 @@ static int hss_ogs_diam_s6a_pur_cb( struct msg **msg, struct avp *avp,
 
     ogs_assert(msg);
 
-    ogs_debug("Purge-UE-Request");
+    ogs_debug("Rx Purge-UE-Request");
 
     memset(&subscription_data, 0, sizeof(ogs_subscription_data_t));
 
@@ -1118,12 +1142,14 @@ static int hss_ogs_diam_s6a_pur_cb( struct msg **msg, struct avp *avp,
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
 
-    ogs_debug("Purge-UE-Answer");
+    ogs_debug("Tx Purge-UE-Answer");
 
     /* Add this value to the stats */
-    ogs_assert(pthread_mutex_lock(&ogs_diam_logger_self()->stats_lock) == 0);
-    ogs_diam_logger_self()->stats.nb_echoed++;
-    ogs_assert(pthread_mutex_unlock(&ogs_diam_logger_self()->stats_lock) == 0);
+    OGS_DIAM_STATS_MTX(
+        OGS_DIAM_STATS_INC(nb_echoed);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_pur);
+        HSS_DIAM_PRIV_STATS_INC(s6a.tx_pua);
+    )
 
     ogs_subscription_data_free(&subscription_data);
 
@@ -1150,6 +1176,12 @@ outnoexp:
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
 
+    OGS_DIAM_STATS_MTX(
+        OGS_DIAM_STATS_INC(nb_echoed);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_pur);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_pur_error);
+    )
+
     ogs_subscription_data_free(&subscription_data);
 
     return 0;
@@ -1167,7 +1199,7 @@ void hss_s6a_send_clr(char *imsi_bcd, char *mme_host, char *mme_realm,
     struct sess_state *sess_data = NULL, *svg;
     struct session *session = NULL;
 
-    ogs_debug("[HSS] Cancel-Location-Request");
+    ogs_debug("[HSS] Tx Cancel-Location-Request");
 
     /* Create the random value to store with the session */
     sess_data = ogs_calloc(1, sizeof(*sess_data));
@@ -1277,9 +1309,10 @@ void hss_s6a_send_clr(char *imsi_bcd, char *mme_host, char *mme_realm,
     ogs_assert(ret == 0);
 
     /* Increment the counter */
-    ogs_assert(pthread_mutex_lock(&ogs_diam_logger_self()->stats_lock) == 0);
-    ogs_diam_logger_self()->stats.nb_sent++;
-    ogs_assert(pthread_mutex_unlock(&ogs_diam_logger_self()->stats_lock) == 0);
+    OGS_DIAM_STATS_MTX(
+        OGS_DIAM_STATS_INC(nb_sent);
+        HSS_DIAM_PRIV_STATS_INC(s6a.tx_clr);
+    )
 
 }
 
@@ -1292,31 +1325,31 @@ static void hss_s6a_cla_cb(void *data, struct msg **msg)
     struct session *session;
     int new;
 
-    ogs_debug("[HSS] Cancel-Location-Answer");
+    ogs_debug("[HSS] Rx Cancel-Location-Answer");
 
     /* Search the session, retrieve its data */
     ret = fd_msg_sess_get(fd_g_config->cnf_dict, *msg, &session, &new);
     if (ret != 0) {
         ogs_error("fd_msg_sess_get() failed");
-        return;
+        goto out;
     }
     if (new != 0) {
         ogs_error("fd_msg_sess_get() failed");
-        return;
+        goto out;
     }
 
     ret = fd_sess_state_retrieve(hss_s6a_reg, session, &sess_data);
     if (ret != 0) {
         ogs_error("fd_sess_state_retrieve() failed");
-        return;
+        goto out;
     }
     if (!sess_data) {
         ogs_error("fd_sess_state_retrieve() failed");
-        return;
+        goto out;
     }
     if ((void *)sess_data != data) {
         ogs_error("fd_sess_state_retrieve() failed");
-        return;
+        goto out;
     }
 
     ret = fd_msg_free(*msg);
@@ -1324,7 +1357,17 @@ static void hss_s6a_cla_cb(void *data, struct msg **msg)
     *msg = NULL;
 
     state_cleanup(sess_data, NULL, NULL);
+
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_cla);
+    )
     return;
+
+out:
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_cla);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_cla_error);
+    )
 }
 
 /* HSS Sends Insert Subscriber Data Request to MME */
@@ -1341,7 +1384,7 @@ int hss_s6a_send_idr(char *imsi_bcd, uint32_t idr_flags, uint32_t subdata_mask)
 
     ogs_subscription_data_t subscription_data;
 
-    ogs_debug("[HSS] Insert-Subscriber-Data-Request");
+    ogs_debug("[HSS] Tx Insert-Subscriber-Data-Request");
 
     memset(&subscription_data, 0, sizeof(ogs_subscription_data_t));
 
@@ -1478,9 +1521,10 @@ int hss_s6a_send_idr(char *imsi_bcd, uint32_t idr_flags, uint32_t subdata_mask)
     ogs_assert(ret == 0);
 
     /* Increment the counter */
-    ogs_assert(pthread_mutex_lock(&ogs_diam_logger_self()->stats_lock) == 0);
-    ogs_diam_logger_self()->stats.nb_sent++;
-    ogs_assert(pthread_mutex_unlock(&ogs_diam_logger_self()->stats_lock) == 0);
+    OGS_DIAM_STATS_MTX(
+        OGS_DIAM_STATS_INC(nb_sent);
+        HSS_DIAM_PRIV_STATS_INC(s6a.tx_idr);
+    )
 
     ogs_subscription_data_free(&subscription_data);
 
@@ -1496,31 +1540,31 @@ static void hss_s6a_ida_cb(void *data, struct msg **msg)
     struct session *session;
     int new;
 
-    ogs_debug("[HSS] Insert-Subscriber-Data-Answer");
+    ogs_debug("[HSS] Rx Insert-Subscriber-Data-Answer");
 
     /* Search the session, retrieve its data */
     ret = fd_msg_sess_get(fd_g_config->cnf_dict, *msg, &session, &new);
     if (ret != 0) {
         ogs_error("fd_msg_sess_get() failed");
-        return;
+        goto out;
     }
     if (new != 0) {
         ogs_error("fd_msg_sess_get() failed");
-        return;
+        goto out;
     }
 
     ret = fd_sess_state_retrieve(hss_s6a_reg, session, &sess_data);
     if (ret != 0) {
         ogs_error("fd_sess_state_retrieve() failed");
-        return;
+        goto out;
     }
     if (!sess_data) {
         ogs_error("fd_sess_state_retrieve() failed");
-        return;
+        goto out;
     }
     if ((void *)sess_data != data) {
         ogs_error("fd_sess_state_retrieve() failed");
-        return;
+        goto out;
     }
 
     ret = fd_msg_free(*msg);
@@ -1528,6 +1572,17 @@ static void hss_s6a_ida_cb(void *data, struct msg **msg)
     *msg = NULL;
 
     state_cleanup(sess_data, NULL, NULL);
+
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_ida);
+    )
+    return;
+
+out:
+    OGS_DIAM_STATS_MTX(
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_ida);
+        HSS_DIAM_PRIV_STATS_INC(s6a.rx_ida_error);
+    )
     return;
 }
 

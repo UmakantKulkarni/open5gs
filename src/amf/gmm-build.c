@@ -425,9 +425,6 @@ ogs_pkbuf_t *gmm_build_security_mode_command(amf_ue_t *amf_ue)
         OGS_NAS_EXTENDED_PROTOCOL_DISCRIMINATOR_5GMM;
     message.gmm.h.message_type = OGS_NAS_5GS_SECURITY_MODE_COMMAND;
 
-    amf_ue->selected_int_algorithm = amf_selected_int_algorithm(amf_ue);
-    amf_ue->selected_enc_algorithm = amf_selected_enc_algorithm(amf_ue);
-
     selected_nas_security_algorithms->type_of_integrity_protection_algorithm =
         amf_ue->selected_int_algorithm;
     selected_nas_security_algorithms->type_of_ciphering_algorithm =
@@ -474,12 +471,8 @@ ogs_pkbuf_t *gmm_build_security_mode_command(amf_ue_t *amf_ue)
     additional_security_information->
         retransmission_of_initial_nas_message_request = 1;
 
-    if (amf_ue->selected_int_algorithm == OGS_NAS_SECURITY_ALGORITHMS_EIA0) {
-        ogs_error("Encrypt[0x%x] can be skipped with NEA0, "
-            "but Integrity[0x%x] cannot be bypassed with NIA0",
-            amf_ue->selected_enc_algorithm, amf_ue->selected_int_algorithm);
-        return NULL;
-    }
+    ogs_assert(amf_ue->selected_int_algorithm !=
+            OGS_NAS_SECURITY_ALGORITHMS_EIA0);
 
     ogs_kdf_nas_5gs(OGS_KDF_NAS_INT_ALG, amf_ue->selected_int_algorithm,
             amf_ue->kamf, amf_ue->knas_int);
@@ -636,7 +629,7 @@ ogs_pkbuf_t *gmm_build_dl_nas_transport(amf_sess_t *sess,
     ogs_nas_gprs_timer_3_t *back_off_timer_value = NULL;
 
     ogs_assert(sess);
-    amf_ue = sess->amf_ue;
+    amf_ue = amf_ue_find_by_id(sess->amf_ue_id);
     ogs_assert(amf_ue);
     ogs_assert(payload_container_type);
     ogs_assert(payload_container);

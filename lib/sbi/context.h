@@ -175,7 +175,6 @@ typedef struct ogs_sbi_nf_instance_s {
 #define NF_INSTANCE_CLIENT(__nFInstance) \
     ((__nFInstance) ? ((__nFInstance)->client) : NULL)
     void *client;                       /* only used in CLIENT */
-    unsigned int reference_count;       /* reference count for memory free */
 } ogs_sbi_nf_instance_t;
 
 typedef enum {
@@ -194,6 +193,16 @@ typedef struct ogs_sbi_object_s {
 
     struct {
         ogs_sbi_nf_instance_t *nf_instance;
+
+        /*
+         * Search.Result stored in nf_instance->time.validity_duration;
+         *
+         * validity_timeout = nf_instance->validity->timeout =
+         *     ogs_get_monotonic_time() + nf_instance->time.validity_duration;
+         *
+         * if no validityPeriod in SearchResult, validity_timeout is 0.
+         */
+        ogs_time_t validity_timeout;
     } nf_type_array[OGS_SBI_MAX_NUM_OF_NF_TYPE],
       service_type_array[OGS_SBI_MAX_NUM_OF_SERVICE_TYPE];
 
@@ -207,6 +216,8 @@ typedef ogs_sbi_request_t *(*ogs_sbi_build_f)(
 typedef struct ogs_sbi_xact_s {
     ogs_lnode_t lnode;
 
+    ogs_pool_id_t id;
+
     ogs_sbi_service_type_e service_type;
     OpenAPI_nf_type_e requester_nf_type;
     ogs_sbi_discovery_option_t *discovery_option;
@@ -214,11 +225,13 @@ typedef struct ogs_sbi_xact_s {
     ogs_sbi_request_t *request;
     ogs_timer_t *t_response;
 
-    ogs_sbi_stream_t *assoc_stream;
+    ogs_pool_id_t assoc_stream_id;
+
     int state;
     char *target_apiroot;
 
     ogs_sbi_object_t *sbi_object;
+    ogs_pool_id_t sbi_object_id;
 } ogs_sbi_xact_t;
 
 typedef struct ogs_sbi_nf_service_s {
@@ -272,12 +285,7 @@ typedef struct ogs_sbi_subscription_spec_s {
 typedef struct ogs_sbi_subscription_data_s {
     ogs_lnode_t lnode;
 
-#define OGS_SBI_VALIDITY_SEC(v) \
-        ogs_time_sec(v) + (ogs_time_usec(v) ? 1 : 0)
-    struct {
-        int validity_duration;
-    } time;
-
+    ogs_time_t validity_duration;           /* valditiyTime(unit: usec) */
     ogs_timer_t *t_validity;                /* check validation */
     ogs_timer_t *t_patch;                   /* for sending PATCH */
 
@@ -286,16 +294,18 @@ typedef struct ogs_sbi_subscription_data_s {
     OpenAPI_nf_type_e req_nf_type;          /* reqNfType */
     OpenAPI_nf_status_e nf_status;
     char *notification_uri;
+    char *resource_uri;
 
     struct {
         OpenAPI_nf_type_e nf_type;          /* nfType */
         char *service_name;                 /* ServiceName */
+        char *nf_instance_id;               /* NF Instance Id */
     } subscr_cond;
 
     uint64_t requester_features;
     uint64_t nrf_supported_features;
 
-    void *client;                           /* only used in SERVER */
+    void *client;
 } ogs_sbi_subscription_data_t;
 
 typedef struct ogs_sbi_smf_info_s {
@@ -461,17 +471,46 @@ int ogs_sbi_default_client_port(OpenAPI_uri_scheme_e scheme);
 #define OGS_SBI_SETUP_NF_INSTANCE(__cTX, __nFInstance) \
     do { \
         ogs_assert(__nFInstance); \
+        ogs_assert((__nFInstance)->id); \
+        ogs_assert((__nFInstance)->t_validity); \
         \
         if ((__cTX).nf_instance) { \
-            ogs_warn("NF Instance [%s] updated [%s]", \
-                    OpenAPI_nf_type_ToString((__nFInstance)->nf_type), \
-                    (__nFInstance)->id); \
-            ogs_sbi_nf_instance_remove((__cTX).nf_instance); \
+            ogs_warn("[%s] NF Instance updated [type:%s validity:%ds]", \
+                    ((__cTX).nf_instance)->id, \
+                    OpenAPI_nf_type_ToString(((__cTX).nf_instance)->nf_type), \
+                    ((__cTX).nf_instance)->time.validity_duration); \
         } \
         \
-        OGS_OBJECT_REF(__nFInstance); \
-        ((__cTX).nf_instance) = (__nFInstance); \
+        ((__cTX).nf_instance) = __nFInstance; \
+        if ((__nFInstance)->time.validity_duration) { \
+            ((__cTX).validity_timeout) = (__nFInstance)->t_validity->timeout; \
+        } else { \
+            ((__cTX).validity_timeout) = 0; \
+        } \
+        ogs_info("[%s] NF Instance setup [type:%s validity:%ds]", \
+                (__nFInstance)->id, \
+                OpenAPI_nf_type_ToString((__nFInstance)->nf_type), \
+                (__nFInstance)->time.validity_duration); \
     } while(0)
+
+/*
+ * Search.Result stored in nf_instance->time.validity_duration;
+ *
+ * validity_timeout = nf_instance->validity->timeout =
+ *     ogs_get_monotonic_time() + nf_instance->time.validity_duration;
+ *
+ * if no validityPeriod in SearchResult, validity_timeout is 0.
+ */
+#define OGS_SBI_GET_NF_INSTANCE(__cTX) \
+    ((__cTX).validity_timeout == 0 || \
+     (__cTX).validity_timeout > ogs_get_monotonic_time() ? \
+        ((__cTX).nf_instance) : NULL)
+
+#define OGS_SBI_NF_INSTANCE_VALID(__nFInstance) \
+    (((__nFInstance) && ((__nFInstance)->t_validity) && \
+     ((__nFInstance)->time.validity_duration == 0 || \
+      (__nFInstance)->t_validity->timeout > ogs_get_monotonic_time())) ? \
+         true : false)
 
 bool ogs_sbi_discovery_param_is_matched(
         ogs_sbi_nf_instance_t *nf_instance,
@@ -500,13 +539,14 @@ bool ogs_sbi_discovery_option_target_plmn_list_is_matched(
 void ogs_sbi_object_free(ogs_sbi_object_t *sbi_object);
 
 ogs_sbi_xact_t *ogs_sbi_xact_add(
+        ogs_pool_id_t sbi_object_id,
         ogs_sbi_object_t *sbi_object,
         ogs_sbi_service_type_e service_type,
         ogs_sbi_discovery_option_t *discovery_option,
         ogs_sbi_build_f build, void *context, void *data);
 void ogs_sbi_xact_remove(ogs_sbi_xact_t *xact);
 void ogs_sbi_xact_remove_all(ogs_sbi_object_t *sbi_object);
-ogs_sbi_xact_t *ogs_sbi_xact_cycle(ogs_sbi_xact_t *xact);
+ogs_sbi_xact_t *ogs_sbi_xact_find_by_id(ogs_pool_id_t id);
 
 ogs_sbi_subscription_spec_t *ogs_sbi_subscription_spec_add(
         OpenAPI_nf_type_e nf_type, const char *service_name);
@@ -515,6 +555,8 @@ void ogs_sbi_subscription_spec_remove(
 void ogs_sbi_subscription_spec_remove_all(void);
 
 ogs_sbi_subscription_data_t *ogs_sbi_subscription_data_add(void);
+void ogs_sbi_subscription_data_set_resource_uri(
+        ogs_sbi_subscription_data_t *subscription_data, char *resource_uri);
 void ogs_sbi_subscription_data_set_id(
         ogs_sbi_subscription_data_t *subscription_data, char *id);
 void ogs_sbi_subscription_data_remove(
