@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2025 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -216,9 +216,9 @@ typedef struct mme_vlr_s {
     uint16_t        ostream_id;     /* vlr_ostream_id generator */
 
     ogs_sockaddr_t  *sa_list;   /* VLR SGsAP Socket Address List */
+    ogs_sockaddr_t  *local_sa_list;   /* VLR SGsAP Socket Local Address List */
 
     ogs_sock_t      *sock;      /* VLR SGsAP Socket */
-    ogs_sockaddr_t  *addr;      /* VLR SGsAP Connected Socket Address */
     ogs_sockopt_t   *option;    /* VLR SGsAP Socket Option */
     ogs_poll_t      *poll;      /* VLR SGsAP Poll */
 } mme_vlr_t;
@@ -342,6 +342,69 @@ struct sgw_ue_s {
     ogs_pool_id_t mme_ue_id;
 };
 
+typedef struct mme_ue_memento_s {
+    /* UE network capability info: supported network features. */
+    ogs_nas_ue_network_capability_t ue_network_capability;
+    /* MS network capability info: supported network features. */
+    ogs_nas_ms_network_capability_t ms_network_capability;
+    /* UE additional security capability: extra security features. */
+    ogs_nas_ue_additional_security_capability_t
+        ue_additional_security_capability;
+
+    /* Expected response and its length */
+    uint8_t xres[OGS_MAX_RES_LEN];
+    uint8_t xres_len;
+    /* Derived key from HSS */
+    uint8_t kasme[OGS_SHA256_DIGEST_SIZE];
+    /* Random challenge value */
+    uint8_t rand[OGS_RAND_LEN];
+    /* Authentication token */
+    uint8_t autn[OGS_AUTN_LEN];
+    /* Integrity and ciphering keys */
+    uint8_t knas_int[OGS_SHA256_DIGEST_SIZE/2];
+    uint8_t knas_enc[OGS_SHA256_DIGEST_SIZE/2];
+    /* Downlink counter */
+    uint32_t dl_count;
+    /* Uplink counter (24-bit stored in uint32_t) */
+    uint32_t ul_count;
+    /* eNB key derived from kasme */
+    uint8_t kenb[OGS_SHA256_DIGEST_SIZE];
+    /* Hash used for NAS message integrity */
+    uint8_t hash_mme[OGS_HASH_MME_LEN];
+    /* Nonces for resynchronization */
+    uint32_t nonceue;
+    uint32_t noncemme;
+    /* GPRS ciphering key sequence number */
+    uint8_t gprs_ciphering_key_sequence_number;
+
+    /*
+     * Next Hop Channing Counter
+     *
+     * Note that the "nhcc" field is not included in the backup
+     * because it is a transient counter used only during next-hop key
+     * derivation. In our design, only the persistent keying material
+     * and related values that are required to recreate the security context
+     * are backed up. The nhcc value is recalculated or updated dynamically
+     * when the next hop key is derived (e.g. via ogs_kdf_nh_enb()),
+     * so it is not necessary to store it in the backup.
+     *
+     * If there is a requirement to preserve the exact nhcc value across state
+     * transitions, you could add it to the backup structure, but typically
+     * it is treated as a computed, temporary value that can be reinitialized
+     * safely without compromising the security context.
+     * struct {
+     *   ED2(uint8_t nhcc_spare:5;,
+     *       uint8_t nhcc:3;)
+     * };
+     */
+
+    /* Next hop key */
+    uint8_t nh[OGS_SHA256_DIGEST_SIZE];
+    /* Selected algorithms (set by HSS/subscription) */
+    uint8_t selected_enc_algorithm;
+    uint8_t selected_int_algorithm;
+} mme_ue_memento_t;
+
 struct mme_ue_s {
     ogs_lnode_t     lnode;
     ogs_pool_id_t   id;
@@ -355,7 +418,13 @@ struct mme_ue_s {
 #define MME_EPS_TYPE_DETACH_REQUEST_FROM_UE         5
 #define MME_EPS_TYPE_DETACH_REQUEST_TO_UE           6
         uint8_t     type;
-        uint8_t     ksi;
+
+        struct {
+        ED3(uint8_t tsc:1;,
+            uint8_t ksi:3;,
+            uint8_t spare:4;)
+        } mme, ue;
+
         ogs_nas_eps_attach_type_t attach;
         ogs_nas_eps_update_type_t update;
         ogs_nas_service_type_t service;
@@ -446,30 +515,42 @@ struct mme_ue_s {
     ((__mME) && \
     ((__mME)->security_context_available == 1) && \
      ((__mME)->mac_failed == 0) && \
-     ((__mME)->nas_eps.ksi != OGS_NAS_KSI_NO_KEY_IS_AVAILABLE))
+     ((__mME)->nas_eps.ue.ksi != OGS_NAS_KSI_NO_KEY_IS_AVAILABLE))
 #define CLEAR_SECURITY_CONTEXT(__mME) \
     do { \
         ogs_assert((__mME)); \
         (__mME)->security_context_available = 0; \
         (__mME)->mac_failed = 0; \
-        (__mME)->nas_eps.ksi = 0; \
     } while(0)
     int             security_context_available;
     int             mac_failed;
+
+    /* flag: 1 = allow restoration of context, 0 = disallow */
+    bool            can_restore_context;
+
+    /* Memento of context fields */
+    mme_ue_memento_t memento;
 
     /* Security Context */
     ogs_nas_ue_network_capability_t ue_network_capability;
     ogs_nas_ms_network_capability_t ms_network_capability;
     ogs_nas_ue_additional_security_capability_t
         ue_additional_security_capability;
+    /* Expected response and its length */
     uint8_t         xres[OGS_MAX_RES_LEN];
     uint8_t         xres_len;
+    /* Derived key from HSS */
     uint8_t         kasme[OGS_SHA256_DIGEST_SIZE];
+    /* Random challenge value */
     uint8_t         rand[OGS_RAND_LEN];
+    /* Authentication token */
     uint8_t         autn[OGS_AUTN_LEN];
+    /* Integrity and ciphering keys */
     uint8_t         knas_int[OGS_SHA256_DIGEST_SIZE/2];
     uint8_t         knas_enc[OGS_SHA256_DIGEST_SIZE/2];
+    /* Downlink counter */
     uint32_t        dl_count;
+    /* Uplink counter (24-bit stored in i32) */
     union {
         struct {
         ED3(uint8_t spare;,
@@ -478,17 +559,23 @@ struct mme_ue_s {
         } __attribute__ ((packed));
         uint32_t i32;
     } ul_count;
+    /* eNB key derived from kasme */
     uint8_t         kenb[OGS_SHA256_DIGEST_SIZE];
+    /* Hash used for NAS message integrity */
     uint8_t         hash_mme[OGS_HASH_MME_LEN];
+    /* Nonces for resynchronization */
     uint32_t        nonceue, noncemme;
+    /* GPRS ciphering key sequence number */
     uint8_t         gprs_ciphering_key_sequence_number;
 
     struct {
     ED2(uint8_t nhcc_spare:5;,
         uint8_t nhcc:3;) /* Next Hop Channing Counter */
     };
-    uint8_t         nh[OGS_SHA256_DIGEST_SIZE]; /* NH Security Key */
+    /* Next hop key */
+    uint8_t         nh[OGS_SHA256_DIGEST_SIZE];
 
+    /* Selected algorithms (set by HSS/subscription) */
     /* defined in 'nas_ies.h'
      * #define NAS_SECURITY_ALGORITHMS_EIA0        0
      * #define NAS_SECURITY_ALGORITHMS_128_EEA1    1
@@ -938,11 +1025,14 @@ void mme_pgw_remove_all(void);
 ogs_sockaddr_t *mme_pgw_addr_find_by_apn_enb(
         ogs_list_t *list, int family, const mme_sess_t *sess);
 
-mme_vlr_t *mme_vlr_add(ogs_sockaddr_t *sa_list, ogs_sockopt_t *option);
+mme_vlr_t *mme_vlr_add(
+        ogs_sockaddr_t *sa_list,
+        ogs_sockaddr_t *local_sa_list,
+        ogs_sockopt_t *option);
 void mme_vlr_remove(mme_vlr_t *vlr);
 void mme_vlr_remove_all(void);
 void mme_vlr_close(mme_vlr_t *vlr);
-mme_vlr_t *mme_vlr_find_by_addr(const ogs_sockaddr_t *addr);
+mme_vlr_t *mme_vlr_find_by_sock(const ogs_sock_t *sock);
 
 mme_csmap_t *mme_csmap_add(mme_vlr_t *vlr);
 void mme_csmap_remove(mme_csmap_t *csmap);
@@ -1124,6 +1214,9 @@ void mme_ebi_pool_clear(mme_ue_t *mme_ue);
 
 uint8_t mme_selected_int_algorithm(mme_ue_t *mme_ue);
 uint8_t mme_selected_enc_algorithm(mme_ue_t *mme_ue);
+
+void mme_ue_save_memento(mme_ue_t *mme_ue, mme_ue_memento_t *memento);
+void mme_ue_restore_memento(mme_ue_t *mme_ue, const mme_ue_memento_t *memento);
 
 #ifdef __cplusplus
 }

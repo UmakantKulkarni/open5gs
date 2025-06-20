@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2025 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -974,6 +974,76 @@ static int hss_ogs_diam_s6a_ulr_cb( struct msg **msg, struct avp *avp,
             ans, OGS_DIAM_S6A_APPLICATION_ID);
     ogs_assert(ret == 0);
 
+    /*
+     * AVP 628 Supported-Features
+     *     AVP 629 Feature-List-ID: 1
+     *         AVP 630 Feature-List: (misc subscriber restrictions)
+     */
+    ret = fd_msg_avp_new(ogs_diam_s6a_supported_features, 0, &avp);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_new(ogs_diam_vendor_id, 0, &avpch1);
+    ogs_assert(ret == 0);
+    val.i32 = OGS_3GPP_VENDOR_ID;
+    ret = fd_msg_avp_setvalue (avpch1, &val);
+    ogs_assert(ret == 0);
+    ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_new(ogs_diam_s6a_feature_list_id, 0, &avpch1);
+    ogs_assert(ret == 0);
+    val.i32 = 1;
+    ret = fd_msg_avp_setvalue (avpch1, &val);
+    ogs_assert(ret == 0);
+    ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_new(ogs_diam_s6a_feature_list, 0, &avpch1);
+    ogs_assert(ret == 0);
+    val.u32 = 0x0000000b;
+    ret = fd_msg_avp_setvalue (avpch1, &val);
+    ogs_assert(ret == 0);
+    ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_add(ans, MSG_BRW_LAST_CHILD, avp);
+    ogs_assert(ret == 0);
+
+    /*
+     * AVP 628 Supported-Features
+     *     AVP 629 Feature-List-ID: 2
+     *         AVP 630 Feature-List: (“NR as Secondary RAT: Supported”)
+     */
+    ret = fd_msg_avp_new(ogs_diam_s6a_supported_features, 0, &avp);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_new(ogs_diam_vendor_id, 0, &avpch1);
+    ogs_assert(ret == 0);
+    val.i32 = OGS_3GPP_VENDOR_ID;
+    ret = fd_msg_avp_setvalue (avpch1, &val);
+    ogs_assert(ret == 0);
+    ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_new(ogs_diam_s6a_feature_list_id, 0, &avpch1);
+    ogs_assert(ret == 0);
+    val.i32 = 2;
+    ret = fd_msg_avp_setvalue (avpch1, &val);
+    ogs_assert(ret == 0);
+    ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_new(ogs_diam_s6a_feature_list, 0, &avpch1);
+    ogs_assert(ret == 0);
+    val.u32 = 0x08000001;
+    ret = fd_msg_avp_setvalue (avpch1, &val);
+    ogs_assert(ret == 0);
+    ret = fd_msg_avp_add (avp, MSG_BRW_LAST_CHILD, avpch1);
+    ogs_assert(ret == 0);
+
+    ret = fd_msg_avp_add(ans, MSG_BRW_LAST_CHILD, avp);
+    ogs_assert(ret == 0);
+
     /* Send the answer */
     ret = fd_msg_send(msg, NULL, NULL);
     ogs_assert(ret == 0);
@@ -1270,7 +1340,7 @@ void hss_s6a_send_clr(char *imsi_bcd, char *mme_host, char *mme_realm,
     /* Set the CLR-Flags */
     ret = fd_msg_avp_new(ogs_diam_s6a_clr_flags, 0, &avp);
     ogs_assert(ret == 0);
-    if (cancellation_type == OGS_DIAM_S6A_CT_SUBSCRIPTION_WITHDRAWL) {
+    if (cancellation_type == OGS_DIAM_S6A_CT_SUBSCRIPTION_WITHDRAWAL) {
         val.u32 = (OGS_DIAM_S6A_CLR_FLAGS_REATTACH_REQUIRED |
             OGS_DIAM_S6A_CLR_FLAGS_S6A_S6D_INDICATOR);
     } else {

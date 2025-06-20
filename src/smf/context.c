@@ -706,7 +706,7 @@ int smf_context_parse_config(void)
                                         s_nssai->sst = atoi(sst);
                                         if (sd)
                                             s_nssai->sd =
-                                                ogs_uint24_from_string(
+                                                ogs_uint24_from_string_hexadecimal(
                                                         (char*)sd);
                                         else
                                             s_nssai->sd.v =
@@ -1084,6 +1084,9 @@ void smf_ue_remove(smf_ue_t *smf_ue)
         ogs_free(smf_ue->supi);
     }
 
+    if (smf_ue->gpsi)
+        ogs_free(smf_ue->gpsi);
+
     if (smf_ue->imsi_len) {
         ogs_hash_set(self.imsi_hash, smf_ue->imsi, smf_ue->imsi_len, NULL);
     }
@@ -1184,8 +1187,6 @@ static ogs_pfcp_node_t *selected_upf_node(
 
 void smf_sess_select_upf(smf_sess_t *sess)
 {
-    char buf[OGS_ADDRSTRLEN];
-
     ogs_assert(sess);
 
     /*
@@ -1196,13 +1197,19 @@ void smf_sess_select_upf(smf_sess_t *sess)
         ogs_pfcp_self()->pfcp_node =
             ogs_list_last(&ogs_pfcp_self()->pfcp_peer_list);
 
-    /* setup GTP session with selected UPF */
-    ogs_pfcp_self()->pfcp_node =
-        selected_upf_node(ogs_pfcp_self()->pfcp_node, sess);
-    ogs_assert(ogs_pfcp_self()->pfcp_node);
-    OGS_SETUP_PFCP_NODE(sess, ogs_pfcp_self()->pfcp_node);
-    ogs_debug("UE using UPF on IP[%s]",
-            OGS_ADDR(&ogs_pfcp_self()->pfcp_node->addr, buf));
+    if (ogs_pfcp_self()->pfcp_node) {
+        /* setup GTP session with selected UPF */
+        ogs_pfcp_self()->pfcp_node =
+            selected_upf_node(ogs_pfcp_self()->pfcp_node, sess);
+        ogs_assert(ogs_pfcp_self()->pfcp_node);
+        OGS_SETUP_PFCP_NODE(sess, ogs_pfcp_self()->pfcp_node);
+        ogs_debug("UE using UPF on IP %s",
+                ogs_sockaddr_to_string_static(
+                    ogs_pfcp_self()->pfcp_node->addr_list));
+    } else {
+        ogs_error("No suitable UPF found for session");
+        ogs_assert(sess->pfcp_node == NULL);
+    }
 }
 
 smf_sess_t *smf_sess_add_by_apn(smf_ue_t *smf_ue, char *apn, uint8_t rat_type)
@@ -1480,6 +1487,7 @@ smf_sess_t *smf_sess_add_by_psi(smf_ue_t *smf_ue, uint8_t psi)
 
     ogs_list_add(&smf_ue->sess_list, sess);
 
+    smf_metrics_inst_global_inc(SMF_METR_GLOB_GAUGE_PFCP_SESSIONS_ACTIVE);
     stats_add_smf_session();
 
     return sess;
@@ -1505,7 +1513,7 @@ smf_sess_t *smf_sess_add_by_sbi_message(ogs_sbi_message_t *message)
     }
 
     if (SmContextCreateData->is_pdu_session_id == false) {
-        ogs_error("PDU session identitiy is unassigned");
+        ogs_error("PDU session identity is unassigned");
         return NULL;
     }
 
@@ -1817,6 +1825,7 @@ void smf_sess_remove(smf_sess_t *sess)
         smf_metrics_inst_global_dec(SMF_METR_GLOB_GAUGE_GTP2_SESSIONS_ACTIVE);
         break;
     }
+    smf_metrics_inst_global_dec(SMF_METR_GLOB_GAUGE_PFCP_SESSIONS_ACTIVE);
     stats_remove_smf_session(sess);
 
     ogs_pool_free(&smf_n4_seid_pool, sess->smf_n4_seid_node);
@@ -2186,14 +2195,16 @@ void smf_sess_create_indirect_data_forwarding(smf_sess_t *sess)
                     else
                         sess->handover.upf_dl_teid = pdr->teid;
                 } else {
-                    if (sess->pfcp_node->addr.ogs_sa_family == AF_INET)
+                    ogs_assert(sess->pfcp_node->addr_list);
+                    if (sess->pfcp_node->addr_list->ogs_sa_family == AF_INET)
                         ogs_assert(OGS_OK == ogs_copyaddrinfo(
                             &sess->handover.upf_dl_addr,
-                            &sess->pfcp_node->addr));
-                    else if (sess->pfcp_node->addr.ogs_sa_family == AF_INET6)
+                            sess->pfcp_node->addr_list));
+                    else if (sess->pfcp_node->addr_list->ogs_sa_family ==
+                            AF_INET6)
                         ogs_assert(OGS_OK == ogs_copyaddrinfo(
                             &sess->handover.upf_dl_addr6,
-                            &sess->pfcp_node->addr));
+                            sess->pfcp_node->addr_list));
                     else
                         ogs_assert_if_reached();
 

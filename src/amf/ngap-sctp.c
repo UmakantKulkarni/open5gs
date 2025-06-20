@@ -160,14 +160,19 @@ void ngap_recv_handler(ogs_sock_t *sock)
             if (not->sn_assoc_change.sac_state == SCTP_COMM_UP) {
                 ogs_debug("SCTP_COMM_UP");
 
-                addr = ogs_calloc(1, sizeof(ogs_sockaddr_t));
-                ogs_assert(addr);
-                memcpy(addr, &from, sizeof(ogs_sockaddr_t));
+                if ((not->sn_assoc_change.sac_outbound_streams-1) >= 1) {
+                    /* NEXT_ID(MAX >= MIN) */
+                    addr = ogs_calloc(1, sizeof(ogs_sockaddr_t));
+                    ogs_assert(addr);
+                    memcpy(addr, &from, sizeof(ogs_sockaddr_t));
 
-                ngap_event_push(AMF_EVENT_NGAP_LO_SCTP_COMM_UP,
-                        sock, addr, NULL,
-                        not->sn_assoc_change.sac_inbound_streams,
-                        not->sn_assoc_change.sac_outbound_streams);
+                    ngap_event_push(AMF_EVENT_NGAP_LO_SCTP_COMM_UP,
+                            sock, addr, NULL,
+                            not->sn_assoc_change.sac_inbound_streams,
+                            not->sn_assoc_change.sac_outbound_streams);
+                } else
+                    ogs_error("Invalid sn_assoc_change.sac_outbound_streams %d",
+                            not->sn_assoc_change.sac_outbound_streams);
             } else if (not->sn_assoc_change.sac_state == SCTP_SHUTDOWN_COMP ||
                     not->sn_assoc_change.sac_state == SCTP_COMM_LOST) {
 
@@ -238,14 +243,8 @@ void ngap_recv_handler(ogs_sock_t *sock)
         ngap_event_push(AMF_EVENT_NGAP_MESSAGE, sock, addr, pkbuf, 0, 0);
         return;
     } else {
-        if (ogs_socket_errno != OGS_EAGAIN) {
-            ogs_fatal("ogs_sctp_recvmsg(%d) failed(%d:%s-0x%x)",
-                    size, errno, strerror(errno), flags);
-            ogs_assert_if_reached();
-        } else {
-            ogs_error("ogs_sctp_recvmsg(%d) failed(%d:%s-0x%x)",
-                    size, errno, strerror(errno), flags);
-        }
+        ogs_error("ogs_sctp_recvmsg(%d) failed(%d:%s-0x%x)",
+                size, errno, strerror(errno), flags);
     }
 
     ogs_pkbuf_free(pkbuf);

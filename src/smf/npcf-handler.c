@@ -377,7 +377,7 @@ bool smf_npcf_smpolicycontrol_handle_create(
     /* SBI Features */
     if (SmPolicyDecision->supp_feat) {
         uint64_t supported_features =
-            ogs_uint64_from_string(SmPolicyDecision->supp_feat);
+            ogs_uint64_from_string_hexadecimal(SmPolicyDecision->supp_feat);
         sess->smpolicycontrol_features &= supported_features;
     } else {
         sess->smpolicycontrol_features = 0;
@@ -475,8 +475,14 @@ bool smf_npcf_smpolicycontrol_handle_create(
     /* Select UPF based on UE Location Information */
     smf_sess_select_upf(sess);
 
+    /* Check if UPF selection was successful */
+    if (!sess->pfcp_node) {
+        ogs_error("[%s:%d] No UPF available for session",
+                  smf_ue->supi, sess->psi);
+        return false;
+    }
+
     /* Check if selected UPF is associated with SMF */
-    ogs_assert(sess->pfcp_node);
     if (!OGS_FSM_CHECK(&sess->pfcp_node->sm, smf_pfcp_state_associated)) {
         ogs_error("[%s:%d] No associated UPF", smf_ue->supi, sess->psi);
         return false;
@@ -645,14 +651,15 @@ bool smf_npcf_smpolicycontrol_handle_create(
             else
                 sess->upf_n3_teid = ul_pdr->teid;
         } else {
-            if (sess->pfcp_node->addr.ogs_sa_family == AF_INET)
+            ogs_assert(sess->pfcp_node->addr_list);
+            if (sess->pfcp_node->addr_list->ogs_sa_family == AF_INET)
                 ogs_assert(OGS_OK ==
                     ogs_copyaddrinfo(
-                        &sess->upf_n3_addr, &sess->pfcp_node->addr));
-            else if (sess->pfcp_node->addr.ogs_sa_family == AF_INET6)
+                        &sess->upf_n3_addr, sess->pfcp_node->addr_list));
+            else if (sess->pfcp_node->addr_list->ogs_sa_family == AF_INET6)
                 ogs_assert(OGS_OK ==
                     ogs_copyaddrinfo(
-                        &sess->upf_n3_addr6, &sess->pfcp_node->addr));
+                        &sess->upf_n3_addr6, sess->pfcp_node->addr_list));
             else
                 ogs_assert_if_reached();
 

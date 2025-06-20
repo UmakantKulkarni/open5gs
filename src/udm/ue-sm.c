@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2024 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2025 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -196,7 +196,17 @@ void udm_ue_state_operational(ogs_fsm_t *s, udm_event_t *e)
                     r = udm_ue_sbi_discover_and_send(
                             OGS_SBI_SERVICE_TYPE_NUDR_DR, NULL,
                             udm_nudr_dr_build_query_subscription_provisioned,
-                            udm_ue, stream, message);
+                            udm_ue, stream, UDM_SBI_NO_STATE, message);
+                    ogs_expect(r == OGS_OK);
+                    ogs_assert(r != OGS_ERROR);
+                    break;
+
+                CASE(OGS_SBI_RESOURCE_NAME_NSSAI)
+                    r = udm_ue_sbi_discover_and_send(
+                            OGS_SBI_SERVICE_TYPE_NUDR_DR, NULL,
+                            udm_nudr_dr_build_query_subscription_provisioned,
+                            udm_ue, stream, UDM_SBI_UE_PROVISIONED_NSSAI_ONLY,
+                            message);
                     ogs_expect(r == OGS_OK);
                     ogs_assert(r != OGS_ERROR);
                     break;
@@ -292,8 +302,12 @@ void udm_ue_state_operational(ogs_fsm_t *s, udm_event_t *e)
             CASE(OGS_SBI_RESOURCE_NAME_SUBSCRIPTION_DATA)
                 SWITCH(message->h.resource.component[2])
                 CASE(OGS_SBI_RESOURCE_NAME_AUTHENTICATION_DATA)
-                    udm_nudr_dr_handle_subscription_authentication(
-                            udm_ue, stream, message);
+                    if (udm_nudr_dr_handle_subscription_authentication(
+                            udm_ue, stream, message) == false) {
+                        ogs_warn("udm_nudr_dr_handle_subscription_"
+                                "authentication() failed");
+                        OGS_FSM_TRAN(s, udm_ue_state_exception);
+                    }
                     break;
 
                 CASE(OGS_SBI_RESOURCE_NAME_CONTEXT_DATA)
@@ -305,7 +319,7 @@ void udm_ue_state_operational(ogs_fsm_t *s, udm_event_t *e)
                     SWITCH(message->h.resource.component[3])
                     CASE(OGS_SBI_RESOURCE_NAME_PROVISIONED_DATA)
                         udm_nudr_dr_handle_subscription_provisioned(
-                                udm_ue, stream, message);
+                                udm_ue, stream, e->h.sbi.state, message);
                         break;
 
                     DEFAULT

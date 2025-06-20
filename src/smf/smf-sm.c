@@ -81,6 +81,7 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
     ogs_sbi_message_t sbi_message;
     ogs_sbi_xact_t *sbi_xact = NULL;
     ogs_pool_id_t sbi_xact_id = OGS_INVALID_POOL_ID;
+    ogs_sbi_object_t *sbi_object = NULL;
     ogs_pool_id_t sbi_object_id = OGS_INVALID_POOL_ID;
 
     ogs_nas_5gs_message_t nas_message;
@@ -406,22 +407,11 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
         ogs_assert(e);
         recvbuf = e->pkbuf;
         ogs_assert(recvbuf);
+        pfcp_message = e->pfcp_message;
+        ogs_assert(pfcp_message);
         pfcp_node = e->pfcp_node;
         ogs_assert(pfcp_node);
         ogs_assert(OGS_FSM_STATE(&pfcp_node->sm));
-
-        /*
-         * Issue #1911
-         *
-         * Because ogs_pfcp_message_t is over 80kb in size,
-         * it can cause stack overflow.
-         * To avoid this, the pfcp_message structure uses heap memory.
-         */
-        if ((pfcp_message = ogs_pfcp_parse_msg(recvbuf)) == NULL) {
-            ogs_error("ogs_pfcp_parse_msg() failed");
-            ogs_pkbuf_free(recvbuf);
-            break;
-        }
 
         rv = ogs_pfcp_xact_receive(pfcp_node, &pfcp_message->h, &pfcp_xact);
         if (rv != OGS_OK) {
@@ -430,7 +420,6 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
             break;
         }
 
-        e->pfcp_message = pfcp_message;
         e->pfcp_xact_id = pfcp_xact ? pfcp_xact->id : OGS_INVALID_POOL_ID;
 
         e->gtp2_message = NULL;
@@ -1053,14 +1042,30 @@ void smf_state_operational(ogs_fsm_t *s, smf_event_t *e)
             /* Here, we should not use ogs_assert(stream)
              * since 'namf-comm' service has no an associated stream. */
 
+            sbi_object = sbi_xact->sbi_object;
+            ogs_assert(sbi_object);
+
+            sbi_object_id = sbi_xact->sbi_object_id;
+            ogs_assert(sbi_object_id >= OGS_MIN_POOL_ID &&
+                    sbi_object_id <= OGS_MAX_POOL_ID);
+
             ogs_sbi_xact_remove(sbi_xact);
 
-            ogs_error("Cannot receive SBI message");
+            sess = smf_sess_find_by_id(sbi_object_id);
+            if (!sess) {
+                ogs_error("Session has already been removed");
+                break;
+            }
+            smf_ue = smf_ue_find_by_id(sess->smf_ue_id);
+            ogs_assert(smf_ue);
+
+            ogs_error("[%s:%d] Cannot receive SBI message",
+                    smf_ue->supi, sess->psi);
             if (stream) {
                 ogs_assert(true ==
                     ogs_sbi_server_send_error(stream,
                         OGS_SBI_HTTP_STATUS_GATEWAY_TIMEOUT, NULL,
-                        "Cannot receive SBI message", NULL, NULL));
+                        "Cannot receive SBI message", smf_ue->supi, NULL));
             }
             break;
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019-2023 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2019-2025 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -36,19 +36,25 @@ typedef struct ogs_sbi_smf_info_s ogs_sbi_smf_info_t;
 typedef struct ogs_sbi_nf_instance_s ogs_sbi_nf_instance_t;
 
 typedef enum {
-    OGS_SBI_DISCOVERY_DELEGATED_AUTO = 0,
-    OGS_SBI_DISCOVERY_DELEGATED_YES,
-    OGS_SBI_DISCOVERY_DELEGATED_NO,
-} ogs_sbi_discovery_delegated_mode;
+    OGS_SBI_CLIENT_DELEGATED_AUTO = 0,
+    OGS_SBI_CLIENT_DELEGATED_YES,
+    OGS_SBI_CLIENT_DELEGATED_NO,
+} ogs_sbi_client_delegated_mode_e;
 
-typedef struct ogs_sbi_discovery_config_s {
-    ogs_sbi_discovery_delegated_mode delegated;
-    bool no_service_names;
-    bool prefer_requester_nf_instance_id;
-} ogs_sbi_discovery_config_t;
+/* To hold all delegated config under sbi.client.delegated */
+typedef struct ogs_sbi_client_delegated_config_s {
+    struct {
+        ogs_sbi_client_delegated_mode_e nfm;  /* e.g. Registration, Heartbeat */
+        ogs_sbi_client_delegated_mode_e disc; /* NF discovery */
+    } nrf;
+    struct {
+        ogs_sbi_client_delegated_mode_e next; /* Next-hop SCP delegation */
+    } scp;
+} ogs_sbi_client_delegated_config_t;
 
 typedef struct ogs_sbi_context_s {
-    ogs_sbi_discovery_config_t discovery_config; /* SCP Discovery Delegated */
+    /* For sbi.client.delegated */
+    ogs_sbi_client_delegated_config_t client_delegated_config;
 
 #define OGS_HOME_NETWORK_PKI_VALUE_MIN 1
 #define OGS_HOME_NETWORK_PKI_VALUE_MAX 254
@@ -65,6 +71,7 @@ typedef struct ogs_sbi_context_s {
 
             const char *private_key;
             const char *cert;
+            const char *sslkeylog;
 
             bool verify_client;
             const char *verify_client_cacert;
@@ -77,8 +84,11 @@ typedef struct ogs_sbi_context_s {
 
             const char *private_key;
             const char *cert;
+            const char *sslkeylog;
         } client;
     } tls;
+
+    const char *local_if;
 
     ogs_list_t server_list;
     ogs_list_t client_list;
@@ -192,8 +202,9 @@ typedef struct ogs_sbi_object_s {
     ogs_sbi_obj_type_e type;
 
     struct {
-        ogs_sbi_nf_instance_t *nf_instance;
+        char *nf_instance_id;
 
+#if ENABLE_VALIDITY_TIMEOUT
         /*
          * Search.Result stored in nf_instance->time.validity_duration;
          *
@@ -203,6 +214,7 @@ typedef struct ogs_sbi_object_s {
          * if no validityPeriod in SearchResult, validity_timeout is 0.
          */
         ogs_time_t validity_timeout;
+#endif
     } nf_type_array[OGS_SBI_MAX_NUM_OF_NF_TYPE],
       service_type_array[OGS_SBI_MAX_NUM_OF_SERVICE_TYPE];
 
@@ -213,6 +225,35 @@ typedef struct ogs_sbi_object_s {
 typedef ogs_sbi_request_t *(*ogs_sbi_build_f)(
         void *context, void *data);
 
+#define OGS_SBI_XACT_LOG(xact) \
+    do { \
+        ogs_error("    requester-nf-type[%s:%d]", \
+                OpenAPI_nf_type_ToString((xact)->requester_nf_type), \
+                (xact)->requester_nf_type); \
+        ogs_error("    service-name[%s:%d]", \
+                ogs_sbi_service_type_to_name((xact)->service_type), \
+                (xact)->service_type); \
+        if ((xact)->request) { \
+            int i; \
+            ogs_sbi_request_t *request = (xact)->request; \
+            if (request->h.method) \
+                ogs_error("    h.method[%s]", request->h.method); \
+            if (request->h.uri) \
+                ogs_error("    h.uri[%s]", request->h.uri); \
+            if (request->h.service.name) \
+                ogs_error("    h.service.name[%s]", request->h.service.name); \
+            if (request->h.api.version) \
+                ogs_error("    h.api.version[%s]", request->h.api.version); \
+            for (i = 0; i < OGS_SBI_MAX_NUM_OF_RESOURCE_COMPONENT && \
+                        request->h.resource.component[i]; i++)  \
+                ogs_error("    h.resource.component[%s:%d]", \
+                        request->h.resource.component[i], i); \
+            ogs_error("    http.content_length[%d]", \
+                    (int)request->http.content_length); \
+            if (request->http.content) \
+                ogs_error("    http.content[%s]", request->http.content); \
+        } \
+    } while(0)
 typedef struct ogs_sbi_xact_s {
     ogs_lnode_t lnode;
 
@@ -351,8 +392,8 @@ typedef struct ogs_sbi_sepp_info_s {
 } ogs_sbi_sepp_info_t;
 
 typedef struct ogs_sbi_amf_info_s {
-    uint8_t amf_set_id;
-    uint16_t amf_region_id;
+    uint16_t amf_set_id;
+    uint8_t amf_region_id;
 
     int num_of_guami;
     ogs_guami_t guami[OGS_MAX_NUM_OF_SERVED_GUAMI];
@@ -468,49 +509,77 @@ void ogs_sbi_client_associate(ogs_sbi_nf_instance_t *nf_instance);
 
 int ogs_sbi_default_client_port(OpenAPI_uri_scheme_e scheme);
 
+#if ENABLE_VALIDITY_TIMEOUT
 #define OGS_SBI_SETUP_NF_INSTANCE(__cTX, __nFInstance) \
     do { \
         ogs_assert(__nFInstance); \
         ogs_assert((__nFInstance)->id); \
+        ogs_assert((__nFInstance)->nf_type); \
         ogs_assert((__nFInstance)->t_validity); \
         \
-        if ((__cTX).nf_instance) { \
-            ogs_warn("[%s] NF Instance updated [type:%s validity:%ds]", \
-                    ((__cTX).nf_instance)->id, \
-                    OpenAPI_nf_type_ToString(((__cTX).nf_instance)->nf_type), \
-                    ((__cTX).nf_instance)->time.validity_duration); \
+        if ((__cTX).nf_instance_id) { \
+            ogs_warn("[%s] Unlink NF Instance " \
+                    "[type:%s validity:%d timeout:%lds]", \
+                    ((__cTX).nf_instance_id), \
+                    OpenAPI_nf_type_ToString((__nFInstance)->nf_type), \
+                    (__nFInstance)->time.validity_duration, \
+                    (long)((__cTX).validity_timeout)); \
+            ogs_free((__cTX).nf_instance_id); \
         } \
         \
-        ((__cTX).nf_instance) = __nFInstance; \
+        ((__cTX).nf_instance_id) = ogs_strdup((__nFInstance)->id); \
         if ((__nFInstance)->time.validity_duration) { \
             ((__cTX).validity_timeout) = (__nFInstance)->t_validity->timeout; \
         } else { \
             ((__cTX).validity_timeout) = 0; \
         } \
-        ogs_info("[%s] NF Instance setup [type:%s validity:%ds]", \
-                (__nFInstance)->id, \
+        ogs_info("[%s] Setup NF Instance [type:%s validity:%d timeout:%lds]", \
+                ((__cTX).nf_instance_id), \
                 OpenAPI_nf_type_ToString((__nFInstance)->nf_type), \
-                (__nFInstance)->time.validity_duration); \
+                (__nFInstance)->time.validity_duration, \
+                (long)((__cTX).validity_timeout)); \
     } while(0)
+#else
+#define OGS_SBI_SETUP_NF_INSTANCE(__cTX, __nFInstance) \
+    do { \
+        ogs_assert(__nFInstance); \
+        ogs_assert((__nFInstance)->id); \
+        ogs_assert((__nFInstance)->nf_type); \
+        \
+        if ((__cTX).nf_instance_id) { \
+            ogs_warn("[%s] Unlink NF Instance [type:%s]", \
+                    ((__cTX).nf_instance_id), \
+                    OpenAPI_nf_type_ToString((__nFInstance)->nf_type)); \
+            ogs_free((__cTX).nf_instance_id); \
+        } \
+        \
+        ((__cTX).nf_instance_id) = ogs_strdup((__nFInstance)->id); \
+        ogs_info("[%s] Setup NF Instance [type:%s]", \
+                ((__cTX).nf_instance_id), \
+                OpenAPI_nf_type_ToString((__nFInstance)->nf_type)); \
+    } while(0)
+#endif
 
 /*
- * Search.Result stored in nf_instance->time.validity_duration;
+ * Issue #3470
  *
- * validity_timeout = nf_instance->validity->timeout =
- *     ogs_get_monotonic_time() + nf_instance->time.validity_duration;
+ * Previously, nf_instance pointers were stored in nf_type_array and
+ * service_type_array. This led to a dangling pointer problem when an
+ * nf_instance was removed via ogs_sbi_nf_instance_remove().
  *
- * if no validityPeriod in SearchResult, validity_timeout is 0.
+ * To resolve this, we now store nf_instance_id instead, and use
+ * ogs_sbi_nf_instance_find(nf_instance_id) to verify the validity of an
+ * nf_instance.
  */
+#if ENABLE_VALIDITY_TIMEOUT
 #define OGS_SBI_GET_NF_INSTANCE(__cTX) \
     ((__cTX).validity_timeout == 0 || \
      (__cTX).validity_timeout > ogs_get_monotonic_time() ? \
-        ((__cTX).nf_instance) : NULL)
-
-#define OGS_SBI_NF_INSTANCE_VALID(__nFInstance) \
-    (((__nFInstance) && ((__nFInstance)->t_validity) && \
-     ((__nFInstance)->time.validity_duration == 0 || \
-      (__nFInstance)->t_validity->timeout > ogs_get_monotonic_time())) ? \
-         true : false)
+        (ogs_sbi_nf_instance_find((__cTX).nf_instance_id)) : NULL)
+#else
+#define OGS_SBI_GET_NF_INSTANCE(__cTX) \
+        ogs_sbi_nf_instance_find((__cTX).nf_instance_id)
+#endif
 
 bool ogs_sbi_discovery_param_is_matched(
         ogs_sbi_nf_instance_t *nf_instance,
@@ -569,6 +638,8 @@ ogs_sbi_subscription_data_t *ogs_sbi_subscription_data_find(char *id);
 bool ogs_sbi_supi_in_vplmn(char *supi);
 bool ogs_sbi_plmn_id_in_vplmn(ogs_plmn_id_t *plmn_id);
 bool ogs_sbi_fqdn_in_vplmn(char *fqdn);
+
+void ogs_sbi_keylog_callback(const SSL *ssl, const char *line);
 
 #ifdef __cplusplus
 }

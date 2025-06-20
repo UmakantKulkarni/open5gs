@@ -216,6 +216,7 @@ int ogs_gtp_context_parse_config(const char *local, const char *remote)
                                                 server_key);
                                 }
 
+                                /* Add address information */
                                 addr = NULL;
                                 for (i = 0; i < num; i++) {
                                     rv = ogs_addaddrinfo(&addr,
@@ -223,17 +224,30 @@ int ogs_gtp_context_parse_config(const char *local, const char *remote)
                                     ogs_assert(rv == OGS_OK);
                                 }
 
+                                /* Add each address as a separate socknode */
                                 if (addr) {
-                                    if (ogs_global_conf()->parameter.
-                                            no_ipv4 == 0)
-                                        ogs_socknode_add(
-                                            &self.gtpc_list, AF_INET, addr,
-                                            is_option ? &option : NULL);
-                                    if (ogs_global_conf()->parameter.
-                                            no_ipv6 == 0)
-                                        ogs_socknode_add(
-                                            &self.gtpc_list6, AF_INET6, addr,
-                                            is_option ? &option : NULL);
+                                    ogs_sockaddr_t *current = addr;
+                                    while (current) {
+                                        if (current->ogs_sa_family ==
+                                                AF_INET &&
+                                            ogs_global_conf()->
+                                                parameter.no_ipv4 == 0) {
+                                            ogs_socknode_add(&self.gtpc_list,
+                                                             AF_INET, current,
+                                                             is_option ?
+                                                             &option : NULL);
+                                        }
+                                        if (current->ogs_sa_family ==
+                                                AF_INET6 &&
+                                            ogs_global_conf()->
+                                                parameter.no_ipv6 == 0) {
+                                            ogs_socknode_add(&self.gtpc_list6,
+                                                             AF_INET6, current,
+                                                             is_option ?
+                                                             &option : NULL);
+                                        }
+                                        current = current->next;
+                                    }
                                     ogs_freeaddrinfo(addr);
                                 }
 
@@ -433,16 +447,28 @@ int ogs_gtp_context_parse_config(const char *local, const char *remote)
                                 ogs_list_init(&list6);
 
                                 if (addr) {
-                                    if (ogs_global_conf()->parameter.
-                                            no_ipv4 == 0)
-                                        ogs_socknode_add(
-                                            &list, AF_INET, addr,
-                                            is_option ? &option : NULL);
-                                    if (ogs_global_conf()->parameter.
-                                            no_ipv6 == 0)
-                                        ogs_socknode_add(
-                                            &list6, AF_INET6, addr,
-                                            is_option ? &option : NULL);
+                                    ogs_sockaddr_t *current = addr;
+                                    while (current) {
+                                        if (current->ogs_sa_family ==
+                                                AF_INET &&
+                                            ogs_global_conf()->
+                                                parameter.no_ipv4 == 0) {
+                                            ogs_socknode_add(&list,
+                                                             AF_INET, current,
+                                                             is_option ?
+                                                             &option : NULL);
+                                        }
+                                        if (current->ogs_sa_family ==
+                                                AF_INET6 &&
+                                            ogs_global_conf()->
+                                                parameter.no_ipv6 == 0) {
+                                            ogs_socknode_add(&list6,
+                                                             AF_INET6, current,
+                                                             is_option ?
+                                                             &option : NULL);
+                                        }
+                                        current = current->next;
+                                    }
                                     ogs_freeaddrinfo(addr);
                                 }
 
@@ -471,11 +497,18 @@ int ogs_gtp_context_parse_config(const char *local, const char *remote)
                                 rv = ogs_filteraddrinfo(&adv_addr6, AF_INET6);
                                 ogs_assert(rv == OGS_OK);
 
+                                if (adv_addr || adv_addr6) {
+                                    rv = ogs_sockaddr_to_ip(
+                                            adv_addr, adv_addr6,
+                                            &self.gtpu_ip);
+                                    ogs_assert(rv == OGS_OK);
+                                }
+
                         /* Find first IPv4/IPv6 address in the list.
                          *
                          * In the following configuration,
                          * 127.0.0.4, 127.0.0.5 and 2001:db8:cafe::1 are ignored
-                         * on PFCP Assocation Response message's
+                         * on PFCP Association Response message's
                          * user plane IP resource information.
                          *
                          * gtpu:

@@ -30,6 +30,7 @@ static void server_final(void);
 
 static int server_start(ogs_sbi_server_t *server,
         int (*cb)(ogs_sbi_request_t *request, void *data));
+static void server_graceful_shutdown(ogs_sbi_server_t *server);
 static void server_stop(ogs_sbi_server_t *server);
 
 static bool server_send_rspmem_persistent(
@@ -47,6 +48,7 @@ const ogs_sbi_server_actions_t ogs_nghttp2_server_actions = {
     server_final,
 
     server_start,
+    server_graceful_shutdown,
     server_stop,
 
     server_send_rspmem_persistent,
@@ -196,7 +198,9 @@ static int ssl_ctx_set_proto_versions(SSL_CTX *ssl_ctx, int min, int max)
 #endif /* OPENSSL_VERSION_NUMBER >= 0x1010000fL */
 }
 
-static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file)
+static SSL_CTX *create_ssl_ctx(
+        const char *key_file, const char *cert_file,
+        const char *sslkeylog_file)
 {
     SSL_CTX *ssl_ctx;
     uint64_t ssl_opts;
@@ -208,6 +212,16 @@ static SSL_CTX *create_ssl_ctx(const char *key_file, const char *cert_file)
     if (!ssl_ctx) {
         ogs_error("Could not create SSL/TLS context: %s", ERR_error_string(ERR_get_error(), NULL));
         return NULL;
+    }
+
+    /* Set key log files for each SSL_CTX */
+    if (sslkeylog_file) {
+        /* Ensure app data is set for SSL objects */
+        SSL_CTX_set_app_data(ssl_ctx, sslkeylog_file);
+#if OPENSSL_VERSION_NUMBER >= 0x10101000L
+        /* Set the SSL Key Log callback */
+        SSL_CTX_set_keylog_callback(ssl_ctx, ogs_sbi_keylog_callback);
+#endif
     }
 
     ssl_opts = (SSL_OP_ALL & ~SSL_OP_DONT_INSERT_EMPTY_FRAGMENTS) |
@@ -322,7 +336,8 @@ static int server_start(ogs_sbi_server_t *server,
     /* Create SSL CTX */
     if (server->scheme == OpenAPI_uri_scheme_https) {
 
-        server->ssl_ctx = create_ssl_ctx(server->private_key, server->cert);
+        server->ssl_ctx = create_ssl_ctx(
+                server->private_key, server->cert, server->sslkeylog);
         if (!server->ssl_ctx) {
             ogs_error("Cannot create SSL CTX");
             return OGS_ERROR;
@@ -427,6 +442,33 @@ static int server_start(ogs_sbi_server_t *server,
                 OGS_ADDR(addr, buf), OGS_PORT(addr));
 
     return OGS_OK;
+}
+
+/* Gracefully shutdown the server by sending GOAWAY to each session. */
+static void server_graceful_shutdown(ogs_sbi_server_t *server)
+{
+    ogs_sbi_session_t *sbi_sess = NULL;
+    ogs_sbi_session_t *next_sbi_sess = NULL;
+    int rv;
+
+    /* Iterate over all active sessions in the server. */
+    ogs_list_for_each_safe(&server->session_list, next_sbi_sess, sbi_sess) {
+        /* Submit a GOAWAY frame using the last stream ID. */
+        rv = nghttp2_submit_goaway(sbi_sess->session,
+                                   NGHTTP2_FLAG_NONE,
+                                   sbi_sess->last_stream_id,
+                                   NGHTTP2_NO_ERROR,
+                                   NULL, 0);
+        if (rv != 0) {
+            ogs_error("nghttp2_submit_goaway() failed (%d:%s)",
+                      rv, nghttp2_strerror(rv));
+        }
+
+        /* Send the GOAWAY frame to the client. */
+        if (session_send(sbi_sess) != OGS_OK) {
+            ogs_error("session_send() failed during graceful shutdown");
+        }
+    }
 }
 
 static void server_stop(ogs_sbi_server_t *server)
@@ -1720,9 +1762,12 @@ static void session_write_callback(short when, ogs_socket_t fd, void *data)
     ogs_assert(sbi_sess);
 
     if (ogs_list_empty(&sbi_sess->write_queue) == true) {
-        ogs_assert(sbi_sess->poll.write);
-        ogs_pollset_remove(sbi_sess->poll.write);
-        sbi_sess->poll.write = NULL;
+        if (sbi_sess->poll.write) {
+            ogs_pollset_remove(sbi_sess->poll.write);
+            sbi_sess->poll.write = NULL;
+        } else
+            ogs_warn("poll.write has already been removed");
+
         return;
     }
 

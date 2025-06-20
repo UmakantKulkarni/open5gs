@@ -177,16 +177,19 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                 udm_ue = udm_ue_find_by_suci_or_supi(
                         message.h.resource.component[0]);
                 if (!udm_ue) {
-                    if (!strcmp(message.h.method,
-                                OGS_SBI_HTTP_METHOD_POST)) {
+                    SWITCH(message.h.method)
+                    CASE(OGS_SBI_HTTP_METHOD_POST)
+                    CASE(OGS_SBI_HTTP_METHOD_GET)
                         udm_ue = udm_ue_add(message.h.resource.component[0]);
                         if (!udm_ue) {
                             ogs_error("Invalid Request [%s]",
                                     message.h.resource.component[0]);
                         }
-                    } else {
+                        break;
+
+                    DEFAULT
                         ogs_error("Invalid HTTP method [%s]", message.h.method);
-                    }
+                    END
                 }
             }
 
@@ -462,6 +465,8 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
                         e->h.sbi.data =
                             OGS_UINT_TO_POINTER(sbi_xact->assoc_stream_id);
 
+                    e->h.sbi.state = sbi_xact->state;
+
                     ogs_sbi_xact_remove(sbi_xact);
 
                     udm_ue = udm_ue_find_by_id(udm_ue_id);
@@ -475,7 +480,7 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
 
                     ogs_fsm_dispatch(&udm_ue->sm, e);
                     if (OGS_FSM_CHECK(&udm_ue->sm, udm_ue_state_exception)) {
-                        ogs_error("[%s] State machine exception", udm_ue->suci);
+                        ogs_warn("[%s] State machine exception", udm_ue->suci);
                         udm_ue_remove(udm_ue);
                     }
                 END
@@ -593,7 +598,7 @@ void udm_state_operational(ogs_fsm_t *s, udm_event_t *e)
             ogs_error("Cannot receive SBI message");
 
             if (!stream) {
-                ogs_error("STREAM has alreadt been removed [%d]",
+                ogs_error("STREAM has already been removed [%d]",
                         sbi_xact->assoc_stream_id);
                 break;
             }

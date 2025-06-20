@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2023 by Sukchan Lee <acetcom@gmail.com>
+ * Copyright (C) 2023-2025 by Sukchan Lee <acetcom@gmail.com>
  *
  * This file is part of Open5GS.
  *
@@ -64,13 +64,16 @@ static void event_termination(void)
     ogs_sbi_nf_instance_t *nf_instance = NULL;
     sepp_node_t *sepp_node = NULL;
 
-    /* Sending NF Instance De-registeration to NRF */
+    /* Sending NF Instance De-registration to NRF */
     ogs_list_for_each(&ogs_sbi_self()->nf_instance_list, nf_instance)
         ogs_sbi_nf_fsm_fini(nf_instance);
 
     /* Sending N32 Termination to Peer SMF */
     ogs_list_for_each(&sepp_self()->peer_list, sepp_node)
         sepp_handshake_fsm_fini(sepp_node);
+
+    /* Gracefully shutdown the server by sending GOAWAY to each session. */
+    ogs_sbi_server_graceful_shutdown_all();
 
     /* Starting holding timer */
     t_termination_holding = ogs_timer_add(ogs_app()->timer_mgr, NULL, NULL);
@@ -112,7 +115,7 @@ static void sepp_main(void *data)
         /*
          * After ogs_pollset_poll(), ogs_timer_mgr_expire() must be called.
          *
-         * The reason is why ogs_timer_mgr_next() can get the corrent value
+         * The reason is why ogs_timer_mgr_next() can get the current value
          * when ogs_timer_stop() is called internally in ogs_timer_mgr_expire().
          *
          * You should not use event-queue before ogs_timer_mgr_expire().

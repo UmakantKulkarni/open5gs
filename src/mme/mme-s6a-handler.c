@@ -63,8 +63,12 @@ uint8_t mme_s6a_handle_aia(
 
     CLEAR_MME_UE_TIMER(mme_ue->t3460);
 
-    if (mme_ue->nas_eps.ksi == OGS_NAS_KSI_NO_KEY_IS_AVAILABLE)
-        mme_ue->nas_eps.ksi = 0;
+    if (mme_ue->nas_eps.mme.ksi < (OGS_NAS_KSI_NO_KEY_IS_AVAILABLE - 1))
+        mme_ue->nas_eps.mme.ksi++;
+    else
+        mme_ue->nas_eps.mme.ksi = 0;
+
+    mme_ue->nas_eps.ue.ksi = mme_ue->nas_eps.mme.ksi;
 
     return OGS_NAS_EMM_CAUSE_REQUEST_ACCEPTED;
 }
@@ -273,7 +277,7 @@ void mme_s6a_handle_clr(mme_ue_t *mme_ue, ogs_diam_s6a_message_t *s6a_message)
     ogs_debug("    OGS_NAS_EPS TYPE[%d]", mme_ue->nas_eps.type);
 
     switch (clr_message->cancellation_type) {
-    case OGS_DIAM_S6A_CT_SUBSCRIPTION_WITHDRAWL:
+    case OGS_DIAM_S6A_CT_SUBSCRIPTION_WITHDRAWAL:
         mme_ue->detach_type = MME_DETACH_TYPE_HSS_EXPLICIT;
 
         /*
@@ -399,7 +403,7 @@ static uint8_t emm_cause_from_diameter(
     if (dia_exp_err) {
         switch (*dia_exp_err) {
         case OGS_DIAM_S6A_ERROR_USER_UNKNOWN:                   /* 5001 */
-            return OGS_NAS_EMM_CAUSE_PLMN_NOT_ALLOWED;
+            return OGS_NAS_EMM_CAUSE_EPS_SERVICES_AND_NON_EPS_SERVICES_NOT_ALLOWED;
         case OGS_DIAM_S6A_ERROR_UNKNOWN_EPS_SUBSCRIPTION:       /* 5420 */
             /* FIXME: Error diagnostic? */
             return OGS_NAS_EMM_CAUSE_NO_SUITABLE_CELLS_IN_TRACKING_AREA;

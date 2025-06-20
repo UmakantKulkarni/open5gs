@@ -171,7 +171,6 @@ ogs_pkbuf_t *ngap_build_ng_setup_failure(
 
     NGAP_NGSetupFailureIEs_t *ie = NULL;
     NGAP_Cause_t *Cause = NULL;
-    NGAP_TimeToWait_t *TimeToWait = NULL;
 
     ogs_debug("    Group[%d] Cause[%d] TimeToWait[%ld]",
             group, (int)cause, time_to_wait);
@@ -189,17 +188,6 @@ ogs_pkbuf_t *ngap_build_ng_setup_failure(
 
     NGSetupFailure = &unsuccessfulOutcome->value.choice.NGSetupFailure;
 
-    if (time_to_wait > -1) {
-        ie = CALLOC(1, sizeof(NGAP_NGSetupFailureIEs_t));
-        ASN_SEQUENCE_ADD(&NGSetupFailure->protocolIEs, ie);
-
-        ie->id = NGAP_ProtocolIE_ID_id_TimeToWait;
-        ie->criticality = NGAP_Criticality_ignore;
-        ie->value.present = NGAP_NGSetupFailureIEs__value_PR_TimeToWait;
-
-        TimeToWait = &ie->value.choice.TimeToWait;
-    }
-
     ie = CALLOC(1, sizeof(NGAP_NGSetupFailureIEs_t));
     ASN_SEQUENCE_ADD(&NGSetupFailure->protocolIEs, ie);
 
@@ -211,8 +199,16 @@ ogs_pkbuf_t *ngap_build_ng_setup_failure(
     Cause->present = group;
     Cause->choice.radioNetwork = cause;
 
-    if (TimeToWait)
-        *TimeToWait = time_to_wait;
+    if (time_to_wait > -1) {
+        ie = CALLOC(1, sizeof(NGAP_NGSetupFailureIEs_t));
+        ASN_SEQUENCE_ADD(&NGSetupFailure->protocolIEs, ie);
+
+        ie->id = NGAP_ProtocolIE_ID_id_TimeToWait;
+        ie->criticality = NGAP_Criticality_ignore;
+        ie->value.present = NGAP_NGSetupFailureIEs__value_PR_TimeToWait;
+
+        ie->value.choice.TimeToWait = time_to_wait;
+    }
 
     return ogs_ngap_encode(&pdu);
 }
@@ -315,7 +311,13 @@ ogs_pkbuf_t *ngap_build_downlink_nas_transport(
     ogs_assert(gmmbuf);
     ogs_assert(ran_ue);
     amf_ue = amf_ue_find_by_id(ran_ue->amf_ue_id);
-    ogs_assert(amf_ue);
+    if (!amf_ue) {
+        ogs_fatal("    AMF-UE-ID[%d] RAN_UE_NGAP_ID[%lld] AMF_UE_NGAP_ID[%lld]",
+                ran_ue->amf_ue_id,
+                (long long)ran_ue->ran_ue_ngap_id,
+                (long long)ran_ue->amf_ue_ngap_id);
+        ogs_assert_if_reached();
+    }
 
     ogs_debug("DownlinkNASTransport");
 
@@ -1259,7 +1261,7 @@ ogs_pkbuf_t *ngap_build_ue_context_release_command(
                 &UE_NGAP_IDs->choice.aMF_UE_NGAP_ID, ran_ue->amf_ue_ngap_id);
     } else {
         UE_NGAP_IDs->present = NGAP_UE_NGAP_IDs_PR_uE_NGAP_ID_pair;
-        UE_NGAP_IDs->choice.uE_NGAP_ID_pair = 
+        UE_NGAP_IDs->choice.uE_NGAP_ID_pair =
             CALLOC(1, sizeof(NGAP_UE_NGAP_ID_pair_t));
         asn_uint642INTEGER(
             &UE_NGAP_IDs->choice.uE_NGAP_ID_pair->aMF_UE_NGAP_ID,
